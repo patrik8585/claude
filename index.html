@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HCP Consent Capture – Clickable Mockup</title>
+<style>
+:root{
+  --brand:#0176d3;--brand-d:#014486;--navy:#032d60;--ink:#181818;--ink2:#444;--mute:#706e6b;
+  --line:#dddbda;--bg:#f3f3f3;--card:#fff;--ok:#2e844a;--ok-bg:#e3f3df;--warn:#8c4b02;--warn-bg:#ffefd1;--warn-line:#fe9339;
+  --err:#ba0517;--err-bg:#feded8;--ai:#7526e3;--ai-bg:#f3ecfd;--info-bg:#e5f2fd;--teal:#0b827c;
+  --font:"Salesforce Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--font);color:var(--ink);background:#e9eef4;font-size:16px;line-height:1.4}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+.ic{width:1.15em;height:1.15em;fill:currentColor;vertical-align:-.2em;flex:none}
+
+/* banner + step navigator */
+.banner{background:#fff3b0;color:#5c4400;text-align:center;font-weight:700;padding:7px 12px;font-size:14px;letter-spacing:.2px;border-bottom:1px solid #e6d36b}
+.top{position:sticky;top:0;z-index:50;background:var(--navy);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.top-in{max-width:1360px;margin:0 auto;padding:10px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.kicker{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:#a8c6e8}
+.ttl{min-width:250px}
+.ttl b{font-size:20px}
+.ttl span{font-size:16px;color:#d6e6f7;margin-left:6px}
+#chips{display:flex;gap:6px;flex:1;justify-content:center;flex-wrap:wrap}
+.chip{border:1px solid #3b5f8d;background:transparent;color:#cfe0f3;border-radius:999px;padding:5px 12px;font-size:13px;display:flex;gap:6px;align-items:center}
+.chip i{font-style:normal;width:20px;height:20px;border-radius:50%;background:#1d4a82;display:inline-grid;place-items:center;font-size:12px;font-weight:700}
+.chip:hover{background:#0b3f77}
+.chip.on{background:#fff;color:var(--navy);border-color:#fff;font-weight:700}
+.chip.on i{background:var(--brand);color:#fff}
+.chip.done i{background:var(--ok);color:#fff}
+.nb{display:flex;gap:8px}
+.bar{height:3px;background:#0b3f77}.bar i{display:block;height:100%;background:#57b4ff;transition:width .3s}
+
+/* buttons */
+.btn{border:1px solid var(--line);background:#fff;color:var(--brand);border-radius:.25rem;padding:7px 16px;font-weight:600;display:inline-flex;align-items:center;gap:6px;justify-content:center;white-space:nowrap}
+.btn:hover{background:#f3f3f3}
+.btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}.btn.brand:hover{background:var(--brand-d)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.danger{color:var(--err);border-color:var(--err)}.btn.danger:hover{background:var(--err-bg)}
+.btn.ai{background:var(--ai);border-color:var(--ai);color:#fff}.btn.ai:hover{background:#5d1db5}
+.btn.ghost{background:transparent;border-color:#3b5f8d;color:#fff}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn.lg{padding:12px 20px;font-size:17px}
+.btn.block{width:100%}
+.btn.sm{padding:4px 10px;font-size:13px}
+
+/* stage + story */
+main{max-width:1360px;margin:0 auto;padding:18px 16px 60px}
+.story{display:flex;gap:20px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-left:6px solid var(--brand);border-radius:.5rem;padding:14px 18px;margin-bottom:20px}
+.who{background:var(--info-bg);color:var(--brand-d);font-weight:700;border-radius:999px;padding:4px 12px;font-size:13px;white-space:nowrap}
+.st-main{flex:1;min-width:280px}
+.st-main h2{margin:0 0 3px;font-size:22px}
+.st-main p{margin:0;color:var(--ink2);font-size:16px}
+.solves{display:flex;gap:6px;flex-wrap:wrap;max-width:420px}
+.pill{background:var(--ok-bg);color:#194e1c;border:1px solid #b4dcae;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:600}
+.pill b{background:var(--ok);color:#fff;border-radius:4px;padding:0 5px;margin-right:5px}
+.grid3{display:grid;grid-template-columns:minmax(220px,1fr) auto minmax(240px,1fr);gap:28px;align-items:start;justify-content:center}
+.grid2{display:grid;grid-template-columns:auto minmax(260px,1fr);gap:28px;align-items:start;justify-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:12px}
+@media(max-width:1000px){.grid3,.grid2{grid-template-columns:1fr}}
+.note{background:#fff;border:1px solid var(--line);border-radius:.5rem;padding:16px 18px}
+.note h4{margin:0 0 8px;font-size:16px}
+.note ul{margin:0;padding-left:20px}.note li{margin:6px 0}
+.note .tag{display:inline-block;font-size:12px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px}
+.tag.bad{background:var(--err-bg);color:var(--err)}.tag.good{background:var(--ok-bg);color:#194e1c}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:380px}
+.subtabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;font-size:13px;color:var(--ink2)}
+.subtabs button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+.demo{font-size:13px;color:var(--mute);text-align:center}
+.demo a{color:var(--brand);cursor:pointer;text-decoration:underline}
+
+/* poster / QR */
+.poster{background:#fff;border:1px solid var(--line);border-radius:.5rem;padding:20px;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.poster .hd{background:var(--brand);color:#fff;border-radius:6px;padding:10px;font-weight:700;margin-bottom:12px}
+.poster h3{margin:0 0 4px;font-size:20px}.poster p{margin:2px 0 12px;color:var(--ink2)}
+.poster svg{width:200px;height:200px;cursor:pointer;border:6px solid #fff;outline:1px solid var(--line)}
+.poster .cta{margin-top:10px;font-size:13px;color:var(--mute)}
+
+/* phone */
+.phone{width:360px;height:720px;background:#111;border-radius:42px;padding:11px;position:relative;box-shadow:0 14px 34px rgba(0,0,0,.35);flex:none}
+.pscreen{background:#fff;border-radius:32px;height:100%;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.sbar{display:flex;justify-content:space-between;padding:9px 22px 3px;font-size:12px;font-weight:700;background:#fff}
+.url{margin:2px 12px 6px;background:#f0f0f0;border-radius:8px;padding:5px 10px;font-size:12px;color:#444;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden}
+.pbody{flex:1;overflow-y:auto;position:relative;font-size:15px;scrollbar-width:thin}
+.pub-h{background:var(--brand);color:#fff;padding:14px 16px}
+.pub-h small{display:block;opacity:.85;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+.pub-h b{font-size:17px;line-height:1.25;display:block;margin-top:2px}
+.pad{padding:14px 16px}
+.pbody label.l{display:block;font-size:13px;color:var(--ink2);margin:10px 0 3px}
+.pbody label.l i{color:var(--err);font-style:normal}
+.in{width:100%;border:1px solid #c9c9c9;border-radius:.25rem;padding:9px 10px;background:#fff;min-height:40px}
+.in:focus{outline:2px solid var(--brand);border-color:var(--brand)}
+.in.err{border-color:var(--err);background:#fff8f7}
+textarea.in{min-height:96px;resize:vertical}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chk{display:flex;gap:9px;align-items:flex-start;margin:12px 0;font-size:13px;line-height:1.35;color:var(--ink2)}
+.chk input{width:20px;height:20px;margin-top:1px;flex:none}
+.chk.err{color:var(--err)}
+.consent{background:#f7f9fb;border:1px solid var(--line);border-radius:6px;padding:10px;margin-top:12px}
+.consent .chk{margin:0}
+.consent small{display:block;color:var(--mute);margin-top:6px;margin-left:29px}
+.prog{height:6px;background:#e5e5e5;border-radius:3px;overflow:hidden;margin:8px 0 2px}.prog i{display:block;height:100%;background:var(--ok);transition:width .25s}
+.progt{font-size:12px;color:var(--mute);display:flex;justify-content:space-between}
+.hero-ok{text-align:center;padding:34px 20px}
+.big-check{width:84px;height:84px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;margin:0 auto 16px;font-size:44px;animation:pop .4s}
+.big-check .ic{width:48px;height:48px}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
+.hero-ok h3{margin:0 0 8px;font-size:22px}.hero-ok p{color:var(--ink2);margin:6px 0}
+.camera{background:linear-gradient(#1b2530,#0c1117);height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:18px;text-align:center;padding:20px}
+.vf{width:190px;height:190px;border:3px solid #fff;border-radius:18px;position:relative;display:grid;place-items:center;opacity:.9}
+.vf:after{content:"";position:absolute;left:8px;right:8px;height:2px;background:#4ade80;animation:scan 1.8s infinite alternate}
+@keyframes scan{from{top:10px}to{top:170px}}
+.mail-h{background:#f6f6f6;border-bottom:1px solid var(--line);padding:10px 14px;font-weight:700;display:flex;gap:8px;align-items:center}
+.mail{padding:14px}
+.mail .meta{font-size:13px;color:var(--mute);margin-bottom:10px;line-height:1.5}
+.mail h4{margin:0 0 10px;font-size:17px}
+.mail .box{border:1px solid var(--line);border-radius:8px;padding:14px;background:#fff}
+.mail small{display:block;margin-top:12px;color:var(--mute);font-size:12px}
+
+/* rep app */
+.rep-h{background:var(--navy);color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.rep-h b{font-size:16px}.av{width:30px;height:30px;border-radius:50%;background:#57b4ff;color:var(--navy);display:inline-grid;place-items:center;font-weight:700;font-size:12px}
+.tabbar{display:flex;border-top:1px solid var(--line);background:#fff;flex:none}
+.tabbar button{flex:1;border:0;background:none;padding:9px 0 12px;color:var(--mute);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabbar button.on{color:var(--brand);font-weight:700}.tabbar .ic{width:22px;height:22px}
+.evc{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:#fff;cursor:pointer}
+.evc:hover{border-color:var(--brand);box-shadow:0 0 0 2px var(--info-bg)}
+.evc b{display:block}.evc small{color:var(--mute)}
+.live{background:#e8444a;color:#fff;border-radius:4px;font-size:11px;padding:1px 6px;font-weight:700;margin-left:6px}
+.evchip{background:var(--info-bg);color:var(--brand-d);border-radius:8px;padding:8px 10px;font-size:13px;display:flex;gap:6px;align-items:center;margin-bottom:10px}
+.srch{position:relative}.srch .ic{position:absolute;left:10px;top:11px;color:var(--mute)}.srch .in{padding-left:34px}
+.res{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px;display:flex;justify-content:space-between;gap:8px;align-items:center;cursor:pointer;background:#fff}
+.res:hover{border-color:var(--brand)}.res small{color:var(--mute);display:block}
+.sugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--mute);align-items:center}
+.sugg button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 10px;font-size:13px;color:var(--brand)}
+.hcpcard{border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:10px;background:#fff}
+.hcpcard h4{margin:0}.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px;margin:10px 0}.kv span:nth-child(odd){color:var(--mute)}
+.alert{border-radius:8px;padding:10px 12px;font-size:13px;margin:10px 0;display:flex;gap:8px;align-items:flex-start}
+.alert.info{background:var(--info-bg);color:var(--brand-d)}.alert.ok{background:var(--ok-bg);color:#194e1c}.alert.warn{background:var(--warn-bg);color:var(--warn)}.alert.ai{background:var(--ai-bg);color:#4b1a94}
+.notes-w{position:relative}
+.mic{position:absolute;right:8px;bottom:8px;width:44px;height:44px;border-radius:50%;border:0;background:var(--brand);color:#fff;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.mic .ic{width:24px;height:24px}
+.mic.on{background:#e8444a;animation:pulse 1s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(232,68,74,.6)}100%{box-shadow:0 0 0 14px rgba(232,68,74,0)}}
+.flash{animation:flash 1.6s}
+@keyframes flash{0%,40%{background:#efe4ff;border-color:var(--ai)}100%{background:#fff}}
+.tchip{display:inline-block;background:var(--ai-bg);color:var(--ai);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;margin:2px 3px 2px 0}
+.cap{border-bottom:1px solid var(--line);padding:11px 0}
+.cap .r{display:flex;justify-content:space-between;gap:8px}.cap small{color:var(--mute)}
+.sm-badge{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.sm-badge.ok{background:var(--ok-bg);color:#194e1c}.sm-badge.wait{background:var(--warn-bg);color:var(--warn)}.sm-badge.red{background:var(--err-bg);color:var(--err)}.sm-badge.t{background:var(--ai-bg);color:var(--ai)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #c9c9c9;border-top-color:var(--brand);border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+#sig{width:100%;height:130px;border:1px dashed #8a8a8a;border-radius:8px;background:#fff;touch-action:none;display:block;margin-top:8px}
+.alert.err{background:var(--err-bg);color:#7a0610}
+.cmo{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.cmo .btn{justify-content:flex-start;text-align:left;white-space:normal}
+.cmo .btn.sel{background:var(--brand);color:#fff;border-color:var(--brand)}
+.cmo .btn.dec.sel{background:var(--err);border-color:var(--err)}
+/* tablet / kiosk */
+.tablet{width:min(940px,100%);aspect-ratio:16/10.5;background:#111;border-radius:30px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.tscreen{background:#fff;border-radius:16px;height:100%;display:grid;grid-template-columns:34% 1fr;overflow:hidden}
+.kside{background:linear-gradient(160deg,var(--brand),var(--navy));color:#fff;padding:28px;display:flex;flex-direction:column;gap:12px;justify-content:center}
+.kside h3{font-size:26px;margin:0;line-height:1.2}.kside p{margin:0;opacity:.9;font-size:16px}
+.kside .kb{background:rgba(255,255,255,.14);border-radius:8px;padding:10px 12px;font-size:14px}
+.kmain{padding:20px 26px;overflow:auto}
+.kmain .pbody{font-size:16px}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.kgrid .full{grid-column:1/-1}
+.kmain .in{min-height:46px;font-size:17px}
+.kmain label.l{font-size:14px}
+.cd{margin-top:16px;color:var(--mute);font-size:15px}
+.cd b{color:var(--brand);font-size:20px}
+@media(max-width:800px){.tscreen{grid-template-columns:1fr}.kside{display:none}}
+
+/* matching */
+.pipe{display:flex;gap:0;align-items:stretch;margin-bottom:16px;flex-wrap:wrap}
+.pnode{flex:1;min-width:180px;background:#fff;border:1px solid var(--line);padding:12px 16px;position:relative}
+.pnode:not(:last-child){margin-right:16px}
+.pnode:not(:last-child):after{content:"";position:absolute;right:-17px;top:50%;margin-top:-10px;border:10px solid transparent;border-left:10px solid var(--brand);border-right:0}
+.pnode b{display:block;font-size:15px}.pnode small{color:var(--mute)}
+.pnode.act{border-color:var(--brand);box-shadow:0 0 0 2px var(--info-bg)}
+.kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.kpi{flex:1;min-width:140px;background:#fff;border:1px solid var(--line);border-radius:.5rem;padding:10px 14px}
+.kpi small{color:var(--mute);display:block;font-size:13px}.kpi b{font-size:28px}
+.kpi.g b{color:var(--ok)}.kpi.a b{color:#b86e00}.kpi.b b{color:var(--brand)}
+.tw{background:#fff;border:1px solid var(--line);border-radius:.5rem;overflow:auto}
+table.tbl{border-collapse:collapse;width:100%;font-size:14px}
+.tbl th{background:#f3f3f3;color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td:first-child{white-space:nowrap}
+.tbl td{padding:9px 12px;border-bottom:1px solid #ecebea;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl small{display:block;color:var(--mute);font-size:12px}
+.tbl tr.click{cursor:pointer}.tbl tr.click:hover td{background:#f3f9ff}
+.tbl a{color:var(--brand);font-weight:600}
+.badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.badge.auto{background:var(--ok-bg);color:#194e1c}.badge.warn{background:var(--warn-bg);color:var(--warn)}.badge.new{background:#e8e0fa;color:#4b2a9c}
+.badge.rev{background:var(--info-bg);color:var(--brand-d)}.badge.dis,.badge.queued{background:#ececec;color:#555}.badge.red{background:var(--err-bg);color:var(--err)}
+.rules ol{margin:0;padding-left:20px}.rules li{margin:6px 0}
+.rowrun td{background:#f7fbff}
+.chan{display:inline-flex;gap:5px;align-items:center;font-size:13px}.chan i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* desktop frame */
+.deskwrap{overflow-x:auto;padding-bottom:6px}
+.desk{min-width:980px;border:1px solid #b9b9b9;border-radius:10px;overflow:hidden;background:var(--bg);box-shadow:0 14px 34px rgba(0,0,0,.25)}
+.chrome{background:#dfe3e8;display:flex;gap:12px;align-items:center;padding:8px 12px}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#b0b6bd;display:block}
+.addr{flex:1;background:#fff;border-radius:6px;padding:4px 12px;font-size:12.5px;color:#444;white-space:nowrap;overflow:hidden}
+.gh{background:var(--navy);color:#fff;display:flex;align-items:center;gap:16px;padding:8px 16px}
+.gh .logo{width:34px;height:34px;border-radius:8px;background:#0b5cab;display:grid;place-items:center}.gh .logo .ic{width:22px;height:22px}
+.gsearch{flex:1;max-width:520px;margin:0 auto;background:#fff;color:var(--mute);border-radius:4px;padding:6px 12px;font-size:14px;display:flex;gap:8px;align-items:center}
+.gicons{display:flex;gap:14px;align-items:center}
+.gnav{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:stretch;padding:0 16px;gap:20px;border-top:3px solid var(--brand)}
+.gnav .app{display:flex;align-items:center;gap:8px;padding:10px 0;font-size:15px}
+.gnav ul{list-style:none;margin:0;padding:0;display:flex}
+.gnav li{padding:12px 16px;font-size:14px;color:var(--ink2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.gnav li:hover{background:#f3f3f3}.gnav li.on{border-bottom-color:var(--brand);font-weight:700;color:var(--ink)}
+.dbody{padding:14px 16px 20px;font-size:14px;min-height:560px}
+.dcard{background:#fff;border:1px solid var(--line);border-radius:.5rem;box-shadow:0 1px 2px rgba(0,0,0,.08);margin-bottom:12px}
+.dcard>h3{margin:0;padding:11px 16px;font-size:15px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.dcard .cb{padding:12px 16px}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ph .oi{width:40px;height:40px;border-radius:6px;display:grid;place-items:center;color:#fff;flex:none}.ph .oi .ic{width:24px;height:24px}
+.ph small{color:var(--mute);display:block;text-transform:uppercase;font-size:11.5px;letter-spacing:.5px}
+.ph h1{font-size:20px;margin:0}
+.ph .sp{flex:1}
+.hl{background:#fff;border:1px solid var(--line);border-radius:.5rem;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.hl .top2{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hl .flds{display:flex;gap:30px;margin-top:12px;flex-wrap:wrap}
+.hl .flds div small{display:block;color:var(--mute);font-size:12px}.hl .flds div{font-size:14px}
+.path{display:flex;list-style:none;margin:0 0 12px;padding:0;background:#fff;border:1px solid var(--line);border-radius:.5rem;overflow:hidden}
+.path li{flex:1;text-align:center;padding:9px 6px 9px 18px;font-size:13px;background:#ecebea;color:var(--ink2);position:relative;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%);margin-right:-6px}
+.path li:first-child{clip-path:polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%);padding-left:10px}
+.path li.d{background:var(--ok);color:#fff}.path li.c{background:var(--brand);color:#fff;font-weight:700}
+.two{display:grid;grid-template-columns:300px 1fr;gap:12px;align-items:start}
+.two.eq{grid-template-columns:1fr 1fr}
+.fl{display:grid;grid-template-columns:130px 1fr;gap:7px 10px;font-size:14px}
+.fl dt{color:var(--mute)}.fl dd{margin:0;word-break:break-word}
+.fl2{display:grid;grid-template-columns:1fr 1fr;gap:12px 28px}
+.fl2 div small{display:block;color:var(--mute);font-size:12px;border-bottom:1px solid var(--line);padding-bottom:2px;margin-bottom:3px}
+.lnk{color:var(--brand);font-weight:600}
+.aicard{border:1px solid #cdb4f5;background:var(--ai-bg);border-radius:.5rem;padding:12px 16px;margin-bottom:12px;border-left:5px solid var(--ai)}
+.aicard h4{margin:0 0 6px;color:var(--ai);display:flex;gap:6px;align-items:center;font-size:14px;text-transform:uppercase;letter-spacing:.5px}
+.aicard .rec{font-size:17px;font-weight:700;margin:2px 0 6px}
+.aicard ul{margin:6px 0 0;padding-left:20px;color:#3d2a66}
+.cmp{width:100%;border-collapse:collapse;font-size:14px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.cmp th{background:#f3f3f3;font-weight:600}
+.cmp td.lab{background:#fafafa;color:var(--mute);width:110px;font-size:13px}
+.cmp td.exact{background:var(--ok-bg);color:#14461a;font-weight:600}
+.cmp td.partial{background:var(--warn-bg);color:var(--warn);font-weight:600}
+.cmp td.na{color:#aaa}
+.cmp th.sel{background:var(--info-bg);box-shadow:inset 0 3px 0 var(--brand)}
+.cmp th label{display:flex;gap:6px;cursor:pointer;align-items:flex-start}
+.cmp th small{font-weight:400;color:var(--mute);display:block}
+.score{height:6px;background:#e5e5e5;border-radius:3px;margin-top:5px;overflow:hidden}.score i{display:block;height:100%;background:var(--brand)}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink2);margin:0 0 8px}.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-2px}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.tabs2{display:flex;gap:6px;margin-bottom:10px}
+.tabs2 button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 14px;font-size:13px;color:var(--ink2)}.tabs2 button.on{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:flex;gap:12px;padding:8px 0;position:relative}
+.tl li:not(:last-child):before{content:"";position:absolute;left:11px;top:32px;bottom:-6px;width:2px;background:#d5d5d5}
+.tl .dot{width:24px;height:24px;border-radius:50%;background:#d5d5d5;color:#fff;display:grid;place-items:center;flex:none}
+.tl .dot .ic{width:15px;height:15px}
+.tl li.ok .dot{background:var(--ok)}.tl li.wait .dot{background:var(--warn-line)}.tl li.run .dot{background:#fff;border:2px solid var(--brand)}
+.tl small{display:block;color:var(--mute)}
+.gig{display:flex;align-items:center;gap:10px;background:var(--ok-bg);color:#14461a;border:1px solid #b4dcae;border-radius:8px;padding:10px 14px;font-size:17px;font-weight:700;margin-bottom:10px}
+.gig.w{background:var(--warn-bg);color:var(--warn);border-color:#f2c987}
+.gig .ic{width:26px;height:26px}
+.quote{background:#fafafa;border-left:4px solid var(--brand);padding:10px 14px;font-size:13.5px;color:var(--ink2);border-radius:0 6px 6px 0}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hb{display:grid;grid-template-columns:130px 1fr 36px;gap:10px;align-items:center;margin:9px 0;font-size:14px}
+.hb .tr{background:#ececec;border-radius:4px;height:22px;overflow:hidden}.hb .tr i{display:block;height:100%;border-radius:4px}
+.hb b{text-align:right}
+.donutw{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.donutw svg{width:160px;height:160px;flex:none}
+.dl{font-size:14px}.dl div{display:flex;gap:8px;align-items:center;margin:5px 0}.dl i{width:12px;height:12px;border-radius:3px;flex:none}
+.dl b{margin-left:auto;padding-left:14px}
+.dsel{border:1px solid #c9c9c9;border-radius:4px;padding:5px 8px;background:#fff}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);background:#16325c;color:#fff;border-radius:8px;padding:12px 20px;font-size:15px;opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:90vw;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:700px){.ttl{min-width:0}#chips .chip span{display:none}.phone{width:100%;max-width:360px}.charts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="banner">Prototype – mockup with fake data</div>
+<header class="top">
+  <div class="top-in">
+    <div class="ttl"><div class="kicker">HCP consent capture · proposed solution</div><div><b id="stepno"></b><span id="steptitle"></span></div></div>
+    <nav id="chips"></nav>
+    <div class="nb"><button class="btn ghost" data-a="prev">‹ Back</button><button class="btn brand" data-a="next">Next ›</button></div>
+  </div>
+  <div class="bar"><i id="barfill"></i></div>
+</header>
+<main id="stage"></main>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   Data (all fake)
+   ========================================================= */
+const REP='Anna Colombo';
+const EVENTS={
+  congress:{name:'National Paediatrics Congress 2026 – Milan',short:'Paediatrics Congress',dates:'14–16 Oct 2026',type:'Congress · Danone booth'},
+  training:{name:'Infant Nutrition Training – Bologna',short:'Bologna Training',dates:'13 Oct 2026',type:'Training meeting'}
+};
+const SPECS=['Paediatrics','Neonatology','Paediatric Gastroenterology','Paediatric Allergy','Dietetics & Nutrition','General Practice','Gynaecology'];
+const HCPS=[
+ {id:'H1',first:'Marco',last:'Ferri',email:'marco.ferri@policlinico-example.it',spec:'Paediatrics',city:'Milan',org:'Policlinico di Milano',reg:'MI-20418',ok:'WITA00418201',terr:1},
+ {id:'H2',first:'Giulia',last:'Romano',email:'g.romano@ospedale-example.it',spec:'Neonatology',city:'Rome',org:'Ospedale Bambino Gesù',reg:'RM-33102',ok:'WITA00331020',terr:1},
+ {id:'H3',first:'Paolo',last:'Conti',email:'paolo.conti@aosp-example.it',spec:'Paediatrics',city:'Bologna',org:'AOSP Sant’Orsola',reg:'BO-09821',ok:'WITA00098214',terr:1},
+ {id:'H4',first:'Maria',last:'Bianchi',email:'m.bianchi@gaslini-example.it',spec:'Paediatrics',city:'Genoa',org:'Gaslini Institute',reg:'GE-11873',ok:'WITA00118733',terr:0},
+ {id:'H5',first:'Maria',last:'Bianchi',email:'maria.bianchi@sanraffaele-example.it',spec:'Gynaecology',city:'Milan',org:'San Raffaele Hospital',reg:'MI-15530',ok:'WITA00155305',terr:0},
+ {id:'H6',first:'Marta',last:'Bianchi',email:'marta.bianchi@asl3-example.it',spec:'Paediatrics',city:'Genoa',org:'ASL 3 Genovese',reg:'GE-12044',ok:'WITA00120440',terr:0},
+ {id:'H7',first:'Alessandro',last:'Gallo',email:'alessandro.gallo@ospedale-example.it',spec:'Paediatrics',city:'Turin',org:'Regina Margherita',reg:'TO-30417',ok:'WITA00304177',terr:1},
+ {id:'H8',first:'Chiara',last:'Rinaldi',email:'crinaldi@meyer-example.it',spec:'Paediatric Gastroenterology',city:'Florence',org:'Meyer Children’s',reg:'FI-08877',ok:'WITA00088779',terr:1},
+ {id:'H9',first:'Roberto',last:'Esposito',email:'r.esposito@santobono-example.it',spec:'Paediatric Gastroenterology',city:'Naples',org:'Santobono Pausilipon',reg:'NA-27711',ok:'WITA00277114',terr:0},
+ {id:'H10',first:'Roberto',last:'Esposito',email:'roberto.esposito@aslroma-example.it',spec:'Paediatrics',city:'Rome',org:'ASL Roma 1',reg:'RM-19904',ok:'WITA00199043',terr:0},
+ {id:'H11',first:'Andrea',last:'Villa',email:'andrea.villa@aovr-example.it',spec:'Paediatrics',city:'Verona',org:'AOUI Verona',reg:'VR-05530',ok:'WITA00055302',terr:1},
+ {id:'H12',first:'Elena',last:'Greco',email:'elena.greco@asst-example.it',spec:'Paediatrics',city:'Milan',org:'ASST Fatebenefratelli',reg:'MI-22764',ok:'WITA00227645',terr:1},
+ {id:'H13',first:'Matteo',last:'Sala',email:'m.sala@asst-bg-example.it',spec:'Paediatrics',city:'Bergamo',org:'ASST Papa Giovanni XXIII',reg:'BG-04412',ok:'WITA00044126',terr:1},
+ {id:'H14',first:'Laura',last:'Benedetti',email:'laura.benedetti@ospedale-example.it',spec:'Paediatrics',city:'Padua',org:'Azienda Ospedale Padova',reg:'PD-13350',ok:'WITA00133509',terr:1}
+];
+const CS={H1:{s:'valid',d:'12 Mar 2025',v:'v3.1'},H2:{s:'valid',d:'02 Sep 2025',v:'v3.1'},H14:{s:'valid',d:'21 Jan 2026',v:'v3.2'},H3:{s:'optout',d:'08 Jun 2025'}};
+HCPS.forEach(h=>h.cs=CS[h.id]||{s:'none'});
+const CHAN={self:{t:'Self-scan',c:'#0176d3',long:'Self-scan (QR → Experience Cloud)'},rep:{t:'Rep',c:'#fe9339',long:'Rep walk-in (Experience Cloud)'},kiosk:{t:'Kiosk',c:'#0b827c',long:'Kiosk (Experience Cloud)'}};
+const REPS=['Anna Colombo','Davide Ricci','Sara Fontana'];
+const CONSENT_TEXT='I agree that Danone may send me scientific information, product news and invitations to events by email. I can withdraw my consent at any time using the link in every email. See the Privacy Notice for details.';
+const DEMO_NOTE='Dr. Maria Bianchi, paediatrician at Gaslini Genoa, interested in product X, call back in November. Email maria.bianchi@gmail.com';
+const PROB={1:'Reps reluctant to ask for consent',2:'Low completion on self-scan',3:'Manual matching'};
+
+/* =========================================================
+   State
+   ========================================================= */
+const S={step:0,caps:[],f1:{slides:true},f3:{slides:true},wi:{},
+  s1:{screen:'scan',cap:null},s2:{screen:'events',ev:null,q:'',sel:null,added:{},cm:null,sig:false},s3:{screen:'form',timer:null,left:0,name:''},
+  s4:{running:false,visited:false},s5:{view:'list',tab:'review',cur:null,sel:null},s6:{cur:null,anim:0},s7:{ev:'all'},lastRes:null};
+
+/* helpers */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9@.]/g,'');
+const normReg=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const get=p=>p.split('.').reduce((o,k)=>o&&o[k],S);
+const set=(p,v)=>{const k=p.split('.');const l=k.pop();k.reduce((o,x)=>o[x],S)[l]=v};
+let clock=14*60+5;
+const fakeNow=()=>{const m=clock;clock+=4;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+const addMin=(hm,n)=>{const [h,m]=hm.split(':').map(Number);const t=h*60+m+n;return String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};
+let toastT;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800)};
+
+const P={close:'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',check:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',mic:'M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',search:'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',mail:'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z',person:'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',sparkle:'M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z',cal:'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z',task:'M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',plus:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',arrow:'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',bell:'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',apps:'M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z',lock:'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',cloud:'M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z',qr:'M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-12v8h8V3h-8zm6 6h-4V5h4v4zm-6 4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2zm0-4h2v2h-2zm2 2h2v2h-2z',list:'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',doc:'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',shield:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',chart:'M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z',home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'};
+const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true"><path d="${P[n]}"/></svg>`;
+
+function qrSvg(){let s=11;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;const N=25;let d='';
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){let dark;const fin=(ox,oy)=>{const dx=x-ox,dy=y-oy;if(dx<-1||dy<-1||dx>7||dy>7)return null;if(dx<0||dy<0||dx>6||dy>6)return false;return dx==0||dx==6||dy==0||dy==6||(dx>=2&&dx<=4&&dy>=2&&dy<=4)};
+    const f=[fin(0,0),fin(N-7,0),fin(0,N-7)].find(v=>v!==null);dark=f!==undefined?f:rnd()>.52;if(dark)d+=`M${x} ${y}h1v1h-1z`}
+  return `<svg viewBox="-1 -1 27 27" data-a="scan" role="img" aria-label="QR code"><rect x="-1" y="-1" width="27" height="27" fill="#fff"/><path d="${d}" fill="#111"/></svg>`}
+
+/* =========================================================
+   Matching engine (tiny, rule-based – mirrors the proposal)
+   ========================================================= */
+function cmpFields(c,h){
+  const nameE=norm(c.last)===norm(h.last)&&norm(c.first)===norm(h.first);
+  const orgC=norm(c.org),orgH=norm(h.org);
+  return{
+    name:nameE?'exact':(norm(c.last)===norm(h.last)?'partial':'none'),
+    email:c.email?(norm(c.email)===norm(h.email)?'exact':'none'):'na',
+    spec:c.spec?(norm(c.spec)===norm(h.spec)?'exact':'none'):'na',
+    city:c.city?(norm(c.city)===norm(h.city)?'exact':'none'):'na',
+    org:orgC?(orgH.includes(orgC)||orgC.includes(orgH)?'partial':'none'):'na',
+    reg:c.reg?(normReg(c.reg)===normReg(h.reg)?'exact':'none'):'na'};
+}
+function score(f){return(f.name==='exact'?30:f.name==='partial'?15:0)+(f.email==='exact'?25:0)+(f.city==='exact'?15:0)+(f.spec==='exact'?15:0)+(f.reg==='exact'?15:0)}
+function runMatch(c){
+  if(c.hcpFixed)return{type:'auto',rule:'HCP selected by rep',hcp:c.hcpFixed};
+  let h=c.email&&HCPS.find(x=>norm(x.email)===norm(c.email));if(h)return{type:'auto',rule:'Identical email',hcp:h.id};
+  h=c.reg&&HCPS.find(x=>normReg(x.reg)===normReg(c.reg));if(h)return{type:'auto',rule:'Identical registration number',hcp:h.id};
+  const cands=HCPS.filter(x=>norm(x.last)===norm(c.last)).map(x=>{const f=cmpFields(c,x);return{h:x,f,score:score(f)}}).sort((a,b)=>b.score-a.score);
+  if(cands.length)return{type:'review',rule:cands.length+' namesake candidates',cands};
+  return{type:'new',rule:'No candidate found'};
+}
+let seq=0;
+function mk(o){seq++;const c=Object.assign({id:'CAP-'+String(seq).padStart(4,'0'),day:'15 Oct',spec:'Paediatrics',reg:'',org:'',notes:'',interest:'',task:null,by:'',optIn:'pending',processed:false,res:null},o);c.out=runMatch(c);S.caps.push(c);return c}
+const hcpById=id=>HCPS.find(h=>h.id===id);
+function hcpOf(c){if(c.res&&c.res.type==='matched')return hcpById(c.res.hcp);if(c.out.type==='auto')return hcpById(c.out.hcp);return null}
+function statusOf(c){
+  if(!c.processed)return{k:'queued',t:'Queued'};
+  if(c.res)return c.res.type==='discarded'?{k:'dis',t:'Discarded'}:{k:'rev',t:c.res.type==='matched'?'Reviewed – matched':'Reviewed – new HCP'};
+  return{auto:{k:'auto',t:'Auto-matched'},review:{k:'warn',t:'To review'},new:{k:'new',t:'New HCP'}}[c.out.type]}
+const hasConsent=c=>c.processed&&c.optIn!=='declined'&&c.cm!=='existing'&&!(c.res&&c.res.type==='discarded')&&(c.out.type!=='review'||!!c.res);
+const processAll=()=>S.caps.forEach(c=>c.processed=true);
+const fullName=c=>`${c.first} ${c.last}`;
+
+/* seed captures (~12) */
+mk({day:'13 Oct',hm:'10:42',first:'Francesca',last:'Leone',email:'francesca.leone@gmail.com',spec:'Dietetics & Nutrition',city:'Bologna',channel:'kiosk',event:'training',optIn:'pending'});
+mk({day:'13 Oct',hm:'11:15',first:'Andrea',last:'Villa',email:'andrea.villa@aovr-example.it',city:'Verona',channel:'kiosk',event:'training',optIn:'confirmed'});
+mk({hm:'09:12',first:'Marco',last:'Ferri',email:'marco.ferri@policlinico-example.it',city:'Milan',channel:'self',event:'congress',optIn:'confirmed'});
+mk({hm:'09:40',first:'Giulia',last:'Romano',email:'giulia.romano@gmail.com',spec:'Neonatology',city:'Rome',reg:'RM-33102',channel:'rep',by:'Anna Colombo',event:'congress',optIn:'confirmed',notes:'Asked for the neonatal range samples.'});
+mk({hm:'10:05',first:'Paolo',last:'Conti',email:'paolo.conti@aosp-example.it',city:'Bologna',channel:'self',event:'congress',optIn:'pending'});
+mk({hm:'10:31',first:'Maria',last:'Bianchi',email:'maria.bianchi@gmail.com',city:'Genoa',org:'Gaslini',channel:'rep',by:'Anna Colombo',event:'congress',optIn:'confirmed',notes:DEMO_NOTE,interest:'Product X',task:{title:'Call back Dr. Maria Bianchi',due:'Mon 2 Nov 2026'}});
+mk({hm:'10:58',first:'Alessandro',last:'Gallo',email:'alessandro.gallo@ospedale-example.it',city:'Turin',channel:'self',event:'congress',optIn:'confirmed'});
+mk({hm:'11:20',first:'Chiara',last:'Rinaldi',email:'chiara.rinaldi@gmail.com',spec:'Paediatric Gastroenterology',city:'Florence',reg:'FI-08877',channel:'self',event:'congress',optIn:'pending'});
+mk({hm:'11:47',first:'Roberto',last:'Esposito',email:'r.esposito@gmail.com',spec:'Paediatric Gastroenterology',city:'Naples',channel:'self',event:'congress',optIn:'pending'});
+mk({hm:'12:15',first:'Silvia',last:'Marchetti',email:'silvia.marchetti@gmail.com',city:'Brescia',channel:'rep',by:'Davide Ricci',event:'congress',optIn:'confirmed',notes:'Met at the booth, new in the area.'});
+mk({hm:'12:48',first:'Elena',last:'Greco',email:'elena.greco@asst-example.it',city:'Milan',channel:'rep',by:'Sara Fontana',event:'congress',optIn:'confirmed'});
+mk({hm:'13:20',first:'Matteo',last:'Sala',email:'matteo.sala@gmail.com',city:'Bergamo',reg:'BG-04412',channel:'rep',by:'Davide Ricci',event:'congress',optIn:'pending'});
+
+/* =========================================================
+   Shared UI builders
+   ========================================================= */
+const phone=(url,inner)=>`<div class="phone"><div class="pscreen"><div class="sbar"><span>9:41</span><span>5G ▮▮▮</span></div><div class="url">${ic('lock')} ${esc(url)}</div>${inner}</div></div>`;
+const err=(p,k)=>get(p+'._err')&&!get(p+'.'+k)?' err':'';
+function fld(p,k,label,o={}){const v=get(p+'.'+k)||'';
+  return `<div><label class="l">${label}${o.req?' <i>*</i>':''}</label><input class="in${o.req?err(p,k):''}" type="${o.type||'text'}" data-in="${p}.${k}" data-prog="${p}" value="${esc(v)}" placeholder="${esc(o.ph||'')}" autocomplete="off"></div>`}
+function sel(p,k,label,o={}){const v=get(p+'.'+k)||'';
+  return `<div><label class="l">${label}${o.req?' <i>*</i>':''}</label><select class="in${o.req?err(p,k):''}" data-in="${p}.${k}" data-prog="${p}"><option value="">Select…</option>${SPECS.map(s=>`<option${s===v?' selected':''}>${s}</option>`).join('')}</select></div>`}
+const progOf=p=>{const f=S[p];return['first','last','email','spec','city','consent'].filter(k=>f[k]).length};
+function pubForm(p){const f=S[p];const n=progOf(p);
+  return `<div class="progt" style="margin-top:8px"><span>About 30 seconds</span><span data-pt="${p}">${n} of 6 done</span></div><div class="prog"><i data-pg="${p}" style="width:${n/6*100}%"></i></div>
+  <div class="${p==='f3'?'kgrid':''}">
+  <div class="f2 ${p==='f3'?'':''}">${fld(p,'first','First name',{req:1})}${fld(p,'last','Last name',{req:1})}</div>
+  ${fld(p,'email','Work email',{req:1,type:'email',ph:'name@hospital.it'})}
+  ${sel(p,'spec','Specialty',{req:1})}
+  ${fld(p,'city','City of practice',{req:1})}
+  ${fld(p,'reg','Registration number (optional)',{ph:'e.g. MI-20418'})}
+  </div>
+  <div class="consent"><label class="chk${f._err&&!f.consent?' err':''}"><input type="checkbox" data-in="${p}.consent" data-prog="${p}"${f.consent?' checked':''}><span>${CONSENT_TEXT}</span></label><small>Consent text v3.2 · no signature needed</small></div>
+  <label class="chk"><input type="checkbox" data-in="${p}.slides"${f.slides?' checked':''}><span><b>Send me the slides by email</b></span></label>
+  <button class="btn brand lg block" data-a="${p==='f1'?'sub1':'sub3'}">${p==='f1'?'Send me the slides':'Register'} ${ic('arrow')}</button>`}
+
+function newCap(o){const c=mk(Object.assign({hm:fakeNow(),processed:false},o));return c}
+function demoFill(p){
+  if(p==='f1')Object.assign(S.f1,{first:'Laura',last:'Benedetti',email:'laura.benedetti@ospedale-example.it',spec:'Paediatrics',city:'Padua',reg:'',consent:true,slides:true,_err:false});
+  else Object.assign(S.f3,{first:'Federica',last:'Marino',email:'f.marino@gmail.com',spec:'Dietetics & Nutrition',city:'Bologna',reg:'',consent:true,slides:true,_err:false})}
+function submitPub(p){const f=S[p];
+  const bad=!f.first||!f.last||!/^\S+@\S+\.\S+$/.test(f.email||'')||!f.spec||!f.city||!f.consent;
+  if(bad){f._err=true;if(f.email&&!/^\S+@\S+\.\S+$/.test(f.email))f.email='';paint();toast('Please complete the highlighted fields');return}
+  f._err=false;
+  const c=newCap({first:f.first,last:f.last,email:f.email,spec:f.spec,city:f.city,reg:f.reg||'',channel:p==='f1'?'self':'kiosk',event:p==='f1'?'congress':'training',day:p==='f1'?'15 Oct':'13 Oct',optIn:'pending'});
+  if(p==='f1'){S.s1.cap=c.id;S.s1.screen='thanks'}
+  else{S.s3.screen='thanks';S.s3.name=f.first;S.s3.left=6;startCountdown()}
+  S[p]={slides:true};paint();toast('Capture saved to staging – CAP-'+c.id.slice(4))}
+function startCountdown(){clearInterval(S.s3.timer);S.s3.timer=setInterval(()=>{S.s3.left--;if(S.s3.left<=0){clearInterval(S.s3.timer);S.s3.screen='form';if(S.step===2)paint()}else{const e=$('#cd');if(e)e.textContent=S.s3.left}},1000)}
+
+/* =========================================================
+   STEP 1 – HCP self-scan
+   ========================================================= */
+function capOf1(){return S.caps.find(c=>c.id===S.s1.cap)}
+function phone1(){const s=S.s1.screen;let b,url='hcp.danone-events.example/ped2026';
+  if(s==='scan'){url='Camera';b=`<div class="pbody"><div class="camera"><div class="vf">${ic('qr')}</div><div>Point the camera at the QR code on the booth</div><button class="btn brand" data-a="scan">Simulate scan</button></div></div>`}
+  else if(s==='form'){b=`<div class="pbody"><div class="pub-h"><small>Danone · Healthcare professionals</small><b>${EVENTS.congress.name}</b></div><div class="pad"><b style="font-size:17px">Get the congress slides by email</b><div style="color:var(--ink2);font-size:14px;margin-top:2px">5 quick fields – no app, no account.</div>${pubForm('f1')}</div></div>`}
+  else if(s==='thanks'){const c=capOf1();b=`<div class="pbody"><div class="pub-h"><small>Danone · Healthcare professionals</small><b>${EVENTS.congress.short}</b></div><div class="hero-ok"><div class="big-check">${ic('check')}</div><h3>Thank you, Dr. ${esc(c?c.first:'')}!</h3><p>We have emailed the slides link to <b>${esc(c?c.email:'')}</b>.</p><p style="font-size:14px">One last step: open the email and tap <b>Confirm</b> to complete your registration.</p><button class="btn brand block" style="margin-top:14px" data-a="s1go" data-k="email">${ic('mail')} Open my email app</button></div></div>`;url='hcp.danone-events.example/thanks'}
+  else if(s==='email'){const c=capOf1();url='Mail';b=`<div class="pbody"><div class="mail-h">${ic('mail')} Inbox</div><div class="mail"><div class="meta"><b>Danone Events</b> &lt;no-reply@danone-events.example&gt;<br>To: ${esc(c?c.email:'')}<br>Just now</div><h4>Please confirm your email to get the slides</h4><div class="box"><p style="margin-top:0">Dear Dr. ${esc(c?c.last:'')},</p><p>Thank you for visiting our booth at the <b>${EVENTS.congress.name}</b>. Please confirm that you agree to receive our scientific communications and we will send you the slides.</p><button class="btn brand lg block" data-a="confirm1">Confirm my email &amp; get the slides</button><small>${CONSENT_TEXT}<br>Consent text v3.2.</small></div></div></div>`}
+  else{const c=capOf1();url='hcp.danone-events.example/confirmed';b=`<div class="pbody"><div class="pub-h"><small>Danone · Healthcare professionals</small><b>${EVENTS.congress.short}</b></div><div class="hero-ok"><div class="big-check">${ic('check')}</div><h3>Consent confirmed</h3><p>Thank you, Dr. ${esc(c?c.last:'')}. Your slides are on their way.</p><button class="btn ok block" style="margin:12px 0" data-a="toast" data-m="Mock: slides download">Download slides (PDF)</button><p style="font-size:12.5px;color:var(--mute)">Consent recorded 15 Oct 2026 · text v3.2. You can withdraw at any time from any of our emails.</p></div></div>`}
+  return phone(url,b)}
+function v1(){const sc=S.s1.screen;const tabs=[['scan','1 Scan'],['form','2 Form'],['thanks','3 Thank you'],['email','4 Email'],['confirmed','5 Confirmed']];
+  return `<div class="grid3">
+  <div class="poster"><div class="hd">DANONE BOOTH · Hall 2</div><h3>Get the slides in 30 seconds</h3><p>Scan with your phone camera</p>${qrSvg()}<div class="cta">Click the QR to simulate a scan</div></div>
+  <div class="col">${phone1()}<div class="subtabs">${tabs.map(t=>`<button class="${sc===t[0]?'on':''}" data-a="s1go" data-k="${t[0]}">${t[1]}</button>`).join('')}</div>${sc==='form'?`<div class="demo"><a data-a="fill" data-p="f1">Fill demo data</a> to speed up the demo</div>`:''}</div>
+  <div class="note"><h4>Why completion goes up</h4><ul>
+   <li><span class="tag bad">Before</span>Long Marketing Cloud form, no reward, abandoned halfway.</li>
+   <li><span class="tag good">Now</span>One short screen: 5 required fields, registration number optional.</li>
+   <li><span class="tag good">Now</span>Immediate reward: <b>“Send me the slides by email”</b>.</li>
+   <li><span class="tag good">Now</span>No signature: consent checkbox + <b>double opt-in</b> email (Compliance-approved).</li>
+   <li><span class="tag good">Now</span>Data lands in a <b>staging record</b> in Salesforce – no export, no manual matching.</li></ul></div></div>`}
+
+/* =========================================================
+   STEP 2 – Rep page
+   ========================================================= */
+const repList=q=>{const n=norm(q);if(n.length<2)return[];return HCPS.filter(h=>h.terr&&(norm(h.first+h.last).includes(n)||norm(h.email).includes(n)||normReg(h.reg).includes(normReg(q))))};
+const ASK='“May we send you scientific information and product news by email? You can withdraw at any time.”';
+function consBlock(h){const m=S.s2.cm;const opt=h&&h.cs.s==='optout';
+  const head=opt?`<div class="alert err">${ic('bell')}<span><b>Opted out on ${h.cs.d}.</b> Do not contact. Consent can only be re-collected by asking explicitly <b>and</b> with a signature.</span></div>`
+   :`<div class="alert warn">${ic('bell')}<span><b>No consent captured yet.</b> Ask the question below before adding the HCP to any communication.</span></div>`;
+  return `${head}<div class="quote" style="font-size:13px">Ask: ${ASK}</div>
+  <div class="cmo"><button class="btn${m==='sign'?' sel':''}" data-a="cm" data-m="sign">${ic('doc')} HCP agrees – signs on screen</button>
+  ${opt?'':`<button class="btn${m==='email'?' sel':''}" data-a="cm" data-m="email">${ic('mail')} HCP agrees – send confirmation link by email</button>`}
+  <button class="btn dec${m==='declined'?' sel':''}" data-a="cm" data-m="declined">${ic('close')} HCP declines – no communications</button></div>
+  ${m==='sign'?`<div style="font-size:12px;color:var(--mute)">${CONSENT_TEXT}</div><canvas id="sig" width="600" height="260"></canvas><div style="font-size:12px;color:var(--mute);display:flex;justify-content:space-between"><span>Sign here with finger</span><a class="lnk" style="cursor:pointer" data-a="sigclr">Clear</a></div>`:''}`}
+const cmLabel=m=>m==='sign'?'Confirm signature & add':m==='email'?'Add & send confirmation link':m==='declined'?'Add without communications':'Choose an option above';
+function goBtn(act,h,label){const m=S.s2.cm;const ok=m&&(m!=='sign'||S.s2.sig);return `<button class="btn brand lg block" id="cmgo" data-a="${act}" ${h?`data-id="${h.id}"`:''} ${ok?'':'disabled'}>${label||cmLabel(m)}</button>`}
+function repResults(){const s=S.s2;
+  if(s.sel){const h=hcpById(s.sel);const added=s.added[h.id];const c=h.cs;
+    const badge=c.s==='valid'?`<span class="sm-badge ok">Opt-in ${c.v} · ${c.d}</span>`:c.s==='optout'?`<span class="sm-badge red">Opted out · ${c.d}</span>`:`<span class="sm-badge wait">None on file</span>`;
+    const msg={existing:'Consent already on file – nothing to ask. Slides sent.',sign:'Signed on screen – consent confirmed and recorded.',email:'Confirmation link sent by email – consent pending until the HCP confirms.',declined:'HCP declined – added as attendee only, no communications.'}[added];
+    return `<div class="hcpcard"><a class="lnk" style="font-size:13px;cursor:pointer" data-a="rselect" data-id="">‹ Back to results</a><h4 style="margin-top:6px">Dr. ${h.first} ${h.last}</h4><div style="color:var(--mute);font-size:13px">${h.spec} · ${h.city}</div>
+      <div class="kv"><span>Organisation</span><span>${h.org}</span><span>OneKey ID</span><span>${h.ok}</span><span>Email</span><span>${h.email}</span><span>Consent</span><span>${badge}</span></div>
+      ${added?`<div class="alert ok">${ic('check')}<span><b>Added to event.</b> ${msg}</span></div>`
+      :c.s==='valid'?`<div class="alert ok">${ic('shield')}<span>Consent is on file – <b>no question needed</b>.</span></div><button class="btn brand lg block" data-a="radd" data-id="${h.id}">${ic('plus')} Add to event</button>`
+      :`${consBlock(h)}${goBtn('radd',h)}`}</div>`}
+  const r=repList(s.q);
+  if(norm(s.q).length<2)return `<div class="sugg">Try: ${[['Ferri','consent on file'],['Greco','no consent'],['Conti','opted out'],['Bianchi','not found']].map(x=>`<button data-a="rq" data-q="${x[0]}">${x[0]}</button>`).join('')}</div><div class="alert info" style="margin-top:14px">${ic('search')}<span>Always search first. The app shows each HCP’s consent status, so you only ask when it is needed.</span></div>`;
+  if(!r.length)return `<div class="alert warn" style="margin-top:10px">${ic('search')}<span>No HCP found for “${esc(s.q)}” in your territory.</span></div><button class="btn brand lg block" data-a="rwalk">${ic('plus')} Add as walk-in</button>`;
+  return r.map(h=>{const c=h.cs.s;return `<div class="res" data-a="rselect" data-id="${h.id}"><div><b>Dr. ${h.first} ${h.last}</b><small>${h.spec} · ${h.city}</small><span class="sm-badge ${c==='valid'?'ok':c==='optout'?'red':'wait'}">${c==='valid'?'Consent on file':c==='optout'?'Opted out':'No consent'}</span></div>${s.added[h.id]?'<span class="sm-badge ok">Added</span>':ic('arrow')}</div>`}).join('')}
+function myCaps(){return S.caps.filter(c=>c.channel==='rep'&&c.by===REP&&c.day==='15 Oct')}
+function phone2(){const s=S.s2;let b,tabs=true;const url='rep.danone-events.example';
+  if(s.screen==='events'){tabs=false;b=`<div class="pad"><b style="font-size:17px">Select event</b><div style="color:var(--mute);font-size:13px;margin-bottom:12px">Your events today</div>
+    <div class="evc" data-a="rev" data-e="congress"><b>${EVENTS.congress.name}<span class="live">LIVE</span></b><small>${EVENTS.congress.dates} · Danone booth</small></div>
+    <div class="evc" data-a="rev" data-e="training"><b>${EVENTS.training.name}</b><small>${EVENTS.training.dates} · Training meeting</small></div></div>`}
+  else if(s.screen==='capture'){b=`<div class="pad"><div class="evchip">${ic('cal')}<span style="flex:1">${EVENTS[s.ev].name}</span><a class="lnk" style="cursor:pointer;font-size:12px" data-a="rchg">Change</a></div>
+    <label class="l" style="font-size:13px;color:var(--ink2)">Search HCP first</label><div class="srch">${ic('search')}<input class="in" id="rq" value="${esc(s.q)}" placeholder="Name, email or registration no." autocomplete="off"></div><div id="rres">${repResults()}</div></div>`}
+  else if(s.screen==='walkin'){const w=S.wi;const fl=w.flash?' flash':'';
+    b=`<div class="pad"><a class="lnk" style="cursor:pointer;font-size:13px" data-a="rback">‹ Search</a><b style="font-size:17px;display:block;margin:4px 0 2px">New walk-in</b><div style="color:var(--mute);font-size:13px">Not in Salesforce – quick form</div>
+    <div class="f2${fl}">${fld('wi','first','First name',{req:1})}${fld('wi','last','Last name',{req:1})}</div>
+    ${fld('wi','email','Email',{type:'email',ph:'for slides + consent link'})}
+    <div class="${fl}">${sel('wi','spec','Specialty')}</div>
+    <div class="f2${fl}">${fld('wi','city','City')}${fld('wi','org','Hospital')}</div>
+    <label class="l">Notes (type or dictate)</label><div class="notes-w"><textarea class="in${fl}" id="notes" data-in="wi.notes" placeholder="Tap the microphone and speak…" style="padding-right:58px">${esc(w.notes||'')}</textarea><button class="mic${w.mic?' on':''}" id="mic" data-a="mic" aria-label="Dictate">${ic('mic')}</button></div>
+    <button class="btn ai block" style="margin-top:10px" data-a="extract" ${w.notes?'':'disabled'}>${w.busy?'<span class="spin"></span> Extracting…':ic('sparkle')+' Extract with AI'}</button>
+    ${w.ai?`<div class="alert ai" style="flex-direction:column;gap:4px"><div><b>${ic('sparkle')} AI filled ${w.ai.n} fields</b> – please review</div><div>${w.ai.chips.map(c=>`<span class="tchip">${esc(c)}</span>`).join('')}</div></div>
+       <div class="alert info">${ic('task')}<span><b>Follow-up task will be created</b><br>${esc(w.task.title)}<br><small>Due ${esc(w.task.due)} · Owner: ${REP}</small></span></div>`:''}
+    <div style="margin-top:14px;font-weight:700">Consent</div>${consBlock(null)}${goBtn('rsave',null,S.s2.cm?'Save capture':'Choose a consent option above')}</div>`}
+  else{const mc=myCaps();b=`<div class="pad"><b style="font-size:17px">My captures today</b><div style="color:var(--mute);font-size:13px">${mc.length} captures · ${mc.filter(c=>c.optIn==='confirmed').length} consents confirmed</div>
+    ${mc.slice().reverse().map(c=>`<div class="cap"><div class="r"><b>Dr. ${esc(fullName(c))}</b><small>${c.hm}</small></div><small>${esc(c.spec)} · ${esc(c.city)}</small><div style="margin-top:4px"><span class="sm-badge ${c.optIn==='confirmed'?'ok':c.optIn==='declined'?'red':'wait'}">Consent ${c.optIn==='confirmed'?(c.cm==='sign'?'signed':c.cm==='existing'?'on file':'confirmed'):c.optIn==='declined'?'declined':'pending'}</span> ${c.task?'<span class="sm-badge t">Follow-up task</span>':''}</div></div>`).join('')}</div>`}
+  const tb=tabs?`<div class="tabbar"><button class="${s.screen==='captures'?'':'on'}" data-a="rtab" data-t="capture">${ic('search')}Capture</button><button class="${s.screen==='captures'?'on':''}" data-a="rtab" data-t="captures">${ic('list')}My captures (${myCaps().length})</button></div>`:'';
+  return phone(url,`<div class="rep-h"><b>Rep Hub</b><span style="display:flex;gap:8px;align-items:center;font-size:13px">${REP}<span class="av">AC</span></span></div><div class="pbody">${b}</div>${tb}`)}
+function v2(){const sc=S.s2.screen;const w=S.wi;
+  const at=sc==='events'?'events':sc==='captures'?'captures':sc==='walkin'?(w.ai?'ai':'walk'):(S.s2.sel==='H1'?'found':S.s2.sel==='H12'?'noc':S.s2.sel==='H3'?'opt':'search');
+  const tabs=[['events','1 Event'],['search','2 Search first'],['found','3a Consent on file'],['noc','3b No consent'],['opt','3c Opted out'],['walk','4 Walk-in'],['ai','5 AI extract'],['captures','6 My captures']];
+  return `<div class="grid2"><div class="col">${phone2()}<div class="subtabs">${tabs.map(t=>`<button class="${at===t[0]?'on':''}" data-a="s2go" data-k="${t[0]}">${t[1]}</button>`).join('')}</div></div>
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:560px">
+  <div class="note"><h4>${ic('person')} Search first, capture second</h4><ul><li>Known HCP → <b>Add to event</b>, no retyping, no duplicates. Consent status is shown right on the card.</li><li>Unknown HCP → short walk-in form, fields stay minimal.</li></ul></div>
+  <div class="note"><h4>${ic('shield')} Consent status drives what the rep does</h4><ul><li><span class="tag good">On file</span>Valid opt-in already in Salesforce → add to event, <b>no question</b>.</li><li><span class="tag bad">None</span>Never captured → the app shows the exact question; the HCP <b>signs on screen</b> or gets a <b>confirmation link</b>.</li><li><span class="tag bad">Opt-out</span>Never contacted. Only a new explicit question <b>with signature</b> can re-enable.</li><li>Reluctance (P1) is reduced: the rep asks only when needed, with a ready script and a 10-second signature.</li></ul></div>
+  <div class="note"><h4>${ic('sparkle')} Notes by voice, structured by AI</h4><ul><li>Dictate with the microphone – no paper notes, no later data entry.</li><li><b>Extract with AI</b> fills name, specialty, hospital, city, email, interest and creates a <b>follow-up task</b>.</li></ul></div></div></div>`}
+
+/* AI extraction (simple pattern-based simulation) */
+function aiExtract(t){const out={};const m=t.match(/Dr\.?\s+([A-ZÀ-Ý][\wà-ÿ'’-]+)(?:\s+([A-ZÀ-Ý][\wà-ÿ'’-]+))?/);
+  if(m){if(m[2]){out.first=m[1];out.last=m[2]}else out.last=m[1]}
+  const e=t.match(/[\w.+-]+@[\w-]+\.[\w.]+/);if(e)out.email=e[0];
+  const sp=[['paediatrician','Paediatrics'],['pediatrician','Paediatrics'],['neonatolog','Neonatology'],['gastroenterolog','Paediatric Gastroenterology'],['allergolog','Paediatric Allergy'],['dietitian','Dietetics & Nutrition'],['gynaecolog','Gynaecology']].find(x=>t.toLowerCase().includes(x[0]));if(sp)out.spec=sp[1];
+  const city=['Genoa','Milan','Rome','Naples','Turin','Bologna','Florence','Padua','Verona','Bergamo','Brescia'].find(c=>t.includes(c));if(city)out.city=city;
+  const o=t.match(/\bat\s+([A-Z][\wà-ÿ]+)/);if(o)out.org=o[1];
+  const pr=t.match(/product\s+([A-Z0-9][\w-]*)/i);if(pr)out.interest='Product '+pr[1];
+  const mo=['January','February','March','April','May','June','July','August','September','October','November','December'].find(x=>new RegExp('call back in '+x,'i').test(t));
+  if(mo)out.task={title:'Call back Dr. '+((out.first?out.first+' ':'')+(out.last||'')),due:mo==='November'?'Mon 2 Nov 2026':'1 '+mo.slice(0,3)+' 2026'};
+  return out}
+
+/* =========================================================
+   STEP 3 – Kiosk
+   ========================================================= */
+function v3(){const s=S.s3;let inner;
+  if(s.screen==='thanks')inner=`<div class="hero-ok" style="padding-top:60px"><div class="big-check">${ic('check')}</div><h3 style="font-size:30px">Thank you, ${esc(s.name)}!</h3><p style="font-size:18px">Check your inbox: tap <b>Confirm</b> in our email to receive the slides.</p><div class="cd">Next visitor in <b id="cd">${s.left}</b> s – the form resets automatically</div><button class="btn block" style="margin:16px auto 0;max-width:260px" data-a="kreset">Reset now</button></div>`;
+  else inner=`<div class="pbody"><b style="font-size:21px">Welcome – register in 30 seconds</b><div style="color:var(--ink2);margin-bottom:4px">Walk-in sign-in · receive the training slides by email</div>${pubForm('f3')}</div>`;
+  return `<div class="col" style="gap:14px"><div class="tablet"><div class="tscreen"><div class="kside"><div class="kb">${ic('qr')} Kiosk mode</div><h3>${EVENTS.training.name}</h3><p>${EVENTS.training.dates}</p><p style="margin-top:10px">Welcome, doctor. Please leave your details and receive today’s slides by email.</p><div class="kb">Same public page as the booth QR – the capture lands in the same staging record.</div></div><div class="kmain">${inner}</div></div></div>
+  <div class="demo">${s.screen==='form'?`<a data-a="fill" data-p="f3">Fill demo data</a> · `:''}Used on a tablet at the training entrance: the page resets itself after every submission.</div>
+  <div class="note" style="max-width:940px;width:100%"><h4>Walk-ins and invitees, one flow</h4><ul><li>Few HCPs, some invited, some walk-ins → same form, <b>same automatic matching</b> afterwards (invitees are usually matched by email).</li><li>No rep needed, no paper list to type in later, and the next person always starts with a clean form.</li></ul></div></div>`}
+
+/* =========================================================
+   STEP 4 – Automatic matching
+   ========================================================= */
+function chanHtml(c){const k=CHAN[c.channel];return `<span class="chan"><i style="background:${k.c}"></i>${k.t}</span>`}
+function v4(){const caps=S.caps,done=caps.filter(c=>c.processed);const cnt=t=>done.filter(c=>c.out.type===t).length;const run=S.s4.running;
+  const rows=caps.map(c=>{let st,nx;
+    if(!c.processed){st=c.state==='run'?`<span class="spin"></span> Matching…`:`<span class="badge queued">Queued</span>`;nx='<span style="color:var(--mute)">–</span>'}
+    else{const s=statusOf(c);st=`<span class="badge ${s.k}">${s.t}</span><small>${esc(c.out.rule)}</small>`;
+      nx=c.optIn==='declined'?'No consent record (declined)':c.cm==='existing'?'Linked to existing consent':c.out.type==='auto'?'Consent record created':c.out.type==='new'?'New HCP created → consent record':'Review queue (data steward)'}
+    return `<tr class="${c.state==='run'?'rowrun':''}"><td><b>${c.id}</b><small>${c.day}, ${c.hm}</small></td><td><b>${esc(fullName(c))}</b><small>${esc(c.spec)} · ${esc(c.city)}</small></td><td>${chanHtml(c)}<small>${EVENTS[c.event].short}</small></td><td><small style="color:var(--ink);font-size:13px">${esc(c.email)}</small><small>${c.reg?'Reg. '+esc(c.reg):'No reg. number'}</small></td><td>${st}</td><td>${nx}</td></tr>`}).join('');
+  return `<div class="pipe"><div class="pnode"><b>1 · Capture</b><small>Self-scan, rep, kiosk → staging record</small></div><div class="pnode ${run?'act':''}"><b>2 · Automatic matching</b><small>Name, email, city, specialty, reg. number</small></div><div class="pnode"><b>3 · Consent record</b><small>Same as Pitcher creates today</small></div><div class="pnode" style="margin-right:0"><b>4 · Sent to Gigya</b><small>Existing integration</small></div></div>
+  <div class="kpis"><div class="kpi"><small>Captures</small><b>${caps.length}</b></div><div class="kpi g"><small>Auto-matched</small><b>${cnt('auto')}</b></div><div class="kpi a"><small>To review</small><b>${cnt('review')}</b></div><div class="kpi b"><small>New HCP</small><b>${cnt('new')}</b></div><div class="kpi"><small>Queued</small><b>${caps.length-done.length}</b></div>
+   <div class="kpi" style="display:flex;align-items:center;justify-content:center"><button class="btn brand" data-a="rerun" ${run?'disabled':''}>${ic('arrow')} ${done.length===caps.length?'Replay matching':'Run matching'}</button></div></div>
+  <div class="grid2" style="grid-template-columns:minmax(0,1fr) 300px;justify-content:stretch"><div class="tw"><table class="tbl"><thead><tr><th>Capture</th><th>HCP</th><th>Channel</th><th>Matching data</th><th>Result</th><th>Next step</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="note rules"><h4>Matching rules</h4><ol><li><b>Identical email</b> → auto-matched</li><li><b>Identical registration number</b> → auto-matched</li><li><b>Same surname</b> (namesakes) → <b>To review</b>, candidates ranked on name, email, city, specialty, reg. no.</li><li>No candidate → <b>New HCP</b></li></ol><p style="font-size:13px;color:var(--mute);margin-bottom:0">HCPs don’t know their OneKey ID, so it is never asked.</p></div></div>`}
+async function runMatching(){if(S.s4.running)return;S.s4.running=true;
+  for(const c of S.caps.filter(c=>!c.processed)){c.state='run';if(S.step===3)paint();await sleep(320);c.processed=true;c.state='';if(S.step===3)paint();await sleep(130)}
+  S.s4.running=false;if(S.step===3)paint()}
+
+/* =========================================================
+   Desktop frame
+   ========================================================= */
+function desk(url,active,inner){const nav=[['Captures',4],['HCPs',-1],['Consents',5],['Dashboard',6]];
+  return `<div class="deskwrap"><div class="desk"><div class="chrome"><span class="dots"><i></i><i></i><i></i></span><div class="addr">${ic('lock')} ${esc(url)}</div></div>
+  <div class="gh"><div class="logo">${ic('cloud')}</div><div class="gsearch">${ic('search')} Search captures, HCPs and consents…</div><div class="gicons">${ic('bell')}<span class="av" style="background:#57b4ff;color:#032d60">SN</span></div></div>
+  <div class="gnav"><div class="app">${ic('apps')}<b>HCP Consent Hub</b></div><ul>${nav.map(n=>`<li class="${n[0]===active?'on':''}" data-a="${n[1]<0?'toast':'go'}" data-i="${n[1]}" data-m="Not part of this mockup">${n[0]}</li>`).join('')}</ul></div>
+  <div class="dbody">${inner}</div></div></div>`}
+
+/* =========================================================
+   STEP 5 – Review console
+   ========================================================= */
+const reviewCaps=()=>S.caps.filter(c=>c.out.type==='review');
+function v5(){const s=S.s5;let inner;const rc=reviewCaps();const todo=rc.filter(c=>!c.res),dn=rc.filter(c=>c.res);
+  if(s.view==='list'){const list=s.tab==='review'?todo:dn;
+    inner=`<div class="ph"><div class="oi" style="background:#e07a14">${ic('doc')}</div><div><small>Captures</small><h1>${s.tab==='review'?'To review':'Reviewed'}</h1></div></div>
+    <div class="tabs2"><button class="${s.tab==='review'?'on':''}" data-a="r5tab" data-t="review">To review (${todo.length})</button><button class="${s.tab==='done'?'on':''}" data-a="r5tab" data-t="done">Reviewed (${dn.length})</button></div>
+    <div class="dcard"><div class="tw" style="border:0"><table class="tbl"><thead><tr><th>Capture</th><th>Name</th><th>Channel</th><th>Event</th><th>Captured by</th><th>Candidates</th><th>Received</th></tr></thead><tbody>
+    ${list.length?list.map(c=>`<tr class="click" data-a="r5open" data-id="${c.id}"><td><a>${c.id}</a></td><td><b>${esc(fullName(c))}</b><small>${esc(c.spec)} · ${esc(c.city)}</small></td><td>${chanHtml(c)}</td><td>${EVENTS[c.event].short}</td><td>${c.by||'HCP (self-service)'}</td><td>${c.out.cands.length} namesakes${c.res?' · <span class="badge rev">'+statusOf(c).t+'</span>':''}</td><td>${c.day}, ${c.hm}</td></tr>`).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--mute);padding:30px">Nothing here – ${s.tab==='review'?'the queue is empty 🎉':'no reviewed captures yet'}</td></tr>`}</tbody></table></div></div>
+    <div style="font-size:13px;color:var(--mute)">Only ambiguous captures land here – exact email / registration number matches never reach a human.</div>`}
+  else{const c=S.caps.find(x=>x.id===s.cur);const cands=c.out.cands;const sl=s.sel||cands[0].h.id;const top=cands[0];const resolved=!!c.res;
+    const reasons=['same surname',top.f.city==='exact'?'city':'',top.f.spec==='exact'?'specialty':''].filter(Boolean);const rs=reasons.length>1?reasons.slice(0,-1).join(', ')+' and '+reasons.slice(-1):reasons[0];
+    const details=[top.f.name==='exact'?'First name matches':'First name differs',c.email?(top.f.email==='exact'?'email matches':'email differs ('+(c.email.split('@')[1].startsWith('gmail')?'personal vs. institutional domain':'different address')+')'):'no email',c.reg?(top.f.reg==='exact'?'registration number matches':'registration number differs'):'no registration number captured'].join(' · ');
+    const cl=k=>({exact:'exact',partial:'partial',none:'',na:'na'}[k]);const mark=k=>k==='exact'?' ✓':k==='partial'?' ≈':'';
+    const rowd=[['Name',x=>x.first+' '+x.last,'name',fullName(c)],['Email',x=>x.email,'email',c.email||'—'],['Specialty',x=>x.spec,'spec',c.spec||'—'],['City',x=>x.city,'city',c.city||'—'],['Organisation',x=>x.org,'org',c.org||'—'],['Reg. number',x=>x.reg,'reg',c.reg||'—']];
+    const path=['Received','Auto-matching','To review','Matched','Consent created','Sent to Gigya'];const pi=resolved?(c.res.type==='discarded'?3:5):2;
+    inner=`<div style="font-size:13px;margin-bottom:8px"><a class="lnk" style="cursor:pointer" data-a="r5list">Captures</a> › ${c.id}</div>
+    <div class="hl"><div class="top2"><div class="ph" style="margin:0;flex:1"><div class="oi" style="background:#e07a14">${ic('doc')}</div><div><small>Capture</small><h1>${c.id} · ${esc(fullName(c))}</h1></div></div>
+      <button class="btn danger" data-a="r5do" data-t="discarded" ${resolved?'disabled':''}>Discard</button><button class="btn" data-a="r5do" data-t="created" ${resolved?'disabled':''}>Create new HCP</button><button class="btn brand" data-a="r5do" data-t="matched" ${resolved?'disabled':''}>Match</button></div>
+      <div class="flds"><div><small>Channel</small>${CHAN[c.channel].long}</div><div><small>Event</small>${EVENTS[c.event].short}</div><div><small>Captured by</small>${c.by||'HCP (self-service)'}</div><div><small>Received</small>${c.day} 2026, ${c.hm}</div><div><small>Status</small><span class="badge ${statusOf(c).k}">${statusOf(c).t}</span></div></div></div>
+    <ul class="path">${path.map((p,i)=>`<li class="${i<pi?'d':i===pi?'c':''}">${i<pi?'✓ ':''}${p}</li>`).join('')}</ul>
+    ${resolved?`<div class="alert ${c.res.type==='discarded'?'warn':'ok'}" style="font-size:14px">${ic('check')}<span style="flex:1">${c.res.type==='matched'?`<b>Matched to Dr. ${esc(hcpById(c.res.hcp).first+' '+hcpById(c.res.hcp).last)}</b> (${hcpById(c.res.hcp).ok}) by Sofia Neri. A consent record was created and queued for Gigya.`:c.res.type==='created'?'<b>New HCP created</b> from this capture. A consent record was created and queued for Gigya.':'<b>Capture discarded.</b> No HCP or consent record created.'}</span>${c.res.type!=='discarded'?`<button class="btn ok sm" data-a="go" data-i="5">View consent record →</button>`:`<button class="btn sm" data-a="r5list">Back to list</button>`}</div>`:''}
+    <div class="two"><div><div class="dcard"><h3>Captured data</h3><div class="cb"><dl class="fl"><dt>Name</dt><dd>${esc(fullName(c))}</dd><dt>Email</dt><dd>${esc(c.email)}</dd><dt>Specialty</dt><dd>${esc(c.spec)}</dd><dt>City</dt><dd>${esc(c.city)}</dd><dt>Hospital</dt><dd>${esc(c.org||'—')}</dd><dt>Reg. number</dt><dd>${esc(c.reg||'—')}</dd><dt>Double opt-in</dt><dd><span class="badge ${c.optIn==='confirmed'?'auto':'warn'}">${c.optIn==='confirmed'?'Confirmed':'Pending'}</span></dd><dt>Notes</dt><dd>${esc(c.notes||'—')}</dd>${c.task?`<dt>Task</dt><dd>${ic('task')} ${esc(c.task.title)}<br><small style="color:var(--mute)">Due ${c.task.due}</small></dd>`:''}</dl></div></div></div>
+    <div><div class="aicard"><h4>${ic('sparkle')} AI suggestion</h4><div class="rec">Recommended: Dr. ${esc(top.h.first+' '+top.h.last)} – ${rs}</div><div style="font-size:13.5px;color:#3d2a66">${details}.</div><ul>${cands.slice(1).map(x=>`<li>${esc(x.h.first+' '+x.h.last)} (${esc(x.h.city)}, ${esc(x.h.spec)}) – ${[x.f.city==='exact'?'':'different city',x.f.spec==='exact'?'':'different specialty',x.f.name==='exact'?'':'different first name'].filter(Boolean).join(', ')||'weaker overall match'}</li>`).join('')}</ul>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:10px;flex-wrap:wrap"><span style="font-size:12.5px;color:#6b4fa3">Confidence: <b>${top.score>=55?'High':'Medium'}</b> · AI only suggests – a person decides.</span>${resolved?'':`<button class="btn sm" data-a="r5pick" data-id="${top.h.id}">Select recommended</button>`}</div></div>
+      <div class="dcard"><h3>Candidate HCPs (${cands.length})</h3><div class="cb"><div class="legend"><span><i style="background:var(--ok-bg);border:1px solid #9ccf93"></i>Match</span><span><i style="background:var(--warn-bg);border:1px solid #f2c987"></i>Partial</span><span><i style="background:#fff;border:1px solid var(--line)"></i>Different</span></div>
+      <table class="cmp"><thead><tr><th></th><th>This capture</th>${cands.map(x=>`<th class="${sl===x.h.id?'sel':''}"><label><input type="radio" name="cand" data-a="r5pick" data-id="${x.h.id}" ${sl===x.h.id?'checked':''} ${resolved?'disabled':''}><span>${esc(x.h.first+' '+x.h.last)}<small>${x.h.ok}</small><div class="score"><i style="width:${x.score}%"></i></div><small>Match score ${x.score}%</small></span></label></th>`).join('')}</tr></thead><tbody>
+      ${rowd.map(r=>`<tr><td class="lab">${r[0]}</td><td><b>${esc(r[3])}</b></td>${cands.map(x=>`<td class="${cl(x.f[r[2]])}">${esc(r[1](x.h)||'—')}${mark(x.f[r[2]])}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      <div class="acts"><button class="btn danger" data-a="r5do" data-t="discarded" ${resolved?'disabled':''}>Discard</button><button class="btn" data-a="r5do" data-t="created" ${resolved?'disabled':''}>Create new HCP</button><button class="btn brand" data-a="r5do" data-t="matched" ${resolved?'disabled':''}>Match to ${esc(hcpById(sl).first+' '+hcpById(sl).last)} (${hcpById(sl).city})</button></div></div></div></div></div>`}
+  return desk('danone.lightning.force.com/lightning/o/Capture__c/list','Captures',inner)}
+
+/* =========================================================
+   STEP 6 – Consent record
+   ========================================================= */
+function consentFor(c){
+  const hcp=hcpOf(c)||(c.out.type==='review'&&!c.res?c.out.cands[0].h:null);const isNew=!hcp;
+  const matcher=c.res?'Sofia Neri – Data steward (manual review)':'Matching engine ('+c.out.rule+')';
+  const conf=c.optIn==='confirmed';const preview=c.out.type==='review'&&!c.res;
+  const created=c.res&&c.res.hm?c.res.hm:addMin(c.hm,1);
+  return{id:'CON-'+String(400+S.caps.indexOf(c)+12).padStart(6,'0'),hcp,isNew,matcher,conf,preview,created,confAt:c.cm==='sign'?c.hm:addMin(c.hm,3),sent:addMin(created,1)}}
+function v6(){
+  let c=S.caps.find(x=>x.id===S.s6.cur);
+  if(!c||!(hasConsent(c)||c.out.type==='review'&&!c.res)){c=S.caps.find(x=>x.id==='CAP-0006');S.s6.cur=c.id}
+  const k=consentFor(c);const name=k.hcp?`${k.hcp.first} ${k.hcp.last}`:fullName(c);const a=S.s6.anim;
+  const opts=S.caps.filter(x=>hasConsent(x)||x.id==='CAP-0006').map(x=>`<option value="${x.id}"${x.id===c.id?' selected':''}>${x.id} · ${esc(fullName(x))}</option>`).join('');
+  const steps=[
+    {t:'Capture received in staging',s:`${c.day} 2026, ${c.hm} · ${CHAN[c.channel].t}`,ok:1},
+    {t:c.cm==='sign'?'HCP signed on the rep’s device':'HCP confirmed by email (double opt-in)',s:k.conf?`${c.day} 2026, ${k.confAt}`:'Waiting for the HCP to click “Confirm”',ok:k.conf},
+    {t:k.isNew?'New HCP created':'Matched to existing HCP',s:k.matcher,ok:1},
+    {t:'Consent record created',s:`${c.day} 2026, ${k.created} · ${k.id}`,ok:1},
+    {t:'Sent to Gigya',s:k.conf?`${c.day} 2026, ${k.sent} · via existing integration`:'Sent automatically once consent is confirmed',ok:k.conf}];
+  const tl=steps.map((x,i)=>{const run=a&&i===4&&a<2;const cls=x.ok?(a&&i===4&&a<2?'run':'ok'):'wait';return `<li class="${a===1&&i===4?'run':cls}"><span class="dot">${(a===1&&i===4)?'<span class="spin" style="width:10px;height:10px"></span>':x.ok?ic('check'):ic('bell')}</span><div><b>${x.t}</b><small>${x.s}</small></div></li>`}).join('');
+  const sent=k.conf&&a!==1;
+  const inner=`<div class="ph" style="justify-content:space-between"><div style="display:flex;gap:12px;align-items:center"><div class="oi" style="background:#2e844a">${ic('shield')}</div><div><small>Consents</small><h1>${k.id}</h1></div></div><div style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mute)">Show consent for <select class="dsel" data-a="s6pick">${opts}</select></div></div>
+  ${k.preview?`<div class="alert ai" style="font-size:14px">${ic('sparkle')}<span>Preview: this is the record that will be created once CAP-0006 is matched to the recommended HCP (see previous step).</span></div>`:''}
+  <div class="hl"><div class="top2"><span class="badge ${k.conf?'auto':'warn'}" style="font-size:13px">${k.conf?'Opt-in confirmed':'Pending double opt-in'}</span><b style="font-size:16px">Dr. ${esc(name)}</b><span style="flex:1"></span><button class="btn" data-a="toast" data-m="Mock: edit not available">Edit</button><button class="btn" data-a="toast" data-m="Mock: withdrawal flow not shown">Withdraw consent</button></div>
+   <div class="flds"><div><small>HCP</small><span class="lnk">${esc(name)}</span></div><div><small>Channel</small>${CHAN[c.channel].long}</div><div><small>Captured on</small>${c.day} 2026, ${c.hm}</div><div><small>Consent text version</small>v3.2 (EN)</div><div><small>Captured by</small>${c.by||'HCP (self-service)'}</div></div></div>
+  <div class="two eq"><div class="dcard"><h3>Consent details <span class="badge rev">Same structure as Pitcher</span></h3><div class="cb"><div class="fl2">
+    <div><small>Consent type</small>Email – scientific &amp; promotional communications</div><div><small>Status</small>${k.conf?'Opt-in confirmed':'Pending double opt-in'}</div>
+    <div><small>HCP</small><span class="lnk">${esc(name)}</span></div><div><small>OneKey ID</small>${k.hcp?k.hcp.ok:'Pending (new HCP)'}</div>
+    <div><small>Channel</small>${CHAN[c.channel].long}</div><div><small>Opt-in method</small>${c.cm==='sign'?'Explicit question + signature on screen':'Double opt-in (email link)'}</div>
+    <div><small>Capture date / time</small>${c.day} 2026, ${c.hm}</div><div><small>Confirmation date / time</small>${k.conf?c.day+' 2026, '+k.confAt:'—'}</div>
+    <div><small>Consent text version</small>v3.2 – approved by Compliance</div><div><small>Signature</small>${c.cm==='sign'?'Captured on screen ✓':'Not required'}</div>
+    <div><small>Captured by</small>${c.by||'HCP (self-service)'}</div><div><small>Matched by</small>${k.matcher}</div>
+    <div><small>Event</small>${EVENTS[c.event].name}</div><div><small>Source capture</small><span class="lnk">${c.id}</span></div></div>
+    <div style="margin:14px 0 6px;font-size:12px;color:var(--mute)">Consent text shown to the HCP</div><div class="quote">${CONSENT_TEXT}</div></div></div>
+  <div><div class="dcard"><h3>Gigya synchronisation <button class="btn sm" data-a="replay" ${k.conf?'':'disabled'}>Replay sync</button></h3><div class="cb">
+    ${sent?`<div class="gig">${ic('check')} Sent to Gigya ✓</div>`:a===1?`<div class="gig w"><span class="spin"></span> Sending to Gigya…</div>`:`<div class="gig w">${ic('bell')} Not sent yet – waiting for opt-in</div>`}
+    <ul class="tl">${tl}</ul>
+    <div class="alert info" style="margin:10px 0 0">${ic('arrow')}<span>No new integration: the consent record is the same object Pitcher creates today, so the existing connector forwards it to Gigya.</span></div></div></div>
+  <div class="dcard"><h3>Related</h3><div class="cb"><dl class="fl" style="grid-template-columns:140px 1fr"><dt>Capture</dt><dd class="lnk">${c.id}</dd><dt>HCP</dt><dd class="lnk">${esc(name)}</dd><dt>Follow-up task</dt><dd>${c.task?`<span class="lnk">${esc(c.task.title)}</span> · due ${c.task.due}`:'—'}</dd></dl></div></div></div></div>`;
+  return desk('danone.lightning.force.com/lightning/r/Consent__c/'+k.id+'/view','Consents',inner)}
+async function replay(){S.s6.anim=1;paint();await sleep(1500);S.s6.anim=0;if(S.step===5)paint();toast('Sent to Gigya ✓')}
+
+/* =========================================================
+   STEP 7 – Dashboard
+   ========================================================= */
+function donut(segs,center){const tot=segs.reduce((a,s)=>a+s.v,0);const R=60,C=2*Math.PI*R;let acc=0;
+  const arcs=tot?segs.filter(s=>s.v).map(s=>{const l=s.v/tot*C;const el=`<circle r="${R}" cx="80" cy="80" fill="none" stroke="${s.c}" stroke-width="26" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-acc}" transform="rotate(-90 80 80)"/>`;acc+=l;return el}).join(''):'';
+  return `<div class="donutw"><svg viewBox="0 0 160 160" role="img"><circle r="${R}" cx="80" cy="80" fill="none" stroke="#ececec" stroke-width="26"/>${arcs}<text x="80" y="78" text-anchor="middle" font-size="26" font-weight="700" fill="#181818">${center}</text><text x="80" y="98" text-anchor="middle" font-size="11" fill="#706e6b">of captures</text></svg>
+  <div class="dl">${segs.map(s=>`<div><i style="background:${s.c}"></i>${s.l}<b>${s.v} · ${tot?Math.round(s.v/tot*100):0}%</b></div>`).join('')}</div></div>`}
+const bars=(rows,max)=>rows.map(r=>`<div class="hb"><span>${r.l}</span><div class="tr"><i style="width:${max?r.v/max*100:0}%;background:${r.c}"></i></div><b>${r.v}</b></div>`).join('');
+function v7(){const ev=S.s7.ev;const cs=S.caps.filter(c=>ev==='all'||c.event===ev);const n=cs.length;const pct=x=>n?Math.round(x/n*100):0;
+  const auto=cs.filter(c=>!c.res&&c.out.type==='auto').length,nw=cs.filter(c=>!c.res&&c.out.type==='new').length,rev=cs.filter(c=>c.res&&c.res.type!=='discarded').length,pend=cs.filter(c=>!c.res&&c.out.type==='review').length,dis=cs.filter(c=>c.res&&c.res.type==='discarded').length;
+  const conf=cs.filter(c=>c.optIn==='confirmed').length,decl=cs.filter(c=>c.optIn==='declined').length;
+  const ch=Object.keys(CHAN).map(k=>({l:CHAN[k].t,c:CHAN[k].c,v:cs.filter(c=>c.channel===k).length}));
+  const rp=REPS.map(r=>({l:r,c:'#0176d3',v:cs.filter(c=>c.by===r).length}));
+  const inner=`<div class="ph"><div class="oi" style="background:#0176d3">${ic('chart')}</div><div><small>Dashboard</small><h1>Capture performance</h1></div><span class="sp"></span><span style="font-size:13px;color:var(--mute)">Event</span><select class="dsel" data-a="s7ev"><option value="all"${ev==='all'?' selected':''}>All events</option><option value="congress"${ev==='congress'?' selected':''}>${EVENTS.congress.name}</option><option value="training"${ev==='training'?' selected':''}>${EVENTS.training.name}</option></select></div>
+  <div class="kpis"><div class="kpi"><small>Total captures</small><b>${n}</b></div><div class="kpi g"><small>Auto-matched</small><b>${pct(auto)}%</b></div><div class="kpi b"><small>Manually reviewed</small><b>${pct(rev)}%</b></div><div class="kpi g"><small>Consent confirmed</small><b>${pct(conf)}%</b></div><div class="kpi a"><small>Consent pending</small><b>${pct(n-conf-decl)}%</b></div></div>
+  <div class="charts"><div class="dcard"><h3>Captures by channel</h3><div class="cb">${bars(ch,Math.max(1,...ch.map(x=>x.v)))}</div></div>
+  <div class="dcard"><h3>Captures per rep</h3><div class="cb">${bars(rp,Math.max(1,...rp.map(x=>x.v)))}<div style="font-size:12.5px;color:var(--mute);margin-top:6px">Self-scan and kiosk captures are not attributed to a rep.</div></div></div>
+  <div class="dcard"><h3>Matching outcome</h3><div class="cb">${donut([{l:'Auto-matched',v:auto,c:'#2e844a'},{l:'Reviewed by data steward',v:rev,c:'#0176d3'},{l:'New HCP (auto-created)',v:nw,c:'#8a63d2'},{l:'Waiting for review',v:pend,c:'#fe9339'},{l:'Discarded',v:dis,c:'#a8a8a8'}],n)}</div></div>
+  <div class="dcard"><h3>Consent status</h3><div class="cb">${donut([{l:'Confirmed (double opt-in)',v:conf,c:'#2e844a'},{l:'Pending confirmation',v:n-conf-decl,c:'#fe9339'},{l:'Declined',v:decl,c:'#ba0517'}],n)}<div style="font-size:12.5px;color:var(--mute);margin-top:8px">Pending = HCP has not yet clicked “Confirm” in the email.</div></div></div></div>`;
+  return desk('danone.lightning.force.com/lightning/n/Capture_Dashboard','Dashboard',inner)}
+
+/* =========================================================
+   Step registry + render
+   ========================================================= */
+const STEPS=[
+ {short:'Self-scan',title:'HCP self-scan',who:'HCP · own phone',desc:'The HCP scans the booth QR, fills one short public page and confirms by email (double opt-in).',solves:[2],view:v1},
+ {short:'Rep page',title:'Rep captures at the booth',who:'Rep · logged-in phone',desc:'Search first: the app shows each HCP’s consent status, so the rep asks (and collects a signature) only when consent is missing or opted out.',solves:[1,3],view:v2},
+ {short:'Kiosk',title:'Kiosk mode for training walk-ins',who:'HCP · tablet',desc:'Same public form on a tablet at the entrance. It resets itself after every submission.',solves:[2],view:v3},
+ {short:'Matching',title:'Automatic matching',who:'System',desc:'Every capture lands in staging and is matched to existing HCPs in seconds. No Marketing Cloud export.',solves:[3],view:v4},
+ {short:'Review',title:'Review console',who:'Data steward · Lightning',desc:'Only ambiguous captures reach a person, with candidates side by side and an AI recommendation.',solves:[3],view:v5},
+ {short:'Consent',title:'Consent record',who:'Lightning · record page',desc:'After the match, the consent record is created like Pitcher does today, then sent to Gigya.',solves:[1,3],view:v6},
+ {short:'Dashboard',title:'Dashboard',who:'Marketing & Compliance · Lightning',desc:'Channel mix, auto-match rate, consent status and activity per rep, per event.',solves:[1,2,3],view:v7}];
+
+function paint(){const st=STEPS[S.step];
+  const keep=document.querySelector('.pbody');const sc=keep?keep.scrollTop:0;const scr=S.step;
+  $('#stage').innerHTML=`<section class="story"><span class="who">${st.who}</span><div class="st-main"><h2>${S.step+1}. ${st.title}</h2><p>${st.desc}</p></div><div class="solves">${st.solves.map(p=>`<span class="pill"><b>P${p}</b>${PROB[p]}</span>`).join('')}</div></section>${st.view()}`;
+  $('#stepno').textContent=`Step ${S.step+1} of 7`;$('#steptitle').textContent='· '+st.short;
+  $('#barfill').style.width=((S.step+1)/7*100)+'%';
+  $('#chips').innerHTML=STEPS.map((s,i)=>`<button class="chip ${i===S.step?'on':i<S.step?'done':''}" data-a="go" data-i="${i}"><i>${i<S.step?'✓':i+1}</i><span>${s.short}</span></button>`).join('');
+  if(S.wi.flash){S.wi.flash=false}
+  const nb=document.querySelector('.pbody');if(nb&&scr===S.step&&S._keepScroll){nb.scrollTop=sc}S._keepScroll=false;initSig()}
+function initSig(){const c=$('#sig');if(!c)return;const g=c.getContext('2d');g.lineWidth=4;g.lineCap='round';g.strokeStyle='#032d60';let d=false;
+  const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+  c.onpointerdown=e=>{d=true;c.setPointerCapture(e.pointerId);const[x,y]=pt(e);g.beginPath();g.moveTo(x,y)};
+  c.onpointermove=e=>{if(!d)return;const[x,y]=pt(e);g.lineTo(x,y);g.stroke();if(!S.s2.sig){S.s2.sig=true;const b=$('#cmgo');if(b)b.disabled=false}};
+  c.onpointerup=()=>{d=false}}
+function go(i){i=Math.max(0,Math.min(6,i));clearInterval(S.s3.timer);S.wi.mic=false;clearInterval(S._mic);
+  S.step=i;if(i>=4)processAll();
+  if(i===3){S.s4.visited=true;paint();if(S.caps.some(c=>!c.processed))setTimeout(runMatching,500)}else paint();
+  window.scrollTo({top:0})}
+
+/* =========================================================
+   Actions
+   ========================================================= */
+const A={
+ prev:()=>go(S.step-1),next:()=>go(S.step+1),go:t=>go(+t.dataset.i),toast:t=>toast(t.dataset.m),
+ fill:t=>{demoFill(t.dataset.p);paint()},
+ scan:()=>{S.s1.screen='form';paint()},
+ sub1:()=>submitPub('f1'),sub3:()=>submitPub('f3'),
+ confirm1:()=>{const c=capOf1();if(c){c.optIn='confirmed'}S.s1.screen='confirmed';paint();toast('Double opt-in confirmed')},
+ s1go:t=>{const k=t.dataset.k;if(['thanks','email','confirmed'].includes(k)&&!capOf1()){demoFill('f1');S.f1.consent=true;const f=S.f1;const c=newCap({first:f.first,last:f.last,email:f.email,spec:f.spec,city:f.city,channel:'self',event:'congress',optIn:'pending'});S.s1.cap=c.id;S.f1={slides:true}}
+   if(k==='confirmed'){const c=capOf1();if(c)c.optIn='confirmed'}S.s1.screen=k;paint()},
+ kreset:()=>{clearInterval(S.s3.timer);S.s3.screen='form';paint()},
+ /* rep */
+ rev:t=>{S.s2.ev=t.dataset.e;S.s2.screen='capture';S.s2.q='';S.s2.sel=null;paint()},
+ rchg:()=>{S.s2.screen='events';paint()},
+ rq:t=>{S.s2.q=t.dataset.q;S.s2.sel=null;paint();setTimeout(()=>{const i=$('#rq');if(i)i.focus()},0)},
+ rselect:t=>{S.s2.sel=t.dataset.id||null;S.s2.cm=null;S.s2.sig=false;paint()},
+ cm:t=>{S.s2.cm=t.dataset.m;S.s2.sig=false;paint()},sigclr:()=>{S.s2.sig=false;paint()},
+ radd:t=>{const h=hcpById(t.dataset.id);let cm,opt;
+   if(h.cs.s==='valid'){cm='existing';opt='confirmed'}
+   else{cm=S.s2.cm;if(!cm)return;if(cm==='sign'&&!S.s2.sig){toast('Signature needed');return}opt=cm==='sign'?'confirmed':cm==='email'?'pending':'declined'}
+   newCap({first:h.first,last:h.last,email:h.email,spec:h.spec,city:h.city,reg:h.reg,channel:'rep',by:REP,event:S.s2.ev,hcpFixed:h.id,optIn:opt,cm});S.s2.added[h.id]=cm;paint();toast('Added to event')},
+ rwalk:()=>{S.s2.cm=null;S.s2.sig=false;S.wi={last:S.s2.q.charAt(0).toUpperCase()+S.s2.q.slice(1)};S.s2.screen='walkin';paint()},
+ rback:()=>{S.s2.screen='capture';paint()},
+ rtab:t=>{S.s2.screen=t.dataset.t;if(t.dataset.t==='capture'&&!S.s2.ev)S.s2.ev='congress';paint()},
+ mic:()=>{const w=S.wi;if(w.mic){clearInterval(S._mic);w.mic=false;paint();return}
+   w.mic=true;w.notes='';paint();const words=DEMO_NOTE.split(' ');let i=0;const ta=()=>$('#notes');
+   S._mic=setInterval(()=>{if(i>=words.length){clearInterval(S._mic);w.mic=false;paint();return}w.notes=words.slice(0,++i).join(' ');const t=ta();if(t){t.value=w.notes;t.scrollTop=t.scrollHeight}},110)},
+ extract:async()=>{const w=S.wi;if(!w.notes||w.busy)return;w.busy=true;paint();await sleep(1100);w.busy=false;
+   const r=aiExtract(w.notes);const chips=[];let n=0;
+   [['first','First name'],['last','Last name'],['email','Email'],['spec','Specialty'],['city','City'],['org','Hospital']].forEach(([k,l])=>{if(r[k]){w[k]=r[k];n++;chips.push(l+': '+r[k])}});
+   if(r.interest){w.interest=r.interest;chips.push('Interest: '+r.interest);n++}
+   w.task=r.task||{title:'Follow up with Dr. '+(r.last||''),due:'Within 2 weeks'};if(r.task)n++;
+   w.ai={n,chips};w.flash=true;paint();const pb=$('.pbody');if(pb)pb.scrollTo({top:pb.scrollHeight,behavior:'smooth'})},
+ rsave:()=>{const w=S.wi;const cm=S.s2.cm;if(!w.first||!w.last){toast('First and last name are required');return}
+   if(!cm||(cm==='sign'&&!S.s2.sig)){toast('Consent option needed');return}if(cm==='email'&&!w.email){toast('Email needed to send the link');return}
+   newCap({first:w.first,last:w.last,email:w.email||'',spec:w.spec||'',city:w.city||'',org:w.org||'',channel:'rep',by:REP,event:S.s2.ev||'congress',notes:w.notes||'',interest:w.interest||'',task:w.ai?w.task:null,optIn:cm==='sign'?'confirmed':cm==='email'?'pending':'declined',cm});
+   S.wi={};S.s2.cm=null;S.s2.sig=false;S.s2.screen='captures';paint();toast('Capture saved'+(w.ai?' · follow-up task created':''))},
+ s2go:t=>{const k=t.dataset.k,s=S.s2;clearInterval(S._mic);S.wi.mic=false;if(!s.ev)s.ev='congress';
+   if(k==='events'){s.screen='events'}
+   else if(k==='search'){s.screen='capture';s.q='';s.sel=null}
+   else if(k==='found'){s.screen='capture';s.q='Ferri';s.sel='H1'}
+   else if(k==='noc'){s.screen='capture';s.q='Greco';s.sel='H12';s.cm=null}
+   else if(k==='opt'){s.screen='capture';s.q='Conti';s.sel='H3';s.cm=null}
+   else if(k==='walk'){S.wi={last:'Bianchi'};s.cm=null;s.sig=false;s.screen='walkin'}
+   else if(k==='ai'){const r=aiExtract(DEMO_NOTE);S.wi={first:r.first,last:r.last,email:r.email,spec:r.spec,city:r.city,org:r.org,notes:DEMO_NOTE,interest:r.interest,task:r.task,flash:true,ai:{n:7,chips:['First name: '+r.first,'Last name: '+r.last,'Email: '+r.email,'Specialty: '+r.spec,'City: '+r.city,'Hospital: '+r.org,'Interest: '+r.interest,'Follow-up: Nov 2026']}};s.cm=null;s.sig=false;s.screen='walkin'}
+   else s.screen='captures';paint()},
+ rerun:()=>{if(S.s4.running)return;if(S.caps.every(c=>c.processed))S.caps.forEach(c=>c.processed=false);paint();runMatching()},
+ /* review */
+ r5tab:t=>{S.s5.tab=t.dataset.t;paint()},r5list:()=>{S.s5.view='list';paint()},
+ r5open:t=>{S.s5.view='rec';S.s5.cur=t.dataset.id;S.s5.sel=null;paint()},
+ r5pick:t=>{S.s5.sel=t.dataset.id;paint()},
+ r5do:t=>{const c=S.caps.find(x=>x.id===S.s5.cur);const type=t.dataset.t;const sl=S.s5.sel||c.out.cands[0].h.id;
+   c.res={type,hcp:type==='matched'?sl:null,hm:fakeNow()};if(type!=='discarded')S.s6.cur=c.id;
+   paint();toast(type==='matched'?'Matched – consent record created':type==='created'?'New HCP created – consent record created':'Capture discarded')},
+ s6pick:t=>{S.s6.cur=t.value;paint()},replay:()=>replay(),
+ s7ev:t=>{S.s7.ev=t.value;paint()}
+};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.tagName==='SELECT'||t.type==='radio'&&e.type==='click'&&false)return;const f=A[t.dataset.a];if(f){if(t.tagName==='INPUT'&&t.type==='radio'){S._keepScroll=1}f(t,e)}});
+document.addEventListener('change',e=>{const t=e.target;if(t.tagName==='SELECT'&&t.dataset.a){A[t.dataset.a](t)}});
+function onIn(e){const t=e.target;if(!t.dataset||!t.dataset.in)return;const v=t.type==='checkbox'?t.checked:t.value;set(t.dataset.in,v);
+  const p=t.dataset.prog;if(p&&S[p]){const n=progOf(p);const b=$(`[data-pg="${p}"]`),l=$(`[data-pt="${p}"]`);if(b)b.style.width=(n/6*100)+'%';if(l)l.textContent=n+' of 6 done'}
+  if(t.id==='notes'){const b=$('[data-a="extract"]');if(b)b.disabled=!v}}
+document.addEventListener('input',onIn);document.addEventListener('change',onIn);
+document.addEventListener('input',e=>{if(e.target.id==='rq'){S.s2.q=e.target.value;S.s2.sel=null;$('#rres').innerHTML=repResults()}});
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(e.key==='ArrowRight')go(S.step+1);if(e.key==='ArrowLeft')go(S.step-1)});
+go(0);
+</script>
+</body>
+</html>
