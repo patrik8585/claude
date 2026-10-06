@@ -153,10 +153,16 @@ textarea.in{min-height:96px;resize:vertical}
 .cap{border-bottom:1px solid var(--line);padding:11px 0}
 .cap .r{display:flex;justify-content:space-between;gap:8px}.cap small{color:var(--mute)}
 .sm-badge{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
-.sm-badge.ok{background:var(--ok-bg);color:#194e1c}.sm-badge.wait{background:var(--warn-bg);color:var(--warn)}.sm-badge.t{background:var(--ai-bg);color:var(--ai)}
+.sm-badge.ok{background:var(--ok-bg);color:#194e1c}.sm-badge.wait{background:var(--warn-bg);color:var(--warn)}.sm-badge.red{background:var(--err-bg);color:var(--err)}.sm-badge.t{background:var(--ai-bg);color:var(--ai)}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid #c9c9c9;border-top-color:var(--brand);border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px}
 @keyframes rot{to{transform:rotate(360deg)}}
 
+#sig{width:100%;height:130px;border:1px dashed #8a8a8a;border-radius:8px;background:#fff;touch-action:none;display:block;margin-top:8px}
+.alert.err{background:var(--err-bg);color:#7a0610}
+.cmo{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.cmo .btn{justify-content:flex-start;text-align:left;white-space:normal}
+.cmo .btn.sel{background:var(--brand);color:#fff;border-color:var(--brand)}
+.cmo .btn.dec.sel{background:var(--err);border-color:var(--err)}
 /* tablet / kiosk */
 .tablet{width:min(940px,100%);aspect-ratio:16/10.5;background:#111;border-radius:30px;padding:16px;box-shadow:0 14px 34px rgba(0,0,0,.35)}
 .tscreen{background:#fff;border-radius:16px;height:100%;display:grid;grid-template-columns:34% 1fr;overflow:hidden}
@@ -322,6 +328,8 @@ const HCPS=[
  {id:'H13',first:'Matteo',last:'Sala',email:'m.sala@asst-bg-example.it',spec:'Paediatrics',city:'Bergamo',org:'ASST Papa Giovanni XXIII',reg:'BG-04412',ok:'WITA00044126',terr:1},
  {id:'H14',first:'Laura',last:'Benedetti',email:'laura.benedetti@ospedale-example.it',spec:'Paediatrics',city:'Padua',org:'Azienda Ospedale Padova',reg:'PD-13350',ok:'WITA00133509',terr:1}
 ];
+const CS={H1:{s:'valid',d:'12 Mar 2025',v:'v3.1'},H2:{s:'valid',d:'02 Sep 2025',v:'v3.1'},H14:{s:'valid',d:'21 Jan 2026',v:'v3.2'},H3:{s:'optout',d:'08 Jun 2025'}};
+HCPS.forEach(h=>h.cs=CS[h.id]||{s:'none'});
 const CHAN={self:{t:'Self-scan',c:'#0176d3',long:'Self-scan (QR → Experience Cloud)'},rep:{t:'Rep',c:'#fe9339',long:'Rep walk-in (Experience Cloud)'},kiosk:{t:'Kiosk',c:'#0b827c',long:'Kiosk (Experience Cloud)'}};
 const REPS=['Anna Colombo','Davide Ricci','Sara Fontana'];
 const CONSENT_TEXT='I agree that Danone may send me scientific information, product news and invitations to events by email. I can withdraw my consent at any time using the link in every email. See the Privacy Notice for details.';
@@ -332,7 +340,7 @@ const PROB={1:'Reps reluctant to ask for consent',2:'Low completion on self-scan
    State
    ========================================================= */
 const S={step:0,caps:[],f1:{slides:true},f3:{slides:true},wi:{},
-  s1:{screen:'scan',cap:null},s2:{screen:'events',ev:null,q:'',sel:null,added:{}},s3:{screen:'form',timer:null,left:0,name:''},
+  s1:{screen:'scan',cap:null},s2:{screen:'events',ev:null,q:'',sel:null,added:{},cm:null,sig:false},s3:{screen:'form',timer:null,left:0,name:''},
   s4:{running:false,visited:false},s5:{view:'list',tab:'review',cur:null,sel:null},s6:{cur:null,anim:0},s7:{ev:'all'},lastRes:null};
 
 /* helpers */
@@ -348,7 +356,7 @@ const fakeNow=()=>{const m=clock;clock+=4;return String(Math.floor(m/60)).padSta
 const addMin=(hm,n)=>{const [h,m]=hm.split(':').map(Number);const t=h*60+m+n;return String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};
 let toastT;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800)};
 
-const P={check:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',mic:'M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',search:'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',mail:'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z',person:'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',sparkle:'M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z',cal:'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z',task:'M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',plus:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',arrow:'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',bell:'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',apps:'M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z',lock:'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',cloud:'M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z',qr:'M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-12v8h8V3h-8zm6 6h-4V5h4v4zm-6 4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2zm0-4h2v2h-2zm2 2h2v2h-2z',list:'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',doc:'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',shield:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',chart:'M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z',home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'};
+const P={close:'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',check:'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',mic:'M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z',search:'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',mail:'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z',person:'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',sparkle:'M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z',cal:'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z',task:'M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',plus:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',arrow:'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',bell:'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z',apps:'M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z',lock:'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',cloud:'M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z',qr:'M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm8-12v8h8V3h-8zm6 6h-4V5h4v4zm-6 4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2zm0-4h2v2h-2zm2 2h2v2h-2z',list:'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',doc:'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',shield:'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',chart:'M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z',home:'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'};
 const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true"><path d="${P[n]}"/></svg>`;
 
 function qrSvg(){let s=11;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;const N=25;let d='';
@@ -387,7 +395,7 @@ function statusOf(c){
   if(!c.processed)return{k:'queued',t:'Queued'};
   if(c.res)return c.res.type==='discarded'?{k:'dis',t:'Discarded'}:{k:'rev',t:c.res.type==='matched'?'Reviewed – matched':'Reviewed – new HCP'};
   return{auto:{k:'auto',t:'Auto-matched'},review:{k:'warn',t:'To review'},new:{k:'new',t:'New HCP'}}[c.out.type]}
-const hasConsent=c=>c.processed&&!(c.res&&c.res.type==='discarded')&&(c.out.type!=='review'||!!c.res);
+const hasConsent=c=>c.processed&&c.optIn!=='declined'&&c.cm!=='existing'&&!(c.res&&c.res.type==='discarded')&&(c.out.type!=='review'||!!c.res);
 const processAll=()=>S.caps.forEach(c=>c.processed=true);
 const fullName=c=>`${c.first} ${c.last}`;
 
@@ -468,16 +476,30 @@ function v1(){const sc=S.s1.screen;const tabs=[['scan','1 Scan'],['form','2 Form
    STEP 2 – Rep page
    ========================================================= */
 const repList=q=>{const n=norm(q);if(n.length<2)return[];return HCPS.filter(h=>h.terr&&(norm(h.first+h.last).includes(n)||norm(h.email).includes(n)||normReg(h.reg).includes(normReg(q))))};
+const ASK='“May we send you scientific information and product news by email? You can withdraw at any time.”';
+function consBlock(h){const m=S.s2.cm;const opt=h&&h.cs.s==='optout';
+  const head=opt?`<div class="alert err">${ic('bell')}<span><b>Opted out on ${h.cs.d}.</b> Do not contact. Consent can only be re-collected by asking explicitly <b>and</b> with a signature.</span></div>`
+   :`<div class="alert warn">${ic('bell')}<span><b>No consent captured yet.</b> Ask the question below before adding the HCP to any communication.</span></div>`;
+  return `${head}<div class="quote" style="font-size:13px">Ask: ${ASK}</div>
+  <div class="cmo"><button class="btn${m==='sign'?' sel':''}" data-a="cm" data-m="sign">${ic('doc')} HCP agrees – signs on screen</button>
+  ${opt?'':`<button class="btn${m==='email'?' sel':''}" data-a="cm" data-m="email">${ic('mail')} HCP agrees – send confirmation link by email</button>`}
+  <button class="btn dec${m==='declined'?' sel':''}" data-a="cm" data-m="declined">${ic('close')} HCP declines – no communications</button></div>
+  ${m==='sign'?`<div style="font-size:12px;color:var(--mute)">${CONSENT_TEXT}</div><canvas id="sig" width="600" height="260"></canvas><div style="font-size:12px;color:var(--mute);display:flex;justify-content:space-between"><span>Sign here with finger</span><a class="lnk" style="cursor:pointer" data-a="sigclr">Clear</a></div>`:''}`}
+const cmLabel=m=>m==='sign'?'Confirm signature & add':m==='email'?'Add & send confirmation link':m==='declined'?'Add without communications':'Choose an option above';
+function goBtn(act,h,label){const m=S.s2.cm;const ok=m&&(m!=='sign'||S.s2.sig);return `<button class="btn brand lg block" id="cmgo" data-a="${act}" ${h?`data-id="${h.id}"`:''} ${ok?'':'disabled'}>${label||cmLabel(m)}</button>`}
 function repResults(){const s=S.s2;
-  if(s.sel){const h=hcpById(s.sel);const added=s.added[h.id];
+  if(s.sel){const h=hcpById(s.sel);const added=s.added[h.id];const c=h.cs;
+    const badge=c.s==='valid'?`<span class="sm-badge ok">Opt-in ${c.v} · ${c.d}</span>`:c.s==='optout'?`<span class="sm-badge red">Opted out · ${c.d}</span>`:`<span class="sm-badge wait">None on file</span>`;
+    const msg={existing:'Consent already on file – nothing to ask. Slides sent.',sign:'Signed on screen – consent confirmed and recorded.',email:'Confirmation link sent by email – consent pending until the HCP confirms.',declined:'HCP declined – added as attendee only, no communications.'}[added];
     return `<div class="hcpcard"><a class="lnk" style="font-size:13px;cursor:pointer" data-a="rselect" data-id="">‹ Back to results</a><h4 style="margin-top:6px">Dr. ${h.first} ${h.last}</h4><div style="color:var(--mute);font-size:13px">${h.spec} · ${h.city}</div>
-      <div class="kv"><span>Organisation</span><span>${h.org}</span><span>OneKey ID</span><span>${h.ok}</span><span>Email</span><span>${h.email}</span><span>Consent</span><span><span class="sm-badge wait">None on file</span></span></div>
-      ${added?`<div class="alert ok">${ic('check')}<span><b>Added to event.</b> The HCP will get the slides + consent confirmation email. No consent question needed at the booth.</span></div>`
-      :`<button class="btn brand lg block" data-a="radd" data-id="${h.id}">${ic('plus')} Add to event</button><div class="alert info" style="margin-bottom:0">${ic('mail')}<span>No need to ask for consent now – a confirmation link is sent by email.</span></div>`}</div>`}
+      <div class="kv"><span>Organisation</span><span>${h.org}</span><span>OneKey ID</span><span>${h.ok}</span><span>Email</span><span>${h.email}</span><span>Consent</span><span>${badge}</span></div>
+      ${added?`<div class="alert ok">${ic('check')}<span><b>Added to event.</b> ${msg}</span></div>`
+      :c.s==='valid'?`<div class="alert ok">${ic('shield')}<span>Consent is on file – <b>no question needed</b>.</span></div><button class="btn brand lg block" data-a="radd" data-id="${h.id}">${ic('plus')} Add to event</button>`
+      :`${consBlock(h)}${goBtn('radd',h)}`}</div>`}
   const r=repList(s.q);
-  if(norm(s.q).length<2)return `<div class="sugg">Try: ${['Ferri','Greco','Bianchi'].map(x=>`<button data-a="rq" data-q="${x}">${x}</button>`).join('')}</div><div class="alert info" style="margin-top:14px">${ic('search')}<span>Always search first – avoids duplicates and re-typing for HCPs we already know.</span></div>`;
+  if(norm(s.q).length<2)return `<div class="sugg">Try: ${[['Ferri','consent on file'],['Greco','no consent'],['Conti','opted out'],['Bianchi','not found']].map(x=>`<button data-a="rq" data-q="${x[0]}">${x[0]}</button>`).join('')}</div><div class="alert info" style="margin-top:14px">${ic('search')}<span>Always search first. The app shows each HCP’s consent status, so you only ask when it is needed.</span></div>`;
   if(!r.length)return `<div class="alert warn" style="margin-top:10px">${ic('search')}<span>No HCP found for “${esc(s.q)}” in your territory.</span></div><button class="btn brand lg block" data-a="rwalk">${ic('plus')} Add as walk-in</button>`;
-  return r.map(h=>`<div class="res" data-a="rselect" data-id="${h.id}"><div><b>Dr. ${h.first} ${h.last}</b><small>${h.spec} · ${h.city}</small></div>${s.added[h.id]?'<span class="sm-badge ok">Added</span>':ic('arrow')}</div>`).join('')}
+  return r.map(h=>{const c=h.cs.s;return `<div class="res" data-a="rselect" data-id="${h.id}"><div><b>Dr. ${h.first} ${h.last}</b><small>${h.spec} · ${h.city}</small><span class="sm-badge ${c==='valid'?'ok':c==='optout'?'red':'wait'}">${c==='valid'?'Consent on file':c==='optout'?'Opted out':'No consent'}</span></div>${s.added[h.id]?'<span class="sm-badge ok">Added</span>':ic('arrow')}</div>`}).join('')}
 function myCaps(){return S.caps.filter(c=>c.channel==='rep'&&c.by===REP&&c.day==='15 Oct')}
 function phone2(){const s=S.s2;let b,tabs=true;const url='rep.danone-events.example';
   if(s.screen==='events'){tabs=false;b=`<div class="pad"><b style="font-size:17px">Select event</b><div style="color:var(--mute);font-size:13px;margin-bottom:12px">Your events today</div>
@@ -495,19 +517,18 @@ function phone2(){const s=S.s2;let b,tabs=true;const url='rep.danone-events.exam
     <button class="btn ai block" style="margin-top:10px" data-a="extract" ${w.notes?'':'disabled'}>${w.busy?'<span class="spin"></span> Extracting…':ic('sparkle')+' Extract with AI'}</button>
     ${w.ai?`<div class="alert ai" style="flex-direction:column;gap:4px"><div><b>${ic('sparkle')} AI filled ${w.ai.n} fields</b> – please review</div><div>${w.ai.chips.map(c=>`<span class="tchip">${esc(c)}</span>`).join('')}</div></div>
        <div class="alert info">${ic('task')}<span><b>Follow-up task will be created</b><br>${esc(w.task.title)}<br><small>Due ${esc(w.task.due)} · Owner: ${REP}</small></span></div>`:''}
-    <label class="chk"><input type="checkbox" checked disabled><span>Email the slides + consent confirmation link (no consent question at the booth)</span></label>
-    <button class="btn brand lg block" data-a="rsave">Save capture</button></div>`}
+    <div style="margin-top:14px;font-weight:700">Consent</div>${consBlock(null)}${goBtn('rsave',null,S.s2.cm?'Save capture':'Choose a consent option above')}</div>`}
   else{const mc=myCaps();b=`<div class="pad"><b style="font-size:17px">My captures today</b><div style="color:var(--mute);font-size:13px">${mc.length} captures · ${mc.filter(c=>c.optIn==='confirmed').length} consents confirmed</div>
-    ${mc.slice().reverse().map(c=>`<div class="cap"><div class="r"><b>Dr. ${esc(fullName(c))}</b><small>${c.hm}</small></div><small>${esc(c.spec)} · ${esc(c.city)}</small><div style="margin-top:4px"><span class="sm-badge ${c.optIn==='confirmed'?'ok':'wait'}">Consent ${c.optIn==='confirmed'?'confirmed':'pending'}</span> ${c.task?'<span class="sm-badge t">Follow-up task</span>':''}</div></div>`).join('')}</div>`}
+    ${mc.slice().reverse().map(c=>`<div class="cap"><div class="r"><b>Dr. ${esc(fullName(c))}</b><small>${c.hm}</small></div><small>${esc(c.spec)} · ${esc(c.city)}</small><div style="margin-top:4px"><span class="sm-badge ${c.optIn==='confirmed'?'ok':c.optIn==='declined'?'red':'wait'}">Consent ${c.optIn==='confirmed'?(c.cm==='sign'?'signed':c.cm==='existing'?'on file':'confirmed'):c.optIn==='declined'?'declined':'pending'}</span> ${c.task?'<span class="sm-badge t">Follow-up task</span>':''}</div></div>`).join('')}</div>`}
   const tb=tabs?`<div class="tabbar"><button class="${s.screen==='captures'?'':'on'}" data-a="rtab" data-t="capture">${ic('search')}Capture</button><button class="${s.screen==='captures'?'on':''}" data-a="rtab" data-t="captures">${ic('list')}My captures (${myCaps().length})</button></div>`:'';
   return phone(url,`<div class="rep-h"><b>Rep Hub</b><span style="display:flex;gap:8px;align-items:center;font-size:13px">${REP}<span class="av">AC</span></span></div><div class="pbody">${b}</div>${tb}`)}
 function v2(){const sc=S.s2.screen;const w=S.wi;
-  const at=sc==='events'?'events':sc==='captures'?'captures':sc==='walkin'?(w.ai?'ai':'walk'):(S.s2.sel?'found':'search');
-  const tabs=[['events','1 Event'],['search','2 Search first'],['found','3 Found'],['walk','4 Walk-in'],['ai','5 AI extract'],['captures','6 My captures']];
+  const at=sc==='events'?'events':sc==='captures'?'captures':sc==='walkin'?(w.ai?'ai':'walk'):(S.s2.sel==='H1'?'found':S.s2.sel==='H12'?'noc':S.s2.sel==='H3'?'opt':'search');
+  const tabs=[['events','1 Event'],['search','2 Search first'],['found','3a Consent on file'],['noc','3b No consent'],['opt','3c Opted out'],['walk','4 Walk-in'],['ai','5 AI extract'],['captures','6 My captures']];
   return `<div class="grid2"><div class="col">${phone2()}<div class="subtabs">${tabs.map(t=>`<button class="${at===t[0]?'on':''}" data-a="s2go" data-k="${t[0]}">${t[1]}</button>`).join('')}</div></div>
   <div style="display:flex;flex-direction:column;gap:14px;max-width:560px">
-  <div class="note"><h4>${ic('person')} Search first, capture second</h4><ul><li>Known HCP → one tap on <b>Add to event</b>. No retyping, no duplicates.</li><li>Unknown HCP → short walk-in form, fields stay minimal.</li></ul></div>
-  <div class="note"><h4>${ic('shield')} The rep never has to ask for consent</h4><ul><li><span class="tag bad">Before</span>Reps skipped the consent question at the first interaction.</li><li><span class="tag good">Now</span>The HCP receives the <b>slides + a confirmation link</b> by email. Consent is HCP-driven (double opt-in).</li></ul></div>
+  <div class="note"><h4>${ic('person')} Search first, capture second</h4><ul><li>Known HCP → <b>Add to event</b>, no retyping, no duplicates. Consent status is shown right on the card.</li><li>Unknown HCP → short walk-in form, fields stay minimal.</li></ul></div>
+  <div class="note"><h4>${ic('shield')} Consent status drives what the rep does</h4><ul><li><span class="tag good">On file</span>Valid opt-in already in Salesforce → add to event, <b>no question</b>.</li><li><span class="tag bad">None</span>Never captured → the app shows the exact question; the HCP <b>signs on screen</b> or gets a <b>confirmation link</b>.</li><li><span class="tag bad">Opt-out</span>Never contacted. Only a new explicit question <b>with signature</b> can re-enable.</li><li>Reluctance (P1) is reduced: the rep asks only when needed, with a ready script and a 10-second signature.</li></ul></div>
   <div class="note"><h4>${ic('sparkle')} Notes by voice, structured by AI</h4><ul><li>Dictate with the microphone – no paper notes, no later data entry.</li><li><b>Extract with AI</b> fills name, specialty, hospital, city, email, interest and creates a <b>follow-up task</b>.</li></ul></div></div></div>`}
 
 /* AI extraction (simple pattern-based simulation) */
@@ -540,7 +561,7 @@ function v4(){const caps=S.caps,done=caps.filter(c=>c.processed);const cnt=t=>do
   const rows=caps.map(c=>{let st,nx;
     if(!c.processed){st=c.state==='run'?`<span class="spin"></span> Matching…`:`<span class="badge queued">Queued</span>`;nx='<span style="color:var(--mute)">–</span>'}
     else{const s=statusOf(c);st=`<span class="badge ${s.k}">${s.t}</span><small>${esc(c.out.rule)}</small>`;
-      nx=c.out.type==='auto'?'Consent record created':c.out.type==='new'?'New HCP created → consent record':'Review queue (data steward)'}
+      nx=c.optIn==='declined'?'No consent record (declined)':c.cm==='existing'?'Linked to existing consent':c.out.type==='auto'?'Consent record created':c.out.type==='new'?'New HCP created → consent record':'Review queue (data steward)'}
     return `<tr class="${c.state==='run'?'rowrun':''}"><td><b>${c.id}</b><small>${c.day}, ${c.hm}</small></td><td><b>${esc(fullName(c))}</b><small>${esc(c.spec)} · ${esc(c.city)}</small></td><td>${chanHtml(c)}<small>${EVENTS[c.event].short}</small></td><td><small style="color:var(--ink);font-size:13px">${esc(c.email)}</small><small>${c.reg?'Reg. '+esc(c.reg):'No reg. number'}</small></td><td>${st}</td><td>${nx}</td></tr>`}).join('');
   return `<div class="pipe"><div class="pnode"><b>1 · Capture</b><small>Self-scan, rep, kiosk → staging record</small></div><div class="pnode ${run?'act':''}"><b>2 · Automatic matching</b><small>Name, email, city, specialty, reg. number</small></div><div class="pnode"><b>3 · Consent record</b><small>Same as Pitcher creates today</small></div><div class="pnode" style="margin-right:0"><b>4 · Sent to Gigya</b><small>Existing integration</small></div></div>
   <div class="kpis"><div class="kpi"><small>Captures</small><b>${caps.length}</b></div><div class="kpi g"><small>Auto-matched</small><b>${cnt('auto')}</b></div><div class="kpi a"><small>To review</small><b>${cnt('review')}</b></div><div class="kpi b"><small>New HCP</small><b>${cnt('new')}</b></div><div class="kpi"><small>Queued</small><b>${caps.length-done.length}</b></div>
@@ -600,7 +621,7 @@ function consentFor(c){
   const matcher=c.res?'Sofia Neri – Data steward (manual review)':'Matching engine ('+c.out.rule+')';
   const conf=c.optIn==='confirmed';const preview=c.out.type==='review'&&!c.res;
   const created=c.res&&c.res.hm?c.res.hm:addMin(c.hm,1);
-  return{id:'CON-'+String(400+S.caps.indexOf(c)+12).padStart(6,'0'),hcp,isNew,matcher,conf,preview,created,confAt:addMin(c.hm,3),sent:addMin(created,1)}}
+  return{id:'CON-'+String(400+S.caps.indexOf(c)+12).padStart(6,'0'),hcp,isNew,matcher,conf,preview,created,confAt:c.cm==='sign'?c.hm:addMin(c.hm,3),sent:addMin(created,1)}}
 function v6(){
   let c=S.caps.find(x=>x.id===S.s6.cur);
   if(!c||!(hasConsent(c)||c.out.type==='review'&&!c.res)){c=S.caps.find(x=>x.id==='CAP-0006');S.s6.cur=c.id}
@@ -608,7 +629,7 @@ function v6(){
   const opts=S.caps.filter(x=>hasConsent(x)||x.id==='CAP-0006').map(x=>`<option value="${x.id}"${x.id===c.id?' selected':''}>${x.id} · ${esc(fullName(x))}</option>`).join('');
   const steps=[
     {t:'Capture received in staging',s:`${c.day} 2026, ${c.hm} · ${CHAN[c.channel].t}`,ok:1},
-    {t:'HCP confirmed by email (double opt-in)',s:k.conf?`${c.day} 2026, ${k.confAt}`:'Waiting for the HCP to click “Confirm”',ok:k.conf},
+    {t:c.cm==='sign'?'HCP signed on the rep’s device':'HCP confirmed by email (double opt-in)',s:k.conf?`${c.day} 2026, ${k.confAt}`:'Waiting for the HCP to click “Confirm”',ok:k.conf},
     {t:k.isNew?'New HCP created':'Matched to existing HCP',s:k.matcher,ok:1},
     {t:'Consent record created',s:`${c.day} 2026, ${k.created} · ${k.id}`,ok:1},
     {t:'Sent to Gigya',s:k.conf?`${c.day} 2026, ${k.sent} · via existing integration`:'Sent automatically once consent is confirmed',ok:k.conf}];
@@ -621,9 +642,9 @@ function v6(){
   <div class="two eq"><div class="dcard"><h3>Consent details <span class="badge rev">Same structure as Pitcher</span></h3><div class="cb"><div class="fl2">
     <div><small>Consent type</small>Email – scientific &amp; promotional communications</div><div><small>Status</small>${k.conf?'Opt-in confirmed':'Pending double opt-in'}</div>
     <div><small>HCP</small><span class="lnk">${esc(name)}</span></div><div><small>OneKey ID</small>${k.hcp?k.hcp.ok:'Pending (new HCP)'}</div>
-    <div><small>Channel</small>${CHAN[c.channel].long}</div><div><small>Opt-in method</small>Double opt-in (email link)</div>
+    <div><small>Channel</small>${CHAN[c.channel].long}</div><div><small>Opt-in method</small>${c.cm==='sign'?'Explicit question + signature on screen':'Double opt-in (email link)'}</div>
     <div><small>Capture date / time</small>${c.day} 2026, ${c.hm}</div><div><small>Confirmation date / time</small>${k.conf?c.day+' 2026, '+k.confAt:'—'}</div>
-    <div><small>Consent text version</small>v3.2 – approved by Compliance</div><div><small>Signature</small>Not required</div>
+    <div><small>Consent text version</small>v3.2 – approved by Compliance</div><div><small>Signature</small>${c.cm==='sign'?'Captured on screen ✓':'Not required'}</div>
     <div><small>Captured by</small>${c.by||'HCP (self-service)'}</div><div><small>Matched by</small>${k.matcher}</div>
     <div><small>Event</small>${EVENTS[c.event].name}</div><div><small>Source capture</small><span class="lnk">${c.id}</span></div></div>
     <div style="margin:14px 0 6px;font-size:12px;color:var(--mute)">Consent text shown to the HCP</div><div class="quote">${CONSENT_TEXT}</div></div></div>
@@ -645,15 +666,15 @@ function donut(segs,center){const tot=segs.reduce((a,s)=>a+s.v,0);const R=60,C=2
 const bars=(rows,max)=>rows.map(r=>`<div class="hb"><span>${r.l}</span><div class="tr"><i style="width:${max?r.v/max*100:0}%;background:${r.c}"></i></div><b>${r.v}</b></div>`).join('');
 function v7(){const ev=S.s7.ev;const cs=S.caps.filter(c=>ev==='all'||c.event===ev);const n=cs.length;const pct=x=>n?Math.round(x/n*100):0;
   const auto=cs.filter(c=>!c.res&&c.out.type==='auto').length,nw=cs.filter(c=>!c.res&&c.out.type==='new').length,rev=cs.filter(c=>c.res&&c.res.type!=='discarded').length,pend=cs.filter(c=>!c.res&&c.out.type==='review').length,dis=cs.filter(c=>c.res&&c.res.type==='discarded').length;
-  const conf=cs.filter(c=>c.optIn==='confirmed').length;
+  const conf=cs.filter(c=>c.optIn==='confirmed').length,decl=cs.filter(c=>c.optIn==='declined').length;
   const ch=Object.keys(CHAN).map(k=>({l:CHAN[k].t,c:CHAN[k].c,v:cs.filter(c=>c.channel===k).length}));
   const rp=REPS.map(r=>({l:r,c:'#0176d3',v:cs.filter(c=>c.by===r).length}));
   const inner=`<div class="ph"><div class="oi" style="background:#0176d3">${ic('chart')}</div><div><small>Dashboard</small><h1>Capture performance</h1></div><span class="sp"></span><span style="font-size:13px;color:var(--mute)">Event</span><select class="dsel" data-a="s7ev"><option value="all"${ev==='all'?' selected':''}>All events</option><option value="congress"${ev==='congress'?' selected':''}>${EVENTS.congress.name}</option><option value="training"${ev==='training'?' selected':''}>${EVENTS.training.name}</option></select></div>
-  <div class="kpis"><div class="kpi"><small>Total captures</small><b>${n}</b></div><div class="kpi g"><small>Auto-matched</small><b>${pct(auto)}%</b></div><div class="kpi b"><small>Manually reviewed</small><b>${pct(rev)}%</b></div><div class="kpi g"><small>Consent confirmed</small><b>${pct(conf)}%</b></div><div class="kpi a"><small>Consent pending</small><b>${pct(n-conf)}%</b></div></div>
+  <div class="kpis"><div class="kpi"><small>Total captures</small><b>${n}</b></div><div class="kpi g"><small>Auto-matched</small><b>${pct(auto)}%</b></div><div class="kpi b"><small>Manually reviewed</small><b>${pct(rev)}%</b></div><div class="kpi g"><small>Consent confirmed</small><b>${pct(conf)}%</b></div><div class="kpi a"><small>Consent pending</small><b>${pct(n-conf-decl)}%</b></div></div>
   <div class="charts"><div class="dcard"><h3>Captures by channel</h3><div class="cb">${bars(ch,Math.max(1,...ch.map(x=>x.v)))}</div></div>
   <div class="dcard"><h3>Captures per rep</h3><div class="cb">${bars(rp,Math.max(1,...rp.map(x=>x.v)))}<div style="font-size:12.5px;color:var(--mute);margin-top:6px">Self-scan and kiosk captures are not attributed to a rep.</div></div></div>
   <div class="dcard"><h3>Matching outcome</h3><div class="cb">${donut([{l:'Auto-matched',v:auto,c:'#2e844a'},{l:'Reviewed by data steward',v:rev,c:'#0176d3'},{l:'New HCP (auto-created)',v:nw,c:'#8a63d2'},{l:'Waiting for review',v:pend,c:'#fe9339'},{l:'Discarded',v:dis,c:'#a8a8a8'}],n)}</div></div>
-  <div class="dcard"><h3>Consent status</h3><div class="cb">${donut([{l:'Confirmed (double opt-in)',v:conf,c:'#2e844a'},{l:'Pending confirmation',v:n-conf,c:'#fe9339'}],n)}<div style="font-size:12.5px;color:var(--mute);margin-top:8px">Pending = HCP has not yet clicked “Confirm” in the email.</div></div></div></div>`;
+  <div class="dcard"><h3>Consent status</h3><div class="cb">${donut([{l:'Confirmed (double opt-in)',v:conf,c:'#2e844a'},{l:'Pending confirmation',v:n-conf-decl,c:'#fe9339'},{l:'Declined',v:decl,c:'#ba0517'}],n)}<div style="font-size:12.5px;color:var(--mute);margin-top:8px">Pending = HCP has not yet clicked “Confirm” in the email.</div></div></div></div>`;
   return desk('danone.lightning.force.com/lightning/n/Capture_Dashboard','Dashboard',inner)}
 
 /* =========================================================
@@ -661,7 +682,7 @@ function v7(){const ev=S.s7.ev;const cs=S.caps.filter(c=>ev==='all'||c.event===e
    ========================================================= */
 const STEPS=[
  {short:'Self-scan',title:'HCP self-scan',who:'HCP · own phone',desc:'The HCP scans the booth QR, fills one short public page and confirms by email (double opt-in).',solves:[2],view:v1},
- {short:'Rep page',title:'Rep captures at the booth',who:'Rep · logged-in phone',desc:'Search first, then add a known HCP or capture a walk-in with voice notes and AI extraction.',solves:[1,3],view:v2},
+ {short:'Rep page',title:'Rep captures at the booth',who:'Rep · logged-in phone',desc:'Search first: the app shows each HCP’s consent status, so the rep asks (and collects a signature) only when consent is missing or opted out.',solves:[1,3],view:v2},
  {short:'Kiosk',title:'Kiosk mode for training walk-ins',who:'HCP · tablet',desc:'Same public form on a tablet at the entrance. It resets itself after every submission.',solves:[2],view:v3},
  {short:'Matching',title:'Automatic matching',who:'System',desc:'Every capture lands in staging and is matched to existing HCPs in seconds. No Marketing Cloud export.',solves:[3],view:v4},
  {short:'Review',title:'Review console',who:'Data steward · Lightning',desc:'Only ambiguous captures reach a person, with candidates side by side and an AI recommendation.',solves:[3],view:v5},
@@ -675,7 +696,12 @@ function paint(){const st=STEPS[S.step];
   $('#barfill').style.width=((S.step+1)/7*100)+'%';
   $('#chips').innerHTML=STEPS.map((s,i)=>`<button class="chip ${i===S.step?'on':i<S.step?'done':''}" data-a="go" data-i="${i}"><i>${i<S.step?'✓':i+1}</i><span>${s.short}</span></button>`).join('');
   if(S.wi.flash){S.wi.flash=false}
-  const nb=document.querySelector('.pbody');if(nb&&scr===S.step&&S._keepScroll){nb.scrollTop=sc}S._keepScroll=false}
+  const nb=document.querySelector('.pbody');if(nb&&scr===S.step&&S._keepScroll){nb.scrollTop=sc}S._keepScroll=false;initSig()}
+function initSig(){const c=$('#sig');if(!c)return;const g=c.getContext('2d');g.lineWidth=4;g.lineCap='round';g.strokeStyle='#032d60';let d=false;
+  const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+  c.onpointerdown=e=>{d=true;c.setPointerCapture(e.pointerId);const[x,y]=pt(e);g.beginPath();g.moveTo(x,y)};
+  c.onpointermove=e=>{if(!d)return;const[x,y]=pt(e);g.lineTo(x,y);g.stroke();if(!S.s2.sig){S.s2.sig=true;const b=$('#cmgo');if(b)b.disabled=false}};
+  c.onpointerup=()=>{d=false}}
 function go(i){i=Math.max(0,Math.min(6,i));clearInterval(S.s3.timer);S.wi.mic=false;clearInterval(S._mic);
   S.step=i;if(i>=4)processAll();
   if(i===3){S.s4.visited=true;paint();if(S.caps.some(c=>!c.processed))setTimeout(runMatching,500)}else paint();
@@ -697,9 +723,13 @@ const A={
  rev:t=>{S.s2.ev=t.dataset.e;S.s2.screen='capture';S.s2.q='';S.s2.sel=null;paint()},
  rchg:()=>{S.s2.screen='events';paint()},
  rq:t=>{S.s2.q=t.dataset.q;S.s2.sel=null;paint();setTimeout(()=>{const i=$('#rq');if(i)i.focus()},0)},
- rselect:t=>{S.s2.sel=t.dataset.id||null;paint()},
- radd:t=>{const h=hcpById(t.dataset.id);newCap({first:h.first,last:h.last,email:h.email,spec:h.spec,city:h.city,reg:h.reg,channel:'rep',by:REP,event:S.s2.ev,hcpFixed:h.id,optIn:'pending'});S.s2.added[h.id]=1;paint();toast('Added to event – slides + consent link emailed')},
- rwalk:()=>{S.wi={last:S.s2.q.charAt(0).toUpperCase()+S.s2.q.slice(1)};S.s2.screen='walkin';paint()},
+ rselect:t=>{S.s2.sel=t.dataset.id||null;S.s2.cm=null;S.s2.sig=false;paint()},
+ cm:t=>{S.s2.cm=t.dataset.m;S.s2.sig=false;paint()},sigclr:()=>{S.s2.sig=false;paint()},
+ radd:t=>{const h=hcpById(t.dataset.id);let cm,opt;
+   if(h.cs.s==='valid'){cm='existing';opt='confirmed'}
+   else{cm=S.s2.cm;if(!cm)return;if(cm==='sign'&&!S.s2.sig){toast('Signature needed');return}opt=cm==='sign'?'confirmed':cm==='email'?'pending':'declined'}
+   newCap({first:h.first,last:h.last,email:h.email,spec:h.spec,city:h.city,reg:h.reg,channel:'rep',by:REP,event:S.s2.ev,hcpFixed:h.id,optIn:opt,cm});S.s2.added[h.id]=cm;paint();toast('Added to event')},
+ rwalk:()=>{S.s2.cm=null;S.s2.sig=false;S.wi={last:S.s2.q.charAt(0).toUpperCase()+S.s2.q.slice(1)};S.s2.screen='walkin';paint()},
  rback:()=>{S.s2.screen='capture';paint()},
  rtab:t=>{S.s2.screen=t.dataset.t;if(t.dataset.t==='capture'&&!S.s2.ev)S.s2.ev='congress';paint()},
  mic:()=>{const w=S.wi;if(w.mic){clearInterval(S._mic);w.mic=false;paint();return}
@@ -711,15 +741,18 @@ const A={
    if(r.interest){w.interest=r.interest;chips.push('Interest: '+r.interest);n++}
    w.task=r.task||{title:'Follow up with Dr. '+(r.last||''),due:'Within 2 weeks'};if(r.task)n++;
    w.ai={n,chips};w.flash=true;paint();const pb=$('.pbody');if(pb)pb.scrollTo({top:pb.scrollHeight,behavior:'smooth'})},
- rsave:()=>{const w=S.wi;if(!w.first||!w.last){w._err=true;paint();toast('First and last name are required');return}
-   newCap({first:w.first,last:w.last,email:w.email||'',spec:w.spec||'',city:w.city||'',org:w.org||'',channel:'rep',by:REP,event:S.s2.ev||'congress',notes:w.notes||'',interest:w.interest||'',task:w.ai?w.task:null,optIn:'pending'});
-   S.wi={};S.s2.screen='captures';paint();toast('Capture saved'+(w.ai?' · follow-up task created':''))},
+ rsave:()=>{const w=S.wi;const cm=S.s2.cm;if(!w.first||!w.last){toast('First and last name are required');return}
+   if(!cm||(cm==='sign'&&!S.s2.sig)){toast('Consent option needed');return}if(cm==='email'&&!w.email){toast('Email needed to send the link');return}
+   newCap({first:w.first,last:w.last,email:w.email||'',spec:w.spec||'',city:w.city||'',org:w.org||'',channel:'rep',by:REP,event:S.s2.ev||'congress',notes:w.notes||'',interest:w.interest||'',task:w.ai?w.task:null,optIn:cm==='sign'?'confirmed':cm==='email'?'pending':'declined',cm});
+   S.wi={};S.s2.cm=null;S.s2.sig=false;S.s2.screen='captures';paint();toast('Capture saved'+(w.ai?' · follow-up task created':''))},
  s2go:t=>{const k=t.dataset.k,s=S.s2;clearInterval(S._mic);S.wi.mic=false;if(!s.ev)s.ev='congress';
    if(k==='events'){s.screen='events'}
    else if(k==='search'){s.screen='capture';s.q='';s.sel=null}
    else if(k==='found'){s.screen='capture';s.q='Ferri';s.sel='H1'}
-   else if(k==='walk'){S.wi={last:'Bianchi'};s.screen='walkin'}
-   else if(k==='ai'){const r=aiExtract(DEMO_NOTE);S.wi={first:r.first,last:r.last,email:r.email,spec:r.spec,city:r.city,org:r.org,notes:DEMO_NOTE,interest:r.interest,task:r.task,flash:true,ai:{n:7,chips:['First name: '+r.first,'Last name: '+r.last,'Email: '+r.email,'Specialty: '+r.spec,'City: '+r.city,'Hospital: '+r.org,'Interest: '+r.interest,'Follow-up: Nov 2026']}};s.screen='walkin'}
+   else if(k==='noc'){s.screen='capture';s.q='Greco';s.sel='H12';s.cm=null}
+   else if(k==='opt'){s.screen='capture';s.q='Conti';s.sel='H3';s.cm=null}
+   else if(k==='walk'){S.wi={last:'Bianchi'};s.cm=null;s.sig=false;s.screen='walkin'}
+   else if(k==='ai'){const r=aiExtract(DEMO_NOTE);S.wi={first:r.first,last:r.last,email:r.email,spec:r.spec,city:r.city,org:r.org,notes:DEMO_NOTE,interest:r.interest,task:r.task,flash:true,ai:{n:7,chips:['First name: '+r.first,'Last name: '+r.last,'Email: '+r.email,'Specialty: '+r.spec,'City: '+r.city,'Hospital: '+r.org,'Interest: '+r.interest,'Follow-up: Nov 2026']}};s.cm=null;s.sig=false;s.screen='walkin'}
    else s.screen='captures';paint()},
  rerun:()=>{if(S.s4.running)return;if(S.caps.every(c=>c.processed))S.caps.forEach(c=>c.processed=false);paint();runMatching()},
  /* review */
