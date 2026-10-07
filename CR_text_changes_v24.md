@@ -31,13 +31,14 @@ Replace "Insight tab framework with 2 sub-tabs, General and Segment" with:
 > Shows the affiliations of the account, between HCP and HCP and between HCP and HCO.
 > Columns:
 > - **From** and **To** – each can be an HCP or an HCO. Both are always mandatory: an affiliation without From and To is not allowed.
-> - **Decision maker** – multipicklist with the values *Discharge Decision Maker* and *Product Decision Maker*. A row can have both, or none. Read-only.
+> - **Decision maker** – multipicklist with the values *Discharge Decision Maker* and *Product Decision Maker*. A row can have both, or none. **Always editable, on both Hard and Soft affiliations** (pencil, Save / Cancel).
 > - **Relationship type** – *Soft* or *Hard*. Read-only.
 >
 > Actions:
-> - **+ New affiliation** button: the user picks From and To (both mandatory, and they must be different). The new affiliation is created as *Soft*.
-> - **Hard** affiliations: From and To cannot be changed (lock icon).
-> - **Soft** affiliations: From and To can be changed (pencil, Save / Cancel).
+> - **+ New affiliation** button: the user picks From and To (both mandatory, and they must be different). The user can also set Decision maker at creation. The new affiliation is created as *Soft*.
+> - **Hard** affiliations: From and To cannot be changed (lock icon). Decision maker can still be changed.
+> - **Soft** affiliations: From and To can be changed (pencil, Save / Cancel). Decision maker can also be changed.
+> - Relationship type is never editable.
 
 ### 2.2 Questionnaire (new)
 
@@ -75,7 +76,7 @@ Replace "Insight tab framework with 2 sub-tabs, General and Segment" with:
 ## 4. Open points to confirm
 
 1. **Source objects** for the three sub-tabs: affiliation object, questionnaire assignment object, and where the product sample limit and delivered quantity are stored.
-2. **Decision maker**: the mockup shows it per affiliation record, read-only. Who sets it (integration, back office)?
+2. **Decision maker**: the mockup shows it per affiliation record, editable by the rep on every affiliation. Confirm the field-level security and whether changes on Hard affiliations need an audit trail.
 3. **Sample period**: confirmed annual. Does the year mean the calendar year, or a fiscal year?
 4. **Plan a call**: does the calendar create a Pitcher call or a calendar event? The mockup only shows the picker.
 5. **Questionnaire Start**: confirm it opens the existing Pitcher questionnaire, and whether mandatory ones must block anything (for example the call).
