@@ -133,7 +133,7 @@ th{background:var(--soft);font-weight:600}
 <ul>
 <li><b>General</b> and <b>Segment</b> are driven by custom metadata (see below).</li>
 <li><b>Questionnaire</b> and <b>Sample</b> are fixed sub-tabs, always shown on the HCP and HCO page. They show standard data and need no card metadata.</li>
-<li><b>Affiliation</b> is always shown, with four fixed core columns plus <b>extra columns configured per CBU and Team</b>. All columns, core and extra, are described in custom metadata (see 13.2 and 13.7), so a rule such as "From and To become read-only" is a metadata change and not an app change.</li>
+<li><b>Affiliation</b> is always shown. Only <b>From</b> and <b>To</b> are fixed for every CBU. All the other columns (Decision maker, Relationship type, extra fields) are <b>configured per CBU and Team</b> in custom metadata (see 13.2 and 13.7).</li>
 </ul>
 
 <h4>13.1 General and Segment</h4>
@@ -142,17 +142,23 @@ th{background:var(--soft);font-weight:600}
 
 <h4>13.2 Affiliation <span class="new">New</span></h4>
 <p>Shows the affiliations of the account, between HCP and HCP and between HCP and HCO.</p>
+<p><b>Fixed columns (same for every CBU):</b></p>
 <table>
 <tr><th>Column</th><th>Description</th><th>Editable (default, from metadata)</th></tr>
 <tr><td>From</td><td>HCP or HCO. Mandatory: an affiliation always has both From and To.</td><td>Soft: yes. Hard: no (lock icon)</td></tr>
 <tr><td>To</td><td>HCP or HCO. Mandatory.</td><td>Soft: yes. Hard: no (lock icon)</td></tr>
-<tr><td>Decision maker</td><td>Multipicklist: <i>Discharge Decision Maker</i>, <i>Product Decision Maker</i>. A row can have both, or none.</td><td>Always, on Hard and Soft (pencil, Save / Cancel)</td></tr>
-<tr><td>Relationship type</td><td>Soft or Hard</td><td>Never</td></tr>
-<tr><td>Extra fields <span class="new">New</span></td><td>Optional additional columns of the affiliation record (e.g. Role, Start date, Notes), shown after Relationship type. Which fields, and in which order, comes from <code>Account_Affiliation_Field__mdt</code> per CBU, Team and Record type, with the same 6-step fallback to DEFAULT. If nothing is configured, no extra column is shown.</td><td>Read-only by default, can be set in metadata</td></tr>
 </table>
-<p>From, To, Decision maker and Relationship type are <b>fixed</b>: they are always shown, first, and in this order, and cannot be removed. They are still written in the metadata, because their editability is read from there. Example: if tomorrow From and To must be read-only, only the metadata record changes (<code>Editable_For__c</code> = None).</p>
+<p>From and To are always shown, first, and cannot be removed. They are still written in the metadata, because their editability is read from there. Example: if tomorrow From and To must be read-only, only the metadata record changes (<code>Editable_For__c</code> = None), not the app.</p>
+<p><b>Configurable columns (per CBU, Team and Record type, shown after To in the configured order):</b></p>
+<table>
+<tr><th>Column</th><th>Description</th><th>Editable (default, from metadata)</th></tr>
+<tr><td>Decision maker</td><td>Multipicklist: <i>Discharge Decision Maker</i>, <i>Product Decision Maker</i>. A row can have both, or none.</td><td>Hard and Soft (pencil, Save / Cancel)</td></tr>
+<tr><td>Relationship type</td><td>Soft or Hard</td><td>Never</td></tr>
+<tr><td>Extra fields</td><td>Any other field of the affiliation record (e.g. Role, Start date, Notes).</td><td>Read-only by default</td></tr>
+</table>
+<p>The default (DEFAULT record) shows Decision maker and Relationship type. A CBU or Team can hide them, reorder them or add extra fields, with the same 6-step fallback as item 3. If a CBU hides Relationship type, the Hard / Soft rule on From and To still applies.</p>
 <ul>
-<li><b>+ New affiliation</b> button: the user picks From and To (both mandatory, and they must be different) and can set the Decision maker. The new affiliation is created as Soft.</li>
+<li><b>+ New affiliation</b> button: the user picks From and To (both mandatory, and they must be different) and fills the other configured columns that are editable. The new affiliation is created as <i>Soft</i>.</li>
 </ul>
 
 <h4>13.3 Questionnaire <span class="new">New</span></h4>
@@ -203,21 +209,20 @@ th{background:var(--soft);font-weight:600}
 </table>
 
 <h4>13.7 Custom metadata <code>Account_Affiliation_Field__mdt</code> <span class="new">New</span></h4>
-<p>One record per column of the Affiliation sub-tab: the four core columns and the extra ones.</p>
+<p>One record per column of the Affiliation sub-tab. From and To are always present; the other columns exist only if a record selects them.</p>
 <table>
 <tr><th>Field</th><th>Description</th></tr>
 <tr><td><code>Page__c</code>, <code>CBU__c</code>, <code>Team__c</code>, <code>Record_Type__c</code>, <code>Is_Active__c</code></td><td>Selection keys, same as item 3 and same 6-step resolution (DEFAULT as fallback). The whole list of columns comes from one step, never mixed</td></tr>
-<tr><td><code>Column_Type__c</code></td><td>Core (From / To / Decision maker / Relationship type) or Extra</td></tr>
-<tr><td><code>Is_Fixed__c</code></td><td>True for the four core columns: always shown, first, cannot be removed or reordered</td></tr>
-<tr><td><code>Sort_Order__c</code></td><td>Position of the column. Extra columns come after the core ones</td></tr>
-<tr><td><code>Source_Field__c</code></td><td>Field on the affiliation object (metadata relationship to the field)</td></tr>
+<tr><td><code>Is_Fixed__c</code></td><td>True for From and To: always shown, first, cannot be removed or reordered</td></tr>
+<tr><td><code>Sort_Order__c</code></td><td>Position of the column (configurable columns come after From and To)</td></tr>
+<tr><td><code>Source_Field__c</code></td><td>Field on the affiliation object (metadata relationship to the field), e.g. From, To, Decision maker, Relationship type, Role</td></tr>
 <tr><td><code>Short_Label__c</code></td><td>Column label</td></tr>
-<tr><td><code>Display_Type__c</code></td><td>Account (From / To), Picklist (Decision maker, Relationship type), Text, Date, Link</td></tr>
+<tr><td><code>Display_Type__c</code></td><td>Account (From / To), Picklist, Multipicklist, Text, Date, Link</td></tr>
 <tr><td><code>Editable_For__c</code></td><td>None / Soft / All: on which affiliations the column can be edited</td></tr>
 </table>
-<p>Default records: From = Soft, To = Soft, Decision maker = All, Relationship type = None, extra columns = None.</p>
+<p>Default records: From = Soft, To = Soft, Decision maker = All, Relationship type = None. Extra columns are added per CBU or Team as needed.</p>
 
-<div class="note"><b>Metadata impact of the sub-tabs:</b> <code>Sub_Tab__c</code> stays General / Segment only. Questionnaire and Sample are not card-driven and are the same for every CBU, Team and Record type. Affiliation has fixed core columns, and <code>Account_Affiliation_Field__mdt</code> describes both the core columns (editability) and the extra columns (which ones to show).</div>
+<div class="note"><b>Metadata impact of the sub-tabs:</b> <code>Sub_Tab__c</code> stays General / Segment only. Questionnaire and Sample are not card-driven and are the same for every CBU, Team and Record type. Affiliation has two fixed columns (From and To), and <code>Account_Affiliation_Field__mdt</code> describes their editability and decides which other columns are shown per CBU and Team.</div>
 </div>
 
 <div class="item">
@@ -264,7 +269,7 @@ th{background:var(--soft);font-weight:600}
 <tr><td>AT rep, Adults</td><td>DEFAULT configuration</td><td>AT has no setup for Adults and none for AT only</td></tr>
 <tr><td>IT rep</td><td>DEFAULT configuration</td><td>IT has no setup of its own</td></tr>
 </table>
-<p>Insight cards use the same filters and the same 6 steps. The chosen step gives the complete list of cards for the General and Segment sub-tabs, and the complete list of extra columns for the Affiliation sub-tab.</p>
+<p>Insight cards use the same filters and the same 6 steps. The chosen step gives the complete list of cards for the General and Segment sub-tabs, and the complete list of configurable columns for the Affiliation sub-tab.</p>
 
 <h2>Open points to confirm <span class="new">New</span></h2>
 <ol>
@@ -274,7 +279,7 @@ th{background:var(--soft);font-weight:600}
 <li><b>Plan a call:</b> does the calendar create a Pitcher call or a calendar event?</li>
 <li><b>Questionnaire Start:</b> confirm it opens the existing Pitcher questionnaire, and whether mandatory ones must block anything (for example the call).</li>
 <li><b>Questionnaire and Sample on HCO:</b> both are shown on both pages. Confirm they are needed on HCO.</li>
-<li><b>Affiliation extra fields:</b> which fields does the business want per CBU and Team (e.g. Role, Start date)? Are they read-only, or editable (<code>Editable_For__c</code>)?</li>
+<li><b>Affiliation columns:</b> which columns does the business want per CBU and Team (Decision maker, Relationship type, Role, Start date, …)? Are the extra ones read-only, or editable (<code>Editable_For__c</code>)?</li>
 <li><b>Affiliation Soft / Hard:</b> who creates Hard affiliations (integration, back office)? In the mockup users create only Soft ones.</li>
 </ol>
 </main>

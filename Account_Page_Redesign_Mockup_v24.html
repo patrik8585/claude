@@ -511,7 +511,7 @@ const P={
    ['Call In Activities',[],[]],
    ['Territories',['Territory','Owner'],[['DE-NW-07','You']]]
   ],
-  affx:{DE:['Role','Start date'],'AT|Adults':['Role'],'AT|Paediatrics':['Role','Notes']},
+  affx:{DEFAULT:['dm','rel'],DE:['dm','rel','Role','Start date'],'AT|Adults':['rel','Role'],'AT|Paediatrics':['dm','rel','Role','Notes']},
   aff:{rows:[['Katrin Vogel','HCP','Praxis Vogel/Brandt/Huber','HCO',['Discharge Decision Maker'],'Hard',{Role:'Owner',"Start date":'01/03/2019',Notes:'Main workplace'}],['Katrin Vogel','HCP','St. Elisabeth Klinikum','HCO',['Product Decision Maker'],'Soft',{Role:'Consultant',"Start date":'15/09/2022',Notes:''}],['Katrin Vogel','HCP','Jonas Brandt','HCP',['Product Decision Maker'],'Hard',{Role:'Colleague',"Start date":'01/03/2019',Notes:''}],['Lena Albers','HCP','Katrin Vogel','HCP',[],'Soft',{Role:'Nurse',"Start date":'10/01/2024',Notes:'Supports tube-feeding patients'}]]},
   quest:[['Customer needs assessment 2026','Not answered','Yes','Assigned 02/09/2026'],['GDPR awareness check','Answered','Yes','Answered 14/06/2026'],['Product satisfaction survey','Answered','No','Answered 04/05/2026'],['Nutrition habits survey','Not answered','No','Assigned 20/09/2026']],
   samp:[['Fortimel Juicy',20,12],['Nutrison Standard',10,10],['Neocate LCP',5,1]],
@@ -593,7 +593,7 @@ const P={
    ['Pitcher Questionnaire Response Items (Parent Account)',[],[]],
    ['Call In Activities',[],[]]
   ],
-  affx:{DE:['Role','Start date'],'AT|Adults':['Role'],'AT|Paediatrics':['Role','Notes']},
+  affx:{DEFAULT:['dm','rel'],DE:['dm','rel','Role','Start date'],'AT|Adults':['rel','Role'],'AT|Paediatrics':['dm','rel','Role','Notes']},
   aff:{rows:[['Lena Albers','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker'],'Hard',{Role:'Nurse',"Start date":'01/06/2018',Notes:''}],['Jonas Brandt','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker','Product Decision Maker'],'Hard',{Role:'Head of department',"Start date":'01/01/2016',Notes:'Decides on tenders'}],['Petra Claßen','HCP','St. Elisabeth Klinikum','HCO',[],'Soft',{Role:'Nurse',"Start date":'01/02/2021',Notes:''}],['St. Elisabeth Klinikum','HCO','Sofia Weber','HCP',['Product Decision Maker'],'Soft',{Role:'Pharmacist',"Start date":'01/09/2020',Notes:''}]]},
   quest:[['Institution profile 2026','Answered','Yes','Answered 11/03/2026'],['Tender readiness check','Not answered','Yes','Assigned 15/09/2026'],['Pharmacy contact survey','Not answered','No','Assigned 01/09/2026']],
   samp:[['Nutrison Standard',40,26],['Fortimel Compact',30,30]],
@@ -781,11 +781,12 @@ const acctSel=(id,cur)=>`<select class="pick" id="${id}"><option value=""${cur?'
 const dmEdit=(id,cur)=>`<div class="dmed" id="${id}">${DM_OPTS.map(o=>`<label><input type="checkbox" value="${o}"${cur.includes(o)?' checked':''}> ${o}</label>`).join('')}</div>`;
 const dmRead=id=>[...document.querySelectorAll('#'+id+' input:checked')].map(x=>x.value);
 /* editability per core column, as set in Account_Affiliation_Field__mdt (Editable_For__c: None / Soft / All) */
+const AFFLAB={dm:'Decision maker',rel:'Relationship type'};
 const AFFEDIT={from:'Soft',to:'Soft',dm:'All',rel:'None'};
 const canEdit=(col,rel)=>AFFEDIT[col]==='All'||AFFEDIT[col]===rel;
 const acctCell=(n,t)=>`<div>${esc(n)}</div><span class="atype">${t}</span>`;
 function renderAff(d){
-  const xc=cfg(d.affx), rows=d.aff.rows, ea=state.editAff, na=state.newAff, ed2=state.editDM;
+  const xc=cfg(d.affx).length?cfg(d.affx):['dm','rel'], rows=d.aff.rows, ea=state.editAff, na=state.newAff, ed2=state.editDM;
   const tr=rows.map((r,i)=>{
     const edFT=canEdit('from',r[5])||canEdit('to',r[5]), ed=ea===i&&edFT;
     const dmed=ed2===i;
@@ -793,11 +794,11 @@ function renderAff(d){
       :`<div class="dmrow">${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}${canEdit('dm',r[5])?`<button class="pencil" type="button" data-dm-edit="${i}" aria-label="Edit decision maker">✎</button>`:''}</div>`;
     const act=ed?`<span class="cellbtns"><button type="button" class="ok" data-aff-save="${i}">Save</button><button type="button" data-aff-cancel="1">Cancel</button></span>`
       :edFT?`<button class="pencil" type="button" data-aff-edit="${i}" aria-label="Edit from / to">✎</button>`:`<span class="lock" title="From and To cannot be changed for this affiliation">🔒</span>`;
-    return `<tr><td>${ed&&canEdit('from',r[5])?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed&&canEdit('to',r[5])?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td><td>${dmcell}</td><td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td>${xc.map(k=>`<td>${(r[6]||{})[k]?esc(r[6][k]):'<span class="faint">—</span>'}</td>`).join('')}<td style="text-align:right">${act}</td></tr>`}).join('');
-  const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td><td>${dmEdit('aff-dm','')}</td><td>${pill('Soft','soft')}</td>${xc.map(()=>'<td><span class="faint">—</span></td>').join('')}<td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
+    return `<tr><td>${ed&&canEdit('from',r[5])?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed&&canEdit('to',r[5])?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td>${xc.map(k=>k==='dm'?`<td>${dmcell}</td>`:k==='rel'?`<td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td>`:`<td>${(r[6]||{})[k]?esc(r[6][k]):'<span class="faint">—</span>'}</td>`).join('')}<td style="text-align:right">${act}</td></tr>`}).join('');
+  const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td>${xc.map(k=>k==='dm'?`<td>${dmEdit('aff-dm','')}</td>`:k==='rel'?`<td>${pill('Soft','soft')}</td>`:'<td><span class="faint">—</span></td>').join('')}<td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
   return `<div class="qsum"><span>${rows.length} affiliations</span><button class="btn sm primary" type="button" data-aff-new="1" style="margin-left:auto"${na?' disabled':''}>+ New affiliation</button></div>
-   <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th><th>Decision maker</th><th>Relationship type</th>${xc.map(k=>`<th>${esc(k)}</th>`).join('')}<th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
-   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. Which columns are editable, and on which affiliations (None / Soft / All), is set in the custom metadata, not in the app. Default: From and To editable on Soft only (locked on Hard), Decision maker (${DM_OPTS.join(' / ')}) editable on Hard and Soft, Relationship type read-only. Use the switch above the device to see From/To switched to read-only. New affiliations are created as Soft. The first four columns are always shown; extra columns after Relationship type come from custom metadata per CBU and Team (switch CBU/Team above the device to compare).</p>`;
+   <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th>${xc.map(k=>`<th>${esc(AFFLAB[k]||k)}</th>`).join('')}<th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
+   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. Which columns are editable, and on which affiliations (None / Soft / All), is set in the custom metadata, not in the app. Default: From and To editable on Soft only (locked on Hard), Decision maker (${DM_OPTS.join(' / ')}) editable on Hard and Soft, Relationship type read-only. Use the switch above the device to see From/To switched to read-only. New affiliations are created as Soft. Only From and To are fixed: always shown, first, for every CBU. All other columns (Decision maker, Relationship type, extra fields) come from custom metadata per CBU and Team, so they can be shown, hidden or reordered. Switch CBU/Team above the device to compare, e.g. AT Adults has no Decision maker column.</p>`;
 }
 function renderQuest(d){
   const f=state.qf||'All', all=d.quest, open=all.filter(q=>q[1]!=='Answered'), mand=open.filter(q=>q[2]==='Yes');
