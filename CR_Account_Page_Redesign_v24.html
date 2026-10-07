@@ -101,20 +101,20 @@ th{background:var(--soft);font-weight:600}
 <div class="item">
 <h3>8. New tab structure</h3>
 <ul>
-<li><b>HCP</b> = 360 / Activity Summary / Details / Insight</li>
-<li><b>HCO</b> = HCPs / 360 / Activity Summary / Details / Insight</li>
+<li><b>HCP</b> = Summary 360 / Timeline 360 / Details / Insight</li>
+<li><b>HCO</b> = HCPs / Summary 360 / Timeline 360 / Details / Insight</li>
 </ul>
 <p>Removal of current toggles and Details sub-tabs.</p>
 </div>
 
 <div class="item">
-<h3>9. 360 tab rework</h3>
-<p>Basic info without fields already in the panel, full-width sections, anchor bar, engagement plan link in Last Visit Summary. The 360 tab shows the new 360 page for CDP and non-CDP countries.</p>
+<h3>9. Summary 360 tab rework <span class="new">Changed</span></h3>
+<p>Basic info without fields already in the panel, full-width sections, anchor bar, engagement plan link in Last Visit Summary. The tab is called <b>Summary 360</b> (was 360) and shows the new 360 page for CDP and non-CDP countries.</p>
 </div>
 
 <div class="item">
-<h3>10. Activity Summary tab</h3>
-<p>Activity Summary tab (moved out of 360): activities grouped by month, filters (6/12 months, TA, HCP for HCO, activity type, only my activities), call details and attendees for Calls saved in pitcher. This is the rework of the Last Activity Summary that is currently in the new 360 page.</p>
+<h3>10. Timeline 360 tab <span class="new">Changed</span></h3>
+<p>Timeline 360 tab (was Activity Summary, moved out of Summary 360): activities grouped by month, filters (6/12 months, TA, HCP for HCO, activity type, only my activities), call details and attendees for Calls saved in pitcher. This is the rework of the Last Activity Summary that is currently in the new 360 page.</p>
 </div>
 
 <div class="item">
@@ -132,7 +132,8 @@ th{background:var(--soft);font-weight:600}
 <p>The Insight tab has <b>5 sub-tabs</b>, in this order: <b>General, Segment, Affiliation, Questionnaire, Sample</b>. The Related sub-tab was removed and is not included in the estimation and final design.</p>
 <ul>
 <li><b>General</b> and <b>Segment</b> are driven by custom metadata (see below).</li>
-<li><b>Affiliation, Questionnaire</b> and <b>Sample</b> are fixed sub-tabs, always shown on the HCP and HCO page. They show standard data and need no card metadata.</li>
+<li><b>Questionnaire</b> and <b>Sample</b> are fixed sub-tabs, always shown on the HCP and HCO page. They show standard data and need no card metadata.</li>
+<li><b>Affiliation</b> is always shown, with four fixed columns plus <b>extra columns configured per CBU and Team</b> in custom metadata (see 13.2 and 13.7).</li>
 </ul>
 
 <h4>13.1 General and Segment</h4>
@@ -147,6 +148,7 @@ th{background:var(--soft);font-weight:600}
 <tr><td>To</td><td>HCP or HCO. Mandatory.</td><td>Soft: yes. Hard: no (lock icon)</td></tr>
 <tr><td>Decision maker</td><td>Multipicklist: <i>Discharge Decision Maker</i>, <i>Product Decision Maker</i>. A row can have both, or none.</td><td>Always, on Hard and Soft (pencil, Save / Cancel)</td></tr>
 <tr><td>Relationship type</td><td>Soft or Hard</td><td>Never</td></tr>
+<tr><td>Extra fields <span class="new">New</span></td><td>Optional additional columns of the affiliation record (e.g. Role, Start date, Notes), shown after Relationship type. Which fields, and in which order, comes from <code>Account_Affiliation_Field__mdt</code> per CBU, Team and Record type, with the same 6-step fallback to DEFAULT. If nothing is configured, no extra column is shown.</td><td>Read-only</td></tr>
 </table>
 <ul>
 <li><b>+ New affiliation</b> button: the user picks From and To (both mandatory, and they must be different) and can set the Decision maker. The new affiliation is created as Soft.</li>
@@ -199,7 +201,18 @@ th{background:var(--soft);font-weight:600}
 <tr><td><code>Colour_Hex__c</code>, <code>Label__c</code>, <code>Is_Active__c</code></td><td>Colour, label and active flag</td></tr>
 </table>
 
-<div class="note"><b>Metadata impact of the new sub-tabs:</b> <code>Sub_Tab__c</code> stays General / Segment only. Affiliation, Questionnaire and Sample are not card-driven, and the 6-step resolution does not apply to them: they are the same for every CBU, Team and Record type.</div>
+<h4>13.7 Custom metadata <code>Account_Affiliation_Field__mdt</code> <span class="new">New</span></h4>
+<p>One record per extra column of the Affiliation sub-tab. The four fixed columns (From, To, Decision maker, Relationship type) are not in the metadata.</p>
+<table>
+<tr><th>Field</th><th>Description</th></tr>
+<tr><td><code>Page__c</code>, <code>CBU__c</code>, <code>Team__c</code>, <code>Record_Type__c</code>, <code>Is_Active__c</code></td><td>Selection keys, same as item 3 and same 6-step resolution (DEFAULT as fallback). The whole list of extra columns comes from one step, never mixed</td></tr>
+<tr><td><code>Sort_Order__c</code></td><td>Position of the extra column</td></tr>
+<tr><td><code>Source_Field__c</code></td><td>Field on the affiliation object (metadata relationship to the field)</td></tr>
+<tr><td><code>Short_Label__c</code></td><td>Column label</td></tr>
+<tr><td><code>Display_Type__c</code></td><td>Text / Date / Picklist / Link</td></tr>
+</table>
+
+<div class="note"><b>Metadata impact of the sub-tabs:</b> <code>Sub_Tab__c</code> stays General / Segment only. Questionnaire and Sample are not card-driven and are the same for every CBU, Team and Record type. Affiliation has fixed core columns and uses <code>Account_Affiliation_Field__mdt</code> only for the extra columns.</div>
 </div>
 
 <div class="item">
@@ -246,7 +259,7 @@ th{background:var(--soft);font-weight:600}
 <tr><td>AT rep, Adults</td><td>DEFAULT configuration</td><td>AT has no setup for Adults and none for AT only</td></tr>
 <tr><td>IT rep</td><td>DEFAULT configuration</td><td>IT has no setup of its own</td></tr>
 </table>
-<p>Insight cards use the same filters and the same 6 steps. The chosen step gives the complete list of cards for the General and Segment sub-tabs.</p>
+<p>Insight cards use the same filters and the same 6 steps. The chosen step gives the complete list of cards for the General and Segment sub-tabs, and the complete list of extra columns for the Affiliation sub-tab.</p>
 
 <h2>Open points to confirm <span class="new">New</span></h2>
 <ol>
@@ -256,6 +269,7 @@ th{background:var(--soft);font-weight:600}
 <li><b>Plan a call:</b> does the calendar create a Pitcher call or a calendar event?</li>
 <li><b>Questionnaire Start:</b> confirm it opens the existing Pitcher questionnaire, and whether mandatory ones must block anything (for example the call).</li>
 <li><b>Questionnaire and Sample on HCO:</b> both are shown on both pages. Confirm they are needed on HCO.</li>
+<li><b>Affiliation extra fields:</b> which fields does the business want per CBU and Team (e.g. Role, Start date)? Are they read-only, or editable on Soft affiliations?</li>
 <li><b>Affiliation Soft / Hard:</b> who creates Hard affiliations (integration, back office)? In the mockup users create only Soft ones.</li>
 </ol>
 </main>

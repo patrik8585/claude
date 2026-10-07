@@ -454,7 +454,7 @@ const P={
   lastCall:['11/06/2026, 16:45','Fortimel','Fortimel Juicy','Cancer Care','Email','Ask about tolerance of Fortimel Juicy in patients on chemotherapy.','Sent product sheet. Wants samples for 2 patients at the next visit.'],
   lastCallShort:'11/06/26 16:45 · Email',
   ep:[['Email',5,2,1,0.5],['Phone',3,2,1,1]],
-  tabs:[['p360','360'],['las','Activity Summary'],['det','Details'],['rat','Insight']],
+  tabs:[['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight']],
   anchors:[['c-basic','Basic HCP info'],['c-nba','Next Best Action'],['c-consent','Consent info'],['c-seg','Segment & Commitment'],['c-visit','Last Visit'],['c-ins','Behavioural Insights'],['c-kpi','HCO KPIs']],
   basic:{title:'Basic HCP info',fields:[['Preferred channel for the rep',''],['Last website login (CDP)',''],['Preferred workplace (HCO)','Praxis Vogel/Brandt/Huber'],['Alternative address','Lindenstraße 12, 48653 Coesfeld']]},
   cards:['nba','consent','seg','visit','ins','kpi'],
@@ -510,7 +510,8 @@ const P={
    ['Call In Activities',[],[]],
    ['Territories',['Territory','Owner'],[['DE-NW-07','You']]]
   ],
-  aff:{rows:[['Katrin Vogel','HCP','Praxis Vogel/Brandt/Huber','HCO',['Discharge Decision Maker'],'Hard'],['Katrin Vogel','HCP','St. Elisabeth Klinikum','HCO',['Product Decision Maker'],'Soft'],['Katrin Vogel','HCP','Jonas Brandt','HCP',['Product Decision Maker'],'Hard'],['Lena Albers','HCP','Katrin Vogel','HCP',[],'Soft']]},
+  affx:{DE:['Role','Start date'],'AT|Adults':['Role'],'AT|Paediatrics':['Role','Notes']},
+  aff:{rows:[['Katrin Vogel','HCP','Praxis Vogel/Brandt/Huber','HCO',['Discharge Decision Maker'],'Hard',{Role:'Owner',"Start date":'01/03/2019',Notes:'Main workplace'}],['Katrin Vogel','HCP','St. Elisabeth Klinikum','HCO',['Product Decision Maker'],'Soft',{Role:'Consultant',"Start date":'15/09/2022',Notes:''}],['Katrin Vogel','HCP','Jonas Brandt','HCP',['Product Decision Maker'],'Hard',{Role:'Colleague',"Start date":'01/03/2019',Notes:''}],['Lena Albers','HCP','Katrin Vogel','HCP',[],'Soft',{Role:'Nurse',"Start date":'10/01/2024',Notes:'Supports tube-feeding patients'}]]},
   quest:[['Customer needs assessment 2026','Not answered','Yes','Assigned 02/09/2026'],['GDPR awareness check','Answered','Yes','Answered 14/06/2026'],['Product satisfaction survey','Answered','No','Answered 04/05/2026'],['Nutrition habits survey','Not answered','No','Assigned 20/09/2026']],
   samp:[['Fortimel Juicy',20,12],['Nutrison Standard',10,10],['Neocate LCP',5,1]],
   insight:{DE:{General:[
@@ -546,7 +547,7 @@ const P={
   lastCall:['29/05/2026, 11:15','Nutrison','Nutrison Standard','DRM','Email','Confirm tender timeline with the pharmacy.','Pharmacy asked for updated price list.'],
   lastCallShort:'29/05/26 11:15 · Email',
   ep:[['F2F',4,0,1,1],['Email',4,0,0,0.5]],
-  tabs:[['con','HCPs'],['p360','360'],['las','Activity Summary'],['det','Details'],['rat','Insight']],
+  tabs:[['con','HCPs'],['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight']],
   anchors:[['c-basic','Basic HCO info'],['c-nba','Next Best Action'],['c-visit','Last Visit'],['c-kpi','HCO KPIs'],['c-aff','Affiliated HCPs']],
   basic:{title:'Basic HCO info',fields:[['Website',''],['City','Düsseldorf'],['Structure Type','ETA']]},
   cards:['nba','visit','kpi','aff'],
@@ -591,7 +592,8 @@ const P={
    ['Pitcher Questionnaire Response Items (Parent Account)',[],[]],
    ['Call In Activities',[],[]]
   ],
-  aff:{rows:[['Lena Albers','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker'],'Hard'],['Jonas Brandt','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker','Product Decision Maker'],'Hard'],['Petra Claßen','HCP','St. Elisabeth Klinikum','HCO',[],'Soft'],['St. Elisabeth Klinikum','HCO','Sofia Weber','HCP',['Product Decision Maker'],'Soft']]},
+  affx:{DE:['Role','Start date'],'AT|Adults':['Role'],'AT|Paediatrics':['Role','Notes']},
+  aff:{rows:[['Lena Albers','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker'],'Hard',{Role:'Nurse',"Start date":'01/06/2018',Notes:''}],['Jonas Brandt','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker','Product Decision Maker'],'Hard',{Role:'Head of department',"Start date":'01/01/2016',Notes:'Decides on tenders'}],['Petra Claßen','HCP','St. Elisabeth Klinikum','HCO',[],'Soft',{Role:'Nurse',"Start date":'01/02/2021',Notes:''}],['St. Elisabeth Klinikum','HCO','Sofia Weber','HCP',['Product Decision Maker'],'Soft',{Role:'Pharmacist',"Start date":'01/09/2020',Notes:''}]]},
   quest:[['Institution profile 2026','Answered','Yes','Answered 11/03/2026'],['Tender readiness check','Not answered','Yes','Assigned 15/09/2026'],['Pharmacy contact survey','Not answered','No','Assigned 01/09/2026']],
   samp:[['Nutrison Standard',40,26],['Fortimel Compact',30,30]],
   insight:{DE:{General:[
@@ -643,7 +645,7 @@ function render(){
     <div class="pop" id="callPop" style="right:auto;left:auto;right:18px;top:84px" hidden>
       <h4>Last Call Details</h4>
       <dl class="dl">${CALL_FIELDS.map((k,i)=>`<dt>${k}</dt><dd>${esc(d.lastCall[i])}</dd>`).join('')}</dl>
-      <button class="btn sm" type="button" data-tabgo="las">Open in Activity Summary ›</button>
+      <button class="btn sm" type="button" data-tabgo="las">Open in Timeline 360 ›</button>
     </div>
     <div class="pop menu" id="morePop" hidden>
       <button type="button">▤ Share box</button><button type="button" data-plan="1">▦ Plan a call</button><button type="button">☁︎ Open in Salesforce (online)</button>
@@ -676,7 +678,7 @@ function render360(d){
      </div><div style="margin-top:10px"><div class="lbl" style="text-transform:none;letter-spacing:0">Summary last visit:</div><div class="val empty">—</div></div></div></article>`,
    ins:`<article class="card wide" id="c-ins"><div class="card-h"><h3>Main Behavioural Insights</h3></div><div class="card-b tiles">${['Last 3 samples ordered','Last 3 websites','Newsletter subscriptions','Last 3 digital campaigns interacted'].map(t=>`<div class="tile"><div class="lbl">${t}</div><div class="sample" style="margin-top:4px">No data available</div></div>`).join('')}</div></article>`,
    kpi:`<article class="card wide" id="c-kpi"><div class="card-h"><h3>HCO KPIs</h3><span class="sample">Last 6M vs Prior 6M</span></div><div class="card-b"><span class="emptytxt">No HCO KPI data available</span></div></article>`,
-   aff:d.contacts?`<article class="card wide" id="c-aff"><div class="card-h"><h3>Affiliated HCPs</h3></div><div class="card-b"><input class="search" type="search" placeholder="Search HCP" style="width:100%" id="affSearch"><div class="sample" style="margin:6px 0">${d.contacts.length}</div><ul class="aff" id="affList">${d.contacts.map(([f,l,s])=>`<li data-q="${esc((f+' '+l).toLowerCase())}"><span class="av">${f[0]}${l[0]}</span><div><div class="nm">${esc(f+' '+l)}</div><div class="sample">${esc(s)} · Düsseldorf</div></div><span class="pref">★ Preferred</span><button class="b360" type="button" data-link="hcp">360 ›</button></li>`).join('')}</ul></div></article>`:''
+   aff:d.contacts?`<article class="card wide" id="c-aff"><div class="card-h"><h3>Affiliated HCPs</h3></div><div class="card-b"><input class="search" type="search" placeholder="Search HCP" style="width:100%" id="affSearch"><div class="sample" style="margin:6px 0">${d.contacts.length}</div><ul class="aff" id="affList">${d.contacts.map(([f,l,s])=>`<li data-q="${esc((f+' '+l).toLowerCase())}"><span class="av">${f[0]}${l[0]}</span><div><div class="nm">${esc(f+' '+l)}</div><div class="sample">${esc(s)} · Düsseldorf</div></div><span class="pref">★ Preferred</span><button class="b360" type="button" data-link="hcp">Summary 360 ›</button></li>`).join('')}</ul></div></article>`:''
   };
   return `<div class="grid2"><article class="card wide" id="c-basic"><div class="card-h"><h3>${esc(d.basic.title)}</h3></div><div class="card-b kv">${d.basic.fields.map(([l,v])=>`<div><div class="lbl">${esc(l)}</div><div class="val${v?'':' empty'}">${v?esc(v):'—'}</div></div>`).join('')}</div></article>${d.cards.map(k=>C[k]).join('')}</div>`;
 }
@@ -779,7 +781,7 @@ const dmEdit=(id,cur)=>`<div class="dmed" id="${id}">${DM_OPTS.map(o=>`<label><i
 const dmRead=id=>[...document.querySelectorAll('#'+id+' input:checked')].map(x=>x.value);
 const acctCell=(n,t)=>`<div>${esc(n)}</div><span class="atype">${t}</span>`;
 function renderAff(d){
-  const rows=d.aff.rows, ea=state.editAff, na=state.newAff, ed2=state.editDM;
+  const xc=cfg(d.affx), rows=d.aff.rows, ea=state.editAff, na=state.newAff, ed2=state.editDM;
   const tr=rows.map((r,i)=>{
     const soft=r[5]==='Soft', ed=ea===i;
     const dmed=ed2===i;
@@ -787,11 +789,11 @@ function renderAff(d){
       :`<div class="dmrow">${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}<button class="pencil" type="button" data-dm-edit="${i}" aria-label="Edit decision maker">✎</button></div>`;
     const act=ed?`<span class="cellbtns"><button type="button" class="ok" data-aff-save="${i}">Save</button><button type="button" data-aff-cancel="1">Cancel</button></span>`
       :soft?`<button class="pencil" type="button" data-aff-edit="${i}" aria-label="Edit from / to">✎</button>`:`<span class="lock" title="Hard affiliation: From and To cannot be changed">🔒</span>`;
-    return `<tr><td>${ed?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td><td>${dmcell}</td><td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td><td style="text-align:right">${act}</td></tr>`}).join('');
-  const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td><td>${dmEdit('aff-dm','')}</td><td>${pill('Soft','soft')}</td><td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
+    return `<tr><td>${ed?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td><td>${dmcell}</td><td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td>${xc.map(k=>`<td>${(r[6]||{})[k]?esc(r[6][k]):'<span class="faint">—</span>'}</td>`).join('')}<td style="text-align:right">${act}</td></tr>`}).join('');
+  const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td><td>${dmEdit('aff-dm','')}</td><td>${pill('Soft','soft')}</td>${xc.map(()=>'<td><span class="faint">—</span></td>').join('')}<td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
   return `<div class="qsum"><span>${rows.length} affiliations</span><button class="btn sm primary" type="button" data-aff-new="1" style="margin-left:auto"${na?' disabled':''}>+ New affiliation</button></div>
-   <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th><th>Decision maker</th><th>Relationship type</th><th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
-   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. On Hard affiliations From and To are locked; on Soft ones they can be changed. Decision maker (${DM_OPTS.join(' / ')}) can always be changed, on Hard and Soft affiliations (pencil). Relationship type (Hard / Soft) is read-only. New affiliations are created as Soft.</p>`;
+   <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th><th>Decision maker</th><th>Relationship type</th>${xc.map(k=>`<th>${esc(k)}</th>`).join('')}<th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
+   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. On Hard affiliations From and To are locked; on Soft ones they can be changed. Decision maker (${DM_OPTS.join(' / ')}) can always be changed, on Hard and Soft affiliations (pencil). Relationship type (Hard / Soft) is read-only. New affiliations are created as Soft. The first four columns are always shown; extra columns after Relationship type come from custom metadata per CBU and Team (switch CBU/Team above the device to compare).</p>`;
 }
 function renderQuest(d){
   const f=state.qf||'All', all=d.quest, open=all.filter(q=>q[1]!=='Answered'), mand=open.filter(q=>q[2]==='Yes');
@@ -878,7 +880,7 @@ function bind(d){
   const affRead=()=>{const f=$('#aff-from').value,t=$('#aff-to').value;return(f&&t&&f!==t)?[f.split('|'),t.split('|')]:null};
   ['#aff-from','#aff-to'].forEach(q=>$(q)?.addEventListener('change',()=>{const ad=$('#aff-add');if(ad)ad.disabled=!affRead()}));
   if($('#aff-add'))$('#aff-add').disabled=true;
-  $$('[data-aff-add]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;d.aff.rows.unshift([v[0][1],v[0][0],v[1][1],v[1][0],dmRead('aff-dm'),'Soft']);state.newAff=false;render()}));
+  $$('[data-aff-add]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;d.aff.rows.unshift([v[0][1],v[0][0],v[1][1],v[1][0],dmRead('aff-dm'),'Soft',{}]);state.newAff=false;render()}));
   $$('[data-aff-save]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;const r=d.aff.rows[+b.dataset.affSave];[r[0],r[1],r[2],r[3]]=[v[0][1],v[0][0],v[1][1],v[1][0]];state.editAff=null;render()}));
   $$('[data-plan]').forEach(b=>b.addEventListener('click',()=>{$$('.pop').forEach(x=>x.hidden=true);openCal(d)}));
   $$('[data-qf]').forEach(b=>b.addEventListener('click',()=>{state.qf=b.dataset.qf;render()}));
