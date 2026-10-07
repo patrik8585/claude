@@ -209,18 +209,28 @@ th{background:var(--soft);font-weight:600}
 </table>
 
 <h4>13.7 Custom metadata <code>Account_Affiliation_Field__mdt</code> <span class="new">New</span></h4>
-<p>One record per column of the Affiliation sub-tab. From and To are always present; the other columns exist only if a record selects them.</p>
+<p>One record per column of the Affiliation sub-tab. From and To are always present and are described by their own records (so their editability is read from the metadata); the other columns are shown only if a record selects them.</p>
 <table>
-<tr><th>Field</th><th>Description</th></tr>
-<tr><td><code>Page__c</code>, <code>CBU__c</code>, <code>Team__c</code>, <code>Record_Type__c</code>, <code>Is_Active__c</code></td><td>Selection keys, same as item 3 and same 6-step resolution (DEFAULT as fallback). The whole list of columns comes from one step, never mixed</td></tr>
-<tr><td><code>Is_Fixed__c</code></td><td>True for From and To: always shown, first, cannot be removed or reordered</td></tr>
-<tr><td><code>Sort_Order__c</code></td><td>Position of the column (configurable columns come after From and To)</td></tr>
-<tr><td><code>Source_Field__c</code></td><td>Field on the affiliation object (metadata relationship to the field), e.g. From, To, Decision maker, Relationship type, Role</td></tr>
-<tr><td><code>Short_Label__c</code></td><td>Column label</td></tr>
-<tr><td><code>Display_Type__c</code></td><td>Account (From / To), Picklist, Multipicklist, Text, Date, Link</td></tr>
-<tr><td><code>Editable_For__c</code></td><td>None / Soft / All: on which affiliations the column can be edited</td></tr>
+<tr><th>Group</th><th>Fields</th></tr>
+<tr><td>Selection keys</td><td><code>Page__c</code> (HCP / HCO), <code>CBU__c</code>, <code>Team__c</code>, <code>Record_Type__c</code>, <code>Is_Active__c</code> (same fallback as item 3, same 6 steps). The whole list of columns comes from one step, never mixed</td></tr>
+<tr><td>Placement</td><td><code>Sort_Order__c</code> (position of the column), <code>Is_Fixed__c</code> (true for From and To: always shown, first, cannot be removed or reordered)</td></tr>
+<tr><td>Source</td><td><code>Source_Object__c</code> (affiliation object) and <code>Source_Field__c</code> (metadata relationships to the object and field), e.g. From, To, Decision maker, Relationship type, Role</td></tr>
+<tr><td>Display</td><td><code>Short_Label__c</code> (column label), <code>Display_Type__c</code> (Account / Picklist / Multipicklist / Text / Date / Link). Account is used for From and To and shows the HCP/HCO name with its type</td></tr>
+<tr><td>Editing</td><td><code>Editable_For__c</code> (None / Soft / All): on which affiliations the column can be edited. Defaults: From = Soft, To = Soft, Decision maker = All, Relationship type = None, extra fields = None</td></tr>
 </table>
-<p>Default records: From = Soft, To = Soft, Decision maker = All, Relationship type = None. Extra columns are added per CBU or Team as needed.</p>
+<p class="key">Example records (HCP page):</p>
+<table>
+<tr><th>CBU</th><th>Team</th><th>Sort</th><th>Source field</th><th>Label</th><th>Fixed</th><th>Editable for</th></tr>
+<tr><td>DEFAULT</td><td></td><td>1</td><td>From</td><td>From</td><td>Yes</td><td>Soft</td></tr>
+<tr><td>DEFAULT</td><td></td><td>2</td><td>To</td><td>To</td><td>Yes</td><td>Soft</td></tr>
+<tr><td>DEFAULT</td><td></td><td>3</td><td>Decision maker</td><td>Decision maker</td><td>No</td><td>All</td></tr>
+<tr><td>DEFAULT</td><td></td><td>4</td><td>Relationship type</td><td>Relationship type</td><td>No</td><td>None</td></tr>
+<tr><td>DE</td><td></td><td>1 – 4</td><td>From, To, Decision maker, Relationship type</td><td>as DEFAULT</td><td>From, To: Yes</td><td>as DEFAULT</td></tr>
+<tr><td>DE</td><td></td><td>5</td><td>Role</td><td>Role</td><td>No</td><td>None</td></tr>
+<tr><td>DE</td><td></td><td>6</td><td>Start date</td><td>Start date</td><td>No</td><td>None</td></tr>
+<tr><td>AT</td><td>Adults</td><td>1 – 3</td><td>From, To, Relationship type, Role</td><td>as above</td><td>From, To: Yes</td><td>as DEFAULT, Role: None</td></tr>
+</table>
+<p>The AT + Adults configuration has no Decision maker column. As for all metadata, the chosen step gives the complete list: DE does not inherit anything from DEFAULT.</p>
 
 <div class="note"><b>Metadata impact of the sub-tabs:</b> <code>Sub_Tab__c</code> stays General / Segment only. Questionnaire and Sample are not card-driven and are the same for every CBU, Team and Record type. Affiliation has two fixed columns (From and To), and <code>Account_Affiliation_Field__mdt</code> describes their editability and decides which other columns are shown per CBU and Team.</div>
 </div>
