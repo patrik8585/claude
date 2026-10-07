@@ -394,6 +394,7 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;min-width:560px;
     <div class="pageswitch">
       <div class="seg" id="pageSeg"><button type="button" aria-pressed="true" data-page="hcp">HCP page</button><button type="button" aria-pressed="false" data-page="hco">HCO page</button></div>
       <label class="cfg" style="margin:0">Line 3 custom metadata demo – CBU: <select id="hdrCbu"><option value="DE">Germany</option><option value="AT">Austria</option></select> Team: <select id="hdrTeam"><option value="Adults">Adults</option><option value="Paediatrics">Paediatrics</option></select></label>
+      <label class="cfg" style="margin:0">Affiliation From/To editable (metadata): <select id="affFT"><option value="Soft">Soft only</option><option value="None">Never (read-only)</option></select></label>
     </div>
   </div>
 
@@ -779,21 +780,24 @@ const ACCTS=[['HCO','Praxis Vogel/Brandt/Huber'],['HCO','St. Elisabeth Klinikum'
 const acctSel=(id,cur)=>`<select class="pick" id="${id}"><option value=""${cur?'':' selected'}>Select HCP / HCO…</option>${['HCO','HCP'].map(t=>`<optgroup label="${t}">${ACCTS.filter(a=>a[0]===t).map(a=>`<option value="${t}|${esc(a[1])}"${cur===t+'|'+a[1]?' selected':''}>${esc(a[1])}</option>`).join('')}</optgroup>`).join('')}</select>`;
 const dmEdit=(id,cur)=>`<div class="dmed" id="${id}">${DM_OPTS.map(o=>`<label><input type="checkbox" value="${o}"${cur.includes(o)?' checked':''}> ${o}</label>`).join('')}</div>`;
 const dmRead=id=>[...document.querySelectorAll('#'+id+' input:checked')].map(x=>x.value);
+/* editability per core column, as set in Account_Affiliation_Field__mdt (Editable_For__c: None / Soft / All) */
+const AFFEDIT={from:'Soft',to:'Soft',dm:'All',rel:'None'};
+const canEdit=(col,rel)=>AFFEDIT[col]==='All'||AFFEDIT[col]===rel;
 const acctCell=(n,t)=>`<div>${esc(n)}</div><span class="atype">${t}</span>`;
 function renderAff(d){
   const xc=cfg(d.affx), rows=d.aff.rows, ea=state.editAff, na=state.newAff, ed2=state.editDM;
   const tr=rows.map((r,i)=>{
-    const soft=r[5]==='Soft', ed=ea===i;
+    const edFT=canEdit('from',r[5])||canEdit('to',r[5]), ed=ea===i&&edFT;
     const dmed=ed2===i;
     const dmcell=dmed?`${dmEdit('aff-dm',r[4])}<span class="cellbtns" style="margin-top:6px"><button type="button" class="ok" data-dm-save="${i}">Save</button><button type="button" data-dm-cancel="1">Cancel</button></span>`
-      :`<div class="dmrow">${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}<button class="pencil" type="button" data-dm-edit="${i}" aria-label="Edit decision maker">✎</button></div>`;
+      :`<div class="dmrow">${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}${canEdit('dm',r[5])?`<button class="pencil" type="button" data-dm-edit="${i}" aria-label="Edit decision maker">✎</button>`:''}</div>`;
     const act=ed?`<span class="cellbtns"><button type="button" class="ok" data-aff-save="${i}">Save</button><button type="button" data-aff-cancel="1">Cancel</button></span>`
-      :soft?`<button class="pencil" type="button" data-aff-edit="${i}" aria-label="Edit from / to">✎</button>`:`<span class="lock" title="Hard affiliation: From and To cannot be changed">🔒</span>`;
-    return `<tr><td>${ed?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td><td>${dmcell}</td><td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td>${xc.map(k=>`<td>${(r[6]||{})[k]?esc(r[6][k]):'<span class="faint">—</span>'}</td>`).join('')}<td style="text-align:right">${act}</td></tr>`}).join('');
+      :edFT?`<button class="pencil" type="button" data-aff-edit="${i}" aria-label="Edit from / to">✎</button>`:`<span class="lock" title="From and To cannot be changed for this affiliation">🔒</span>`;
+    return `<tr><td>${ed&&canEdit('from',r[5])?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed&&canEdit('to',r[5])?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td><td>${dmcell}</td><td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td>${xc.map(k=>`<td>${(r[6]||{})[k]?esc(r[6][k]):'<span class="faint">—</span>'}</td>`).join('')}<td style="text-align:right">${act}</td></tr>`}).join('');
   const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td><td>${dmEdit('aff-dm','')}</td><td>${pill('Soft','soft')}</td>${xc.map(()=>'<td><span class="faint">—</span></td>').join('')}<td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
   return `<div class="qsum"><span>${rows.length} affiliations</span><button class="btn sm primary" type="button" data-aff-new="1" style="margin-left:auto"${na?' disabled':''}>+ New affiliation</button></div>
    <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th><th>Decision maker</th><th>Relationship type</th>${xc.map(k=>`<th>${esc(k)}</th>`).join('')}<th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
-   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. On Hard affiliations From and To are locked; on Soft ones they can be changed. Decision maker (${DM_OPTS.join(' / ')}) can always be changed, on Hard and Soft affiliations (pencil). Relationship type (Hard / Soft) is read-only. New affiliations are created as Soft. The first four columns are always shown; extra columns after Relationship type come from custom metadata per CBU and Team (switch CBU/Team above the device to compare).</p>`;
+   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. Which columns are editable, and on which affiliations (None / Soft / All), is set in the custom metadata, not in the app. Default: From and To editable on Soft only (locked on Hard), Decision maker (${DM_OPTS.join(' / ')}) editable on Hard and Soft, Relationship type read-only. Use the switch above the device to see From/To switched to read-only. New affiliations are created as Soft. The first four columns are always shown; extra columns after Relationship type come from custom metadata per CBU and Team (switch CBU/Team above the device to compare).</p>`;
 }
 function renderQuest(d){
   const f=state.qf||'All', all=d.quest, open=all.filter(q=>q[1]!=='Answered'), mand=open.filter(q=>q[2]==='Yes');
@@ -877,11 +881,11 @@ function bind(d){
   $$('[data-dm-save]').forEach(b=>b.addEventListener('click',()=>{d.aff.rows[+b.dataset.dmSave][4]=dmRead('aff-dm');state.editDM=null;render()}));
   $$('[data-aff-edit]').forEach(b=>b.addEventListener('click',()=>{state.editAff=+b.dataset.affEdit;state.editDM=null;state.newAff=false;render()}));
   $$('[data-aff-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editAff=null;state.newAff=false;render()}));
-  const affRead=()=>{const f=$('#aff-from').value,t=$('#aff-to').value;return(f&&t&&f!==t)?[f.split('|'),t.split('|')]:null};
+  const affRead=r=>{const f=$('#aff-from')?$('#aff-from').value:r[1]+'|'+r[0],t=$('#aff-to')?$('#aff-to').value:r[3]+'|'+r[2];return(f&&t&&f!==t)?[f.split('|'),t.split('|')]:null};
   ['#aff-from','#aff-to'].forEach(q=>$(q)?.addEventListener('change',()=>{const ad=$('#aff-add');if(ad)ad.disabled=!affRead()}));
   if($('#aff-add'))$('#aff-add').disabled=true;
   $$('[data-aff-add]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;d.aff.rows.unshift([v[0][1],v[0][0],v[1][1],v[1][0],dmRead('aff-dm'),'Soft',{}]);state.newAff=false;render()}));
-  $$('[data-aff-save]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;const r=d.aff.rows[+b.dataset.affSave];[r[0],r[1],r[2],r[3]]=[v[0][1],v[0][0],v[1][1],v[1][0]];state.editAff=null;render()}));
+  $$('[data-aff-save]').forEach(b=>b.addEventListener('click',()=>{const r=d.aff.rows[+b.dataset.affSave];const v=affRead(r);if(!v)return;[r[0],r[1],r[2],r[3]]=[v[0][1],v[0][0],v[1][1],v[1][0]];state.editAff=null;render()}));
   $$('[data-plan]').forEach(b=>b.addEventListener('click',()=>{$$('.pop').forEach(x=>x.hidden=true);openCal(d)}));
   $$('[data-qf]').forEach(b=>b.addEventListener('click',()=>{state.qf=b.dataset.qf;render()}));
   $$('[data-pick]').forEach(b=>b.addEventListener('click',()=>{state.editPick=b.dataset.pick;render();$('#pick-sel')?.focus()}));
@@ -939,6 +943,7 @@ function go(page){state.page=page;state.tab=null;state.open=new Set();state.open
 document.addEventListener('click',()=>$$('.pop').forEach(p=>p.hidden=true));
 $('#pageSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.page)});
 $('#hdrCbu').addEventListener('change',e=>{state.cbu=e.target.value;render()});
+$('#affFT').addEventListener('change',e=>{AFFEDIT.from=AFFEDIT.to=e.target.value;state.editAff=null;render()});
 $('#hdrTeam').addEventListener('change',e=>{state.team=e.target.value;render()});
 $('#navToggle').addEventListener('click',e=>{const n=$('#nav');n.classList.toggle('open');e.currentTarget.textContent=n.classList.contains('open')?'‹':'›'});
 new ResizeObserver(()=>{const h=$('#hl');if(h)scroller.style.setProperty('--hlh',h.offsetHeight+'px')}).observe(scroller);
