@@ -780,7 +780,7 @@ const ACCTS=[['HCO','Praxis Vogel/Brandt/Huber'],['HCO','St. Elisabeth Klinikum'
 const acctSel=(id,cur)=>`<select class="pick" id="${id}"><option value=""${cur?'':' selected'}>Select HCP / HCO…</option>${['HCO','HCP'].map(t=>`<optgroup label="${t}">${ACCTS.filter(a=>a[0]===t).map(a=>`<option value="${t}|${esc(a[1])}"${cur===t+'|'+a[1]?' selected':''}>${esc(a[1])}</option>`).join('')}</optgroup>`).join('')}</select>`;
 const dmEdit=(id,cur)=>`<div class="dmed" id="${id}">${DM_OPTS.map(o=>`<label><input type="checkbox" value="${o}"${cur.includes(o)?' checked':''}> ${o}</label>`).join('')}</div>`;
 const dmRead=id=>[...document.querySelectorAll('#'+id+' input:checked')].map(x=>x.value);
-/* editability per core column, as set in Account_Affiliation_Field__mdt (Editable_For__c: None / Soft / All) */
+/* editability per core column, as set in Account_Insight_Card__mdt (Is_Editable__c + Editable_For__c: None / Soft / All) */
 const AFFLAB={dm:'Decision maker',rel:'Relationship type'};
 const AFFEDIT={from:'Soft',to:'Soft',dm:'All',rel:'None'};
 const canEdit=(col,rel)=>AFFEDIT[col]==='All'||AFFEDIT[col]===rel;

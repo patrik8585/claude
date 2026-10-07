@@ -132,23 +132,24 @@ th{background:var(--soft);font-weight:600}
 <p>The Insight tab has <b>5 sub-tabs</b>, in this order: <b>General, Segment, Affiliation, Questionnaire, Sample</b>. The Related sub-tab was removed and is not included in the estimation and final design.</p>
 <ul>
 <li><b>General</b> and <b>Segment</b> are driven by custom metadata (see below).</li>
+<li><b>General, Segment and Affiliation</b> are driven by the same custom metadata, <code>Account_Insight_Card__mdt</code> and <code>Account_Insight_Range__mdt</code>, with the same selection keys and the same 6-step resolution (see 13.5 and 13.6).</li>
 <li><b>Questionnaire</b> and <b>Sample</b> are fixed sub-tabs, always shown on the HCP and HCO page. They show standard data and need no card metadata.</li>
-<li><b>Affiliation</b> is always shown. Only <b>From</b> and <b>To</b> are fixed for every CBU. All the other columns (Decision maker, Relationship type, extra fields) are <b>configured per CBU and Team</b> in custom metadata (see 13.2 and 13.7).</li>
 </ul>
 
 <h4>13.1 General and Segment</h4>
-<p>Insight tab framework with 2 metadata-driven sub-tabs, General (Account fields) and Segment (Account Segment records): visual cards (toggle, number, currency, date, text, continuum, doughnut), colour ranges, editable cards with pencil / Clear and toggle switch.</p>
+<p>Insight tab framework with metadata-driven sub-tabs, General (Account fields) and Segment (Account Segment records): visual cards (toggle, number, currency, date, text, continuum, doughnut), colour ranges, editable cards with pencil / Clear and toggle switch.</p>
 <p>Insight Segment grid on Account Segment records: rows by Therapeutic Area and/or Team depending on the CBU, NOB / CL / Segment letter columns with descriptions, inline edit. <b>NOB and CL are editable inline; Segment letter is read-only</b> <span class="new">New</span>.</p>
 
 <h4>13.2 Affiliation <span class="new">New</span></h4>
 <p>Shows the affiliations of the account, between HCP and HCP and between HCP and HCO.</p>
+<p>The Affiliation sub-tab is a table. Its columns are records of <code>Account_Insight_Card__mdt</code> with <code>Sub_Tab__c</code> = Affiliation and <code>Layout__c</code> = Table (see 13.5).</p>
 <p><b>Fixed columns (same for every CBU):</b></p>
 <table>
 <tr><th>Column</th><th>Description</th><th>Editable (default, from metadata)</th></tr>
 <tr><td>From</td><td>HCP or HCO. Mandatory: an affiliation always has both From and To.</td><td>Soft: yes. Hard: no (lock icon)</td></tr>
 <tr><td>To</td><td>HCP or HCO. Mandatory.</td><td>Soft: yes. Hard: no (lock icon)</td></tr>
 </table>
-<p>From and To are always shown, first, and cannot be removed. They are still written in the metadata, because their editability is read from there. Example: if tomorrow From and To must be read-only, only the metadata record changes (<code>Editable_For__c</code> = None), not the app.</p>
+<p>From and To are always shown, first, and cannot be removed. They are still written in the metadata, because their editability is read from there. Example: if tomorrow From and To must be read-only, only the metadata record changes (<code>Is_Editable__c</code> = false), not the app.</p>
 <p><b>Configurable columns (per CBU, Team and Record type, shown after To in the configured order):</b></p>
 <table>
 <tr><th>Column</th><th>Description</th><th>Editable (default, from metadata)</th></tr>
@@ -185,18 +186,30 @@ th{background:var(--soft);font-weight:600}
 <p>No usage chart: the numbers are enough.</p>
 
 <h4>13.5 Custom metadata <code>Account_Insight_Card__mdt</code></h4>
-<p>One record per card or grid column. Used for the General and Segment sub-tabs only.</p>
+<p>One record per card, grid column or table column. Used for the General, Segment and Affiliation sub-tabs.</p>
 <table>
 <tr><th>Group</th><th>Fields</th></tr>
 <tr><td>Selection keys</td><td><code>Page__c</code>, <code>CBU__c</code>, <code>Team__c</code>, <code>Record_Type__c</code>, <code>Is_Active__c</code> (same fallback as item 3)</td></tr>
-<tr><td>Placement</td><td><code>Sub_Tab__c</code> (General / Segment), <code>Section__c</code>, <code>Sort_Order__c</code>, <code>Card_Label__c</code></td></tr>
-<tr><td>Source</td><td><code>Source_Object__c</code> (Account or Account Segment), <code>Source_Field__c</code>, <code>Account_Lookup_Field__c</code> (for Account Segment)</td></tr>
-<tr><td>Display</td><td><code>Display_Type__c</code> (Toggle / Number / Currency / Date / Text / Continuum / Doughnut), <code>Decimal_Places__c</code>, <code>Show_Relative_Date__c</code></td></tr>
+<tr><td>Placement</td><td><code>Sub_Tab__c</code> (General / Segment / Affiliation), <code>Section__c</code>, <code>Sort_Order__c</code>, <code>Card_Label__c</code></td></tr>
+<tr><td>Source</td><td><code>Source_Object__c</code> (Account, Account Segment or Affiliation), <code>Source_Field__c</code>, <code>Account_Lookup_Field__c</code> (for Account Segment)</td></tr>
+<tr><td>Display</td><td><code>Display_Type__c</code> (Toggle / Number / Currency / Date / Text / Continuum / Doughnut; for Affiliation also Account / Picklist / Multipicklist), <code>Decimal_Places__c</code>, <code>Show_Relative_Date__c</code></td></tr>
 <tr><td>Doughnut / continuum</td><td><code>Max_Value__c</code> or <code>Max_Value_Field__c</code> and <code>Potential_Field__c</code> (Doughnut), <code>Continuum_Order__c</code> (e.g. D;C;B;A)</td></tr>
-<tr><td>Editing</td><td><code>Is_Editable__c</code> (pencil / Clear / toggle). False for the Segment letter column</td></tr>
-<tr><td>Grid</td><td><code>Layout__c</code> (Card / Grid), <code>Grid_Key__c</code>, <code>Grid_Row_Field_1__c</code> (e.g. Therapeutic Area), <code>Grid_Row_Field_2__c</code> (e.g. Team), <code>Grid_Row_Sort_Field__c</code>, <code>Column_Description__c</code></td></tr>
+<tr><td>Editing</td><td><code>Is_Editable__c</code> (pencil / Clear / toggle). False for the Segment letter column. <code>Editable_For__c</code> (Affiliation only: All / Soft, blank = All): on which affiliations the column is editable. Affiliation defaults: From and To = Soft, Decision maker = All, Relationship type = not editable, extra fields = not editable</td></tr>
+<tr><td>Grid</td><td><code>Layout__c</code> (Card / Grid / Table), <code>Is_Fixed__c</code> (Affiliation: true for From and To, always shown, first, cannot be removed), <code>Grid_Key__c</code>, <code>Grid_Row_Field_1__c</code> (e.g. Therapeutic Area), <code>Grid_Row_Field_2__c</code> (e.g. Team), <code>Grid_Row_Sort_Field__c</code>, <code>Column_Description__c</code></td></tr>
 </table>
 
+<h4>13.5.1 Example records for the Affiliation sub-tab <span class="new">New</span></h4>
+<table>
+<tr><th>CBU</th><th>Team</th><th>Sub_Tab / Layout</th><th>Sort</th><th>Source field</th><th>Label</th><th>Fixed</th><th>Editable</th></tr>
+<tr><td>DEFAULT</td><td></td><td>Affiliation / Table</td><td>1</td><td>From</td><td>From</td><td>Yes</td><td>Soft</td></tr>
+<tr><td>DEFAULT</td><td></td><td>Affiliation / Table</td><td>2</td><td>To</td><td>To</td><td>Yes</td><td>Soft</td></tr>
+<tr><td>DEFAULT</td><td></td><td>Affiliation / Table</td><td>3</td><td>Decision maker</td><td>Decision maker</td><td>No</td><td>All</td></tr>
+<tr><td>DEFAULT</td><td></td><td>Affiliation / Table</td><td>4</td><td>Relationship type</td><td>Relationship type</td><td>No</td><td>No</td></tr>
+<tr><td>DE</td><td></td><td>Affiliation / Table</td><td>1 – 4</td><td>From, To, Decision maker, Relationship type</td><td>as DEFAULT</td><td>From, To: Yes</td><td>as DEFAULT</td></tr>
+<tr><td>DE</td><td></td><td>Affiliation / Table</td><td>5, 6</td><td>Role, Start date</td><td>Role, Start date</td><td>No</td><td>No</td></tr>
+<tr><td>AT</td><td>Adults</td><td>Affiliation / Table</td><td>1 – 4</td><td>From, To, Relationship type, Role</td><td>as above</td><td>From, To: Yes</td><td>as DEFAULT</td></tr>
+</table>
+<p>The AT + Adults configuration has no Decision maker column. As for all metadata, the chosen step gives the complete list: DE does not inherit anything from DEFAULT.</p>
 <h4>13.6 Custom metadata <code>Account_Insight_Range__mdt</code></h4>
 <p>Colour ranges, up to 10 per card.</p>
 <table>
@@ -208,31 +221,7 @@ th{background:var(--soft);font-weight:600}
 <tr><td><code>Colour_Hex__c</code>, <code>Label__c</code>, <code>Is_Active__c</code></td><td>Colour, label and active flag</td></tr>
 </table>
 
-<h4>13.7 Custom metadata <code>Account_Affiliation_Field__mdt</code> <span class="new">New</span></h4>
-<p>One record per column of the Affiliation sub-tab. From and To are always present and are described by their own records (so their editability is read from the metadata); the other columns are shown only if a record selects them.</p>
-<table>
-<tr><th>Group</th><th>Fields</th></tr>
-<tr><td>Selection keys</td><td><code>Page__c</code> (HCP / HCO), <code>CBU__c</code>, <code>Team__c</code>, <code>Record_Type__c</code>, <code>Is_Active__c</code> (same fallback as item 3, same 6 steps). The whole list of columns comes from one step, never mixed</td></tr>
-<tr><td>Placement</td><td><code>Sort_Order__c</code> (position of the column), <code>Is_Fixed__c</code> (true for From and To: always shown, first, cannot be removed or reordered)</td></tr>
-<tr><td>Source</td><td><code>Source_Object__c</code> (affiliation object) and <code>Source_Field__c</code> (metadata relationships to the object and field), e.g. From, To, Decision maker, Relationship type, Role</td></tr>
-<tr><td>Display</td><td><code>Short_Label__c</code> (column label), <code>Display_Type__c</code> (Account / Picklist / Multipicklist / Text / Date / Link). Account is used for From and To and shows the HCP/HCO name with its type</td></tr>
-<tr><td>Editing</td><td><code>Editable_For__c</code> (None / Soft / All): on which affiliations the column can be edited. Defaults: From = Soft, To = Soft, Decision maker = All, Relationship type = None, extra fields = None</td></tr>
-</table>
-<p class="key">Example records (HCP page):</p>
-<table>
-<tr><th>CBU</th><th>Team</th><th>Sort</th><th>Source field</th><th>Label</th><th>Fixed</th><th>Editable for</th></tr>
-<tr><td>DEFAULT</td><td></td><td>1</td><td>From</td><td>From</td><td>Yes</td><td>Soft</td></tr>
-<tr><td>DEFAULT</td><td></td><td>2</td><td>To</td><td>To</td><td>Yes</td><td>Soft</td></tr>
-<tr><td>DEFAULT</td><td></td><td>3</td><td>Decision maker</td><td>Decision maker</td><td>No</td><td>All</td></tr>
-<tr><td>DEFAULT</td><td></td><td>4</td><td>Relationship type</td><td>Relationship type</td><td>No</td><td>None</td></tr>
-<tr><td>DE</td><td></td><td>1 – 4</td><td>From, To, Decision maker, Relationship type</td><td>as DEFAULT</td><td>From, To: Yes</td><td>as DEFAULT</td></tr>
-<tr><td>DE</td><td></td><td>5</td><td>Role</td><td>Role</td><td>No</td><td>None</td></tr>
-<tr><td>DE</td><td></td><td>6</td><td>Start date</td><td>Start date</td><td>No</td><td>None</td></tr>
-<tr><td>AT</td><td>Adults</td><td>1 – 3</td><td>From, To, Relationship type, Role</td><td>as above</td><td>From, To: Yes</td><td>as DEFAULT, Role: None</td></tr>
-</table>
-<p>The AT + Adults configuration has no Decision maker column. As for all metadata, the chosen step gives the complete list: DE does not inherit anything from DEFAULT.</p>
-
-<div class="note"><b>Metadata impact of the sub-tabs:</b> <code>Sub_Tab__c</code> stays General / Segment only. Questionnaire and Sample are not card-driven and are the same for every CBU, Team and Record type. Affiliation has two fixed columns (From and To), and <code>Account_Affiliation_Field__mdt</code> describes their editability and decides which other columns are shown per CBU and Team.</div>
+<div class="note"><b>Metadata impact of the sub-tabs:</b> <code>Sub_Tab__c</code> has three values, General / Segment / Affiliation, all in <code>Account_Insight_Card__mdt</code>. No separate metadata type is needed for Affiliation. Questionnaire and Sample are not card-driven and are the same for every CBU, Team and Record type.</div>
 </div>
 
 <div class="item">
@@ -279,7 +268,7 @@ th{background:var(--soft);font-weight:600}
 <tr><td>AT rep, Adults</td><td>DEFAULT configuration</td><td>AT has no setup for Adults and none for AT only</td></tr>
 <tr><td>IT rep</td><td>DEFAULT configuration</td><td>IT has no setup of its own</td></tr>
 </table>
-<p>Insight cards use the same filters and the same 6 steps. The chosen step gives the complete list of cards for the General and Segment sub-tabs, and the complete list of configurable columns for the Affiliation sub-tab.</p>
+<p>Insight cards use the same filters and the same 6 steps. The chosen step gives the complete list of cards for the General, Segment and Affiliation sub-tabs, and for the Affiliation sub-tab.</p>
 
 <h2>Open points to confirm <span class="new">New</span></h2>
 <ol>
@@ -289,7 +278,7 @@ th{background:var(--soft);font-weight:600}
 <li><b>Plan a call:</b> does the calendar create a Pitcher call or a calendar event?</li>
 <li><b>Questionnaire Start:</b> confirm it opens the existing Pitcher questionnaire, and whether mandatory ones must block anything (for example the call).</li>
 <li><b>Questionnaire and Sample on HCO:</b> both are shown on both pages. Confirm they are needed on HCO.</li>
-<li><b>Affiliation columns:</b> which columns does the business want per CBU and Team (Decision maker, Relationship type, Role, Start date, …)? Are the extra ones read-only, or editable (<code>Editable_For__c</code>)?</li>
+<li><b>Affiliation columns:</b> which columns does the business want per CBU and Team (Decision maker, Relationship type, Role, Start date, …)? Are the extra ones read-only, or editable (<code>Is_Editable__c</code>)?</li>
 <li><b>Affiliation Soft / Hard:</b> who creates Hard affiliations (integration, back office)? In the mockup users create only Soft ones.</li>
 </ol>
 </main>
