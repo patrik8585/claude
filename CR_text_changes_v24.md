@@ -28,14 +28,16 @@ Replace "Insight tab framework with 2 sub-tabs, General and Segment" with:
 
 ### 2.1 Affiliation (new)
 
-> Shows the affiliations of the account: between HCP and HCP, and between HCP and HCO.
+> Shows the affiliations of the account, between HCP and HCP and between HCP and HCO.
 > Columns:
-> - **HCO** – blank for HCP ↔ HCP rows.
-> - **HCP**
-> - **Decision maker** – multipicklist with the values *Discharge Decision Maker* and *Product Decision Maker*. A row can have both, or none.
-> - **Relationship type** – *Soft* or *Hard*.
+> - **From** and **To** – each can be an HCP or an HCO. Both are always mandatory: an affiliation without From and To is not allowed.
+> - **Decision maker** – multipicklist with the values *Discharge Decision Maker* and *Product Decision Maker*. A row can have both, or none. Read-only.
+> - **Relationship type** – *Soft* or *Hard*. Read-only.
 >
-> The sub-tab is read-only.
+> Actions:
+> - **+ New affiliation** button: the user picks From and To (both mandatory, and they must be different). The new affiliation is created as *Soft*.
+> - **Hard** affiliations: From and To cannot be changed (lock icon).
+> - **Soft** affiliations: From and To can be changed (pencil, Save / Cancel).
 
 ### 2.2 Questionnaire (new)
 
@@ -45,18 +47,24 @@ Replace "Insight tab framework with 2 sub-tabs, General and Segment" with:
 > - **Status** – Answered / Not answered.
 > - **Mandatory** – Mandatory / Optional.
 > - **Assigned / answered date**
+> - **Action** – **Start** button on questionnaires not yet answered, to launch the questionnaire; **View answers** on answered ones.
 >
 > A summary above the list shows "x of y answered" and "n mandatory open". A filter switches between All, Open and Answered. The Questionnaire entry is removed from the Actions menu.
 
 ### 2.3 Sample (new)
 
-> Shows, per product, the sample limit and the quantity already used or delivered.
+> Shows, per product, the sample limit and the quantity already used or delivered **for the current year**. Limits are annual, so the quantities restart from 0 every year.
 > Columns:
 > - **Product**
-> - **Sample limit**
-> - **Delivered** (used)
+> - **Annual limit** (current year)
+> - **Delivered** (current year)
 > - **Remaining** – shows "limit reached" at 0.
-> - **Usage** – progress bar. It is amber from 80% and red at the limit.
+>
+> There is no usage chart: the numbers are enough.
+
+### 2.4 Segment – read-only letter
+
+> In the Segment grid, **Segment letter** is read-only. NOB and CL stay editable inline. In `Account_Insight_Card__mdt`, the Segment letter column has `Is_Editable__c = false`.
 
 ## 3. Metadata impact
 
@@ -67,8 +75,9 @@ Replace "Insight tab framework with 2 sub-tabs, General and Segment" with:
 ## 4. Open points to confirm
 
 1. **Source objects** for the three sub-tabs: affiliation object, questionnaire assignment object, and where the product sample limit and delivered quantity are stored.
-2. **Decision maker**: the mockup shows it per affiliation record. If it is a field on the Account, the column becomes a single field above the table.
-3. **Sample period**: is the limit per year, per quarter or per call? The mockup shows a generic "current period".
+2. **Decision maker**: the mockup shows it per affiliation record, read-only. Who sets it (integration, back office)?
+3. **Sample period**: confirmed annual. Does the year mean the calendar year, or a fiscal year?
 4. **Plan a call**: does the calendar create a Pitcher call or a calendar event? The mockup only shows the picker.
-5. **Sub-tabs on HCO**: Questionnaire and Sample are shown on both pages. Confirm they are needed on HCO.
-6. **Line 3 GO Rating** (AT, Adults): I only removed it from Insight → General. The header demo still shows it. Remove it there too?
+5. **Questionnaire Start**: confirm it opens the existing Pitcher questionnaire, and whether mandatory ones must block anything (for example the call).
+6. **Sub-tabs on HCO**: Questionnaire and Sample are shown on both pages. Confirm they are needed on HCO.
+7. **Line 3 GO Rating** (AT, Adults): I only removed it from Insight → General. The header demo still shows it. Remove it there too?

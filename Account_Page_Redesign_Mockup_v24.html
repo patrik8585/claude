@@ -352,6 +352,9 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;min-width:560px;
 .pill.open{color:var(--faint)}
 .pill.mand{color:var(--bad);border-color:var(--bad);background:transparent}
 .faint{color:var(--faint)}
+.atype{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 5px;margin-top:2px}
+.lock{font-size:13px;opacity:.7}
+.newrow{background:var(--accent-soft)}
 .qsum{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:10px}
 .qsum .warn{color:var(--bad)}.qsum .seg{margin-left:auto}
 .pick{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:13px}
@@ -505,7 +508,7 @@ const P={
    ['Call In Activities',[],[]],
    ['Territories',['Territory','Owner'],[['DE-NW-07','You']]]
   ],
-  aff:{rows:[['Praxis Vogel/Brandt/Huber','Katrin Vogel',['Discharge Decision Maker'],'Hard'],['St. Elisabeth Klinikum','Katrin Vogel',['Product Decision Maker'],'Soft'],['','Jonas Brandt',['Product Decision Maker'],'Hard'],['','Lena Albers',[],'Soft']]},
+  aff:{rows:[['Katrin Vogel','HCP','Praxis Vogel/Brandt/Huber','HCO',['Discharge Decision Maker'],'Hard'],['Katrin Vogel','HCP','St. Elisabeth Klinikum','HCO',['Product Decision Maker'],'Soft'],['Katrin Vogel','HCP','Jonas Brandt','HCP',['Product Decision Maker'],'Hard'],['Lena Albers','HCP','Katrin Vogel','HCP',[],'Soft']]},
   quest:[['Customer needs assessment 2026','Not answered','Yes','Assigned 02/09/2026'],['GDPR awareness check','Answered','Yes','Answered 14/06/2026'],['Product satisfaction survey','Answered','No','Answered 04/05/2026'],['Nutrition habits survey','Not answered','No','Assigned 20/09/2026']],
   samp:[['Fortimel Juicy',20,12],['Nutrison Standard',10,10],['Neocate LCP',5,1]],
   insight:{DE:{General:[
@@ -586,7 +589,7 @@ const P={
    ['Pitcher Questionnaire Response Items (Parent Account)',[],[]],
    ['Call In Activities',[],[]]
   ],
-  aff:{rows:[['St. Elisabeth Klinikum','Lena Albers',['Discharge Decision Maker'],'Hard'],['St. Elisabeth Klinikum','Jonas Brandt',['Discharge Decision Maker','Product Decision Maker'],'Hard'],['St. Elisabeth Klinikum','Petra Claßen',[],'Soft'],['St. Elisabeth Klinikum','Sofia Weber',['Product Decision Maker'],'Soft']]},
+  aff:{rows:[['Lena Albers','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker'],'Hard'],['Jonas Brandt','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker','Product Decision Maker'],'Hard'],['Petra Claßen','HCP','St. Elisabeth Klinikum','HCO',[],'Soft'],['St. Elisabeth Klinikum','HCO','Sofia Weber','HCP',['Product Decision Maker'],'Soft']]},
   quest:[['Institution profile 2026','Answered','Yes','Answered 11/03/2026'],['Tender readiness check','Not answered','Yes','Assigned 15/09/2026'],['Pharmacy contact survey','Not answered','No','Assigned 01/09/2026']],
   samp:[['Nutrison Standard',40,26],['Fortimel Compact',30,30]],
   insight:{DE:{General:[
@@ -743,11 +746,10 @@ function gridCell(c,r,i){
     inner = `<div class="pips">${[1,2,3,4,5].map(n=>{const on=n<=c.v;const st=on?`background:${col};border-color:${col}`:'';
       return ed?`<button class="pip" type="button" data-set="${r}-${i}-${n}" style="${st}" aria-label="${n}"></button>`:`<b style="${st}"></b>`}).join('')}</div><span class="num" style="font-size:14px;color:${col}">CL ${c.v}</span>`;
   } else {
-    const col=LCOL[c.v];
     inner = `<div class="chips">${LETTERS.map(L=>{const on=L===c.v;const st=on?`background:${LCOL[L]};border-color:${LCOL[L]};color:#fff`:'';
-      return ed?`<button class="chipb" type="button" data-set="${r}-${i}-${L}" style="${st}">${L}</button>`:`<b style="${st}">${L}</b>`}).join('')}</div>`;
+      return `<b style="${st}">${L}</b>`}).join('')}</div>`;
   }
-  return `<div class="cell${ed?' editing':''}" ${at}>${inner}${c.t==='num'&&ed?'':`<button class="pencil" type="button" data-edit="${r}-${i}" aria-label="Edit">✎</button>`}</div>`;
+  return `<div class="cell${ed?' editing':''}" ${at}>${inner}${(c.t==='num'&&ed)||c.t==='letter'?'':`<button class="pencil" type="button" data-edit="${r}-${i}" aria-label="Edit">✎</button>`}</div>`;
 }
 function segmentGrid(g){
   const used=g.dims.filter((d,i)=>g.rows.some(r=>r.keys[i]));
@@ -769,23 +771,35 @@ const FIXED_SUB=['Affiliation','Questionnaire','Sample'];
 const subtabBar=(all,cur)=>`<div class="subtabs">${all.map(g=>`<button type="button" data-isub="${g}" aria-pressed="${g===cur}">${esc(g)}</button>`).join('')}</div>`;
 const DM_OPTS=['Discharge Decision Maker','Product Decision Maker'];
 const pill=(t,k)=>`<span class="pill ${k}">${esc(t)}</span>`;
+const ACCTS=[['HCO','Praxis Vogel/Brandt/Huber'],['HCO','St. Elisabeth Klinikum'],['HCO','Klinikum Münster'],['HCP','Katrin Vogel'],['HCP','Jonas Brandt'],['HCP','Lena Albers'],['HCP','Petra Claßen'],['HCP','Sofia Weber']];
+const acctSel=(id,cur)=>`<select class="pick" id="${id}"><option value=""${cur?'':' selected'}>Select HCP / HCO…</option>${['HCO','HCP'].map(t=>`<optgroup label="${t}">${ACCTS.filter(a=>a[0]===t).map(a=>`<option value="${t}|${esc(a[1])}"${cur===t+'|'+a[1]?' selected':''}>${esc(a[1])}</option>`).join('')}</optgroup>`).join('')}</select>`;
+const acctCell=(n,t)=>`<div>${esc(n)}</div><span class="atype">${t}</span>`;
 function renderAff(d){
-  const rows=d.aff.rows;
-  return `<div class="tablewrap"><table class="rt"><thead><tr><th>HCO</th><th>HCP</th><th>Decision maker</th><th>Relationship type</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]?esc(r[0]):'<span class="faint">—</span>'}</td><td>${esc(r[1])}</td><td>${r[2].length?r[2].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}</td><td>${pill(r[3],r[3]==='Hard'?'hard':'soft')}</td></tr>`).join('')}</tbody></table></div>
-   <p class="sample">Example affiliations. HCP ↔ HCO rows show the HCO; HCP ↔ HCP rows have no HCO. Decision maker is a multipicklist (${DM_OPTS.join(' / ')}). Relationship type: Hard or Soft.</p>`;
+  const rows=d.aff.rows, ea=state.editAff, na=state.newAff;
+  const tr=rows.map((r,i)=>{
+    const soft=r[5]==='Soft', ed=ea===i;
+    const act=ed?`<span class="cellbtns"><button type="button" class="ok" data-aff-save="${i}">Save</button><button type="button" data-aff-cancel="1">Cancel</button></span>`
+      :soft?`<button class="pencil" type="button" data-aff-edit="${i}" aria-label="Edit from / to">✎</button>`:`<span class="lock" title="Hard affiliation: From and To cannot be changed">🔒</span>`;
+    return `<tr><td>${ed?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td><td>${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}</td><td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td><td style="text-align:right">${act}</td></tr>`}).join('');
+  const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td><td><span class="faint">—</span></td><td>${pill('Soft','soft')}</td><td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
+  return `<div class="qsum"><span>${rows.length} affiliations</span><button class="btn sm primary" type="button" data-aff-new="1" style="margin-left:auto"${na?' disabled':''}>+ New affiliation</button></div>
+   <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th><th>Decision maker</th><th>Relationship type</th><th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
+   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. On Hard affiliations From and To are locked; on Soft ones they can be changed. Decision maker (${DM_OPTS.join(' / ')}) and Relationship type (Hard / Soft) are read-only. New affiliations are created as Soft.</p>`;
 }
 function renderQuest(d){
   const f=state.qf||'All', all=d.quest, open=all.filter(q=>q[1]!=='Answered'), mand=open.filter(q=>q[2]==='Yes');
   const rows=all.filter(q=>f==='All'||(f==='Open'?q[1]!=='Answered':q[1]==='Answered'));
   return `<div class="qsum"><span><b>${all.length-open.length}</b> of ${all.length} answered</span><span class="${mand.length?'warn':''}"><b>${mand.length}</b> mandatory open</span>
    <div class="seg" id="qSeg">${['All','Open','Answered'].map(x=>`<button type="button" data-qf="${x}" aria-pressed="${x===f}">${x}</button>`).join('')}</div></div>
-   <div class="tablewrap"><table class="rt"><thead><tr><th>Questionnaire</th><th>Status</th><th>Mandatory</th><th>Assigned / answered</th></tr></thead><tbody>${rows.map(q=>`<tr><td>${esc(q[0])}</td><td>${pill(q[1],q[1]==='Answered'?'ok':'open')}</td><td>${q[2]==='Yes'?pill('Mandatory','mand'):'<span class="faint">Optional</span>'}</td><td>${esc(q[3])}</td></tr>`).join('')||'<tr><td colspan="4" class="faint">No questionnaires</td></tr>'}</tbody></table></div>
-   <p class="sample">Example questionnaires assigned to this account.</p>`;
+   <div class="tablewrap"><table class="rt"><thead><tr><th>Questionnaire</th><th>Status</th><th>Mandatory</th><th>Assigned / answered</th><th></th></tr></thead><tbody>${rows.map(q=>`<tr><td>${esc(q[0])}</td><td>${pill(q[1],q[1]==='Answered'?'ok':'open')}</td><td>${q[2]==='Yes'?pill('Mandatory','mand'):'<span class="faint">Optional</span>'}</td><td>${esc(q[3])}</td><td style="text-align:right">${q[1]==='Answered'?'<button class="btn sm ghost" type="button">View answers</button>':'<button class="btn sm primary" type="button">▶ Start</button>'}</td></tr>`).join('')||'<tr><td colspan="5" class="faint">No questionnaires</td></tr>'}</tbody></table></div>
+   <p class="sample">Example questionnaires assigned to this account. Start opens the questionnaire to fill in; View answers opens the answered one.</p>`;
 }
 function renderSamp(d){
-  return `<div class="tablewrap"><table class="rt"><thead><tr><th>Product</th><th>Sample limit</th><th>Delivered</th><th>Remaining</th><th style="min-width:160px">Usage</th></tr></thead><tbody>${d.samp.map(([n,lim,used])=>{const pct=Math.min(100,used/lim*100),rem=lim-used,col=rem===0?'var(--bad)':pct>=80?'#E06C1F':'var(--good)';
-    return `<tr><td>${esc(n)}</td><td>${lim}</td><td>${used}</td><td style="color:${col};font-weight:600">${rem}${rem===0?' · limit reached':''}</td><td><div class="bar"><i style="width:${pct}%;background:${col}"></i></div></td></tr>`}).join('')}</tbody></table></div>
-   <p class="sample">Example sample limits per product (current period). Delivered = quantity already used or delivered.</p>`;
+  const y=new Date().getFullYear();
+  return `<div class="qsum"><span>Annual sample limits · <b>${y}</b> (current year)</span></div>
+   <div class="tablewrap"><table class="rt"><thead><tr><th>Product</th><th>Annual limit ${y}</th><th>Delivered ${y}</th><th>Remaining ${y}</th></tr></thead><tbody>${d.samp.map(([n,lim,used])=>{const rem=lim-used,col=rem===0?'var(--bad)':rem/lim<=.2?'#E06C1F':'var(--good)';
+    return `<tr><td>${esc(n)}</td><td>${lim}</td><td>${used}</td><td style="color:${col};font-weight:600">${rem}${rem===0?' · limit reached':''}</td></tr>`}).join('')}</tbody></table></div>
+   <p class="sample">Example sample limits per product. Limits are annual: quantities count for the current year (${y}) only and start again from 0 each year. Delivered = quantity already used or delivered.</p>`;
 }
 function openCal(d){
   $('#calModal')?.remove();
@@ -848,13 +862,21 @@ function bind(d){
   $$('[data-set]').forEach(b=>b.addEventListener('click',()=>{const p=b.dataset.set.split('-');const r=+p[0],i=+p[1],v=p[2];const g=gridOf();
     if(g){g.rows[r].cells[i].v=isNaN(+v)?v:+v;g.rows[r].upd='just now'}state.editCell=null;render()}));
   $$('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{const on=b.getAttribute('aria-checked')==='true';b.setAttribute('aria-checked',!on);b.classList.toggle('on',!on);const c=findCard(d,b.dataset.toggle);if(c)c.v=on?'No':'Yes'}));
+  $$('[data-aff-new]').forEach(b=>b.addEventListener('click',()=>{state.newAff=true;state.editAff=null;render()}));
+  $$('[data-aff-edit]').forEach(b=>b.addEventListener('click',()=>{state.editAff=+b.dataset.affEdit;state.newAff=false;render()}));
+  $$('[data-aff-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editAff=null;state.newAff=false;render()}));
+  const affRead=()=>{const f=$('#aff-from').value,t=$('#aff-to').value;return(f&&t&&f!==t)?[f.split('|'),t.split('|')]:null};
+  ['#aff-from','#aff-to'].forEach(q=>$(q)?.addEventListener('change',()=>{const ad=$('#aff-add');if(ad)ad.disabled=!affRead()}));
+  if($('#aff-add'))$('#aff-add').disabled=true;
+  $$('[data-aff-add]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;d.aff.rows.unshift([v[0][1],v[0][0],v[1][1],v[1][0],[],'Soft']);state.newAff=false;render()}));
+  $$('[data-aff-save]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;const r=d.aff.rows[+b.dataset.affSave];[r[0],r[1],r[2],r[3]]=[v[0][1],v[0][0],v[1][1],v[1][0]];state.editAff=null;render()}));
   $$('[data-plan]').forEach(b=>b.addEventListener('click',()=>{$$('.pop').forEach(x=>x.hidden=true);openCal(d)}));
   $$('[data-qf]').forEach(b=>b.addEventListener('click',()=>{state.qf=b.dataset.qf;render()}));
   $$('[data-pick]').forEach(b=>b.addEventListener('click',()=>{state.editPick=b.dataset.pick;render();$('#pick-sel')?.focus()}));
   $$('[data-pick-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editPick=null;render()}));
   $$('[data-pick-save]').forEach(b=>b.addEventListener('click',()=>{const c=findCard(d,b.dataset.pickSave);if(c){c.v=$('#pick-sel').value;c.upd='just now'}state.editPick=null;render()}));
   $$('[data-pick-clear]').forEach(b=>b.addEventListener('click',()=>{const c=findCard(d,b.dataset.pickClear);if(c){c.v='—';c.upd='just now'}render()}));
-  $$('[data-isub]').forEach(b=>b.addEventListener('click',()=>{state.isub=b.dataset.isub;state.editCell=null;state.editPick=null;render()}));
+  $$('[data-isub]').forEach(b=>b.addEventListener('click',()=>{state.isub=b.dataset.isub;state.editCell=null;state.editPick=null;state.editAff=null;state.newAff=false;render()}));
   $$('[data-rel-name]').forEach(b=>b.addEventListener('click',()=>{const i=d.related.findIndex(r=>r[0]===b.dataset.relName);state.tab='det';render();openRel(d,i)}));
   // contacts / affiliated search
   $('#conSearch')?.addEventListener('input',e=>{const q=e.target.value.toLowerCase();$$('#conBody tr').forEach(r=>r.hidden=!r.dataset.q.includes(q))});
