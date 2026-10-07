@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CR Account Page Redesign v24</title>
+<style>
+:root{--ink:#1B2430;--muted:#5B6675;--line:#DCE1E8;--accent:#1F3A68;--soft:#EEF2F8;--new:#6B3FA0;--new-soft:#F1EAF9}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:15px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:26px;margin:0 0 4px;color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 24px}
+h2{font-size:19px;color:var(--accent);margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent)}
+h3{font-size:15.5px;margin:22px 0 6px}
+h4{font-size:14px;margin:16px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+p{margin:6px 0 10px}
+ul,ol{margin:6px 0 12px;padding-left:22px}
+li{margin:3px 0}
+code{background:var(--soft);border-radius:4px;padding:1px 5px;font:12.5px ui-monospace,Menlo,Consolas,monospace}
+table{border-collapse:collapse;width:100%;margin:10px 0 16px;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+.new{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--new);background:var(--new-soft);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.item{border:1px solid var(--line);border-radius:10px;padding:2px 16px 8px;margin:14px 0}
+.item h3{margin-top:12px}
+.note{background:var(--soft);border-left:4px solid var(--accent);padding:8px 12px;border-radius:0 8px 8px 0;margin:10px 0}
+.key{font-weight:600}
+@media print{main{padding:0}.item{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<h1>Account Page Redesign (HCP and HCO)</h1>
+<p class="sub">Change request description · mockup v24. Parts marked <span class="new">New</span> or <span class="new">Changed</span> were added or changed after the business review.</p>
+
+<h2>Macro requirement</h2>
+
+<div class="item">
+<h3>1. Account page layout</h3>
+<p>Account page layout (HCP and HCO) with a fixed highlight panel and tab bar, single vertical scroll, Pitcher top bar and left menu unchanged.</p>
+</div>
+
+<div class="item">
+<h3>2. Highlight panel, lines 1 and 2</h3>
+<p>Highlight panel with name, Target chip, Consent chip, Start call and actions button on line 1, plus fixed fields defined by the global team on line 2:</p>
+<ul>
+<li><b>HCP:</b> Workplace, Address, Specialty, Last call</li>
+<li><b>HCO:</b> Address, WorkPlace Type, Last call, XX – 4th field to be decided by global team</li>
+</ul>
+<p>The list of the second line is also saved in the custom metadata for easy maintenance.</p>
+</div>
+
+<div class="item">
+<h3>3. Highlight panel, line 3 (custom metadata)</h3>
+<p>Highlight panel line 3 with 4 fields driven by custom metadata per Country, Team and Record type (with fallback to DEFAULT).</p>
+<p class="key">Custom metadata <code>Account_Header_Field__mdt</code> (used for line 2 and line 3):</p>
+<table>
+<tr><th>Field</th><th>Description</th></tr>
+<tr><td><code>Page__c</code></td><td>HCP / HCO</td></tr>
+<tr><td><code>Line__c</code></td><td>2 = fixed line, global records / 3 = configurable line</td></tr>
+<tr><td><code>CBU__c</code></td><td>Country code, GLOBAL for line 2, DEFAULT as fallback</td></tr>
+<tr><td><code>Team__c</code></td><td>Team within the CBU, e.g. Adults, Paediatrics – blank = all teams</td></tr>
+<tr><td><code>Record_Type__c</code></td><td>Account record type – blank = all</td></tr>
+<tr><td><code>Position__c</code></td><td>1 to 4</td></tr>
+<tr><td><code>Display_Type__c</code></td><td>Field / Link / Last Call</td></tr>
+<tr><td><code>Source_Object__c</code> and <code>Source_Field__c</code></td><td>Metadata relationships to the object and field</td></tr>
+<tr><td><code>Short_Label__c</code></td><td>Label shown in the panel</td></tr>
+<tr><td><code>Is_Active__c</code></td><td>Only active records are used</td></tr>
+</table>
+<p class="key">Resolution for line 3:</p>
+<p>CBU + Team + Record type → CBU + Team → CBU + Record type → CBU → DEFAULT + Record type → DEFAULT</p>
+</div>
+
+<div class="item">
+<h3>4. Target chip</h3>
+<p>Target chip with engagement plan popover per channel (Goal / Actual / Planned, progress bars, Touchpoints / CEQ toggle).</p>
+</div>
+
+<div class="item">
+<h3>5. Consent Status chip</h3>
+<p>Consent Status chip (green / red) with popover showing channel-level consent detail and link to Consent Management History; removal of the current consent and last call banners.</p>
+</div>
+
+<div class="item">
+<h3>6. Last call field</h3>
+<p>Last call field with Last Call Details popover (call time, brands, products, TA, channel, pre-call and post-call notes) – same infos as-is.</p>
+</div>
+
+<div class="item">
+<h3>7. Actions button <span class="new">Changed</span></h3>
+<p>Actions button ("•••") next to Start call opening the context features, in this order:</p>
+<ol>
+<li><b>Share box</b></li>
+<li><b>Plan a call</b> – opens the calendar, where the user picks a day and a free slot to plan a call with the HCP/HCO.</li>
+<li><b>Open in Salesforce (online)</b> – always the last option.</li>
+</ol>
+<p>Removed from the list: <b>Quick share</b> (still available in the Pitcher top bar, which is unchanged), <b>Questionnaire</b> (moved to the Insight tab, sub-tab Questionnaire) and the <b>TBD</b> placeholder.</p>
+</div>
+
+<div class="item">
+<h3>8. New tab structure</h3>
+<ul>
+<li><b>HCP</b> = 360 / Activity Summary / Details / Insight</li>
+<li><b>HCO</b> = HCPs / 360 / Activity Summary / Details / Insight</li>
+</ul>
+<p>Removal of current toggles and Details sub-tabs.</p>
+</div>
+
+<div class="item">
+<h3>9. 360 tab rework</h3>
+<p>Basic info without fields already in the panel, full-width sections, anchor bar, engagement plan link in Last Visit Summary. The 360 tab shows the new 360 page for CDP and non-CDP countries.</p>
+</div>
+
+<div class="item">
+<h3>10. Activity Summary tab</h3>
+<p>Activity Summary tab (moved out of 360): activities grouped by month, filters (6/12 months, TA, HCP for HCO, activity type, only my activities), call details and attendees for Calls saved in pitcher. This is the rework of the Last Activity Summary that is currently in the new 360 page.</p>
+</div>
+
+<div class="item">
+<h3>11. Details tab rework</h3>
+<p>Left navigation with sections and related lists (with counts), search by field name or value, Hide empty toggle, edit button for editing the information of the account.</p>
+</div>
+
+<div class="item">
+<h3>12. HCPs tab on the HCO page</h3>
+<p>Renamed from Contacts, same content.</p>
+</div>
+
+<div class="item">
+<h3>13. Insight tab <span class="new">Changed</span></h3>
+<p>The Insight tab has <b>5 sub-tabs</b>, in this order: <b>General, Segment, Affiliation, Questionnaire, Sample</b>. The Related sub-tab was removed and is not included in the estimation and final design.</p>
+<ul>
+<li><b>General</b> and <b>Segment</b> are driven by custom metadata (see below).</li>
+<li><b>Affiliation, Questionnaire</b> and <b>Sample</b> are fixed sub-tabs, always shown on the HCP and HCO page. They show standard data and need no card metadata.</li>
+</ul>
+
+<h4>13.1 General and Segment</h4>
+<p>Insight tab framework with 2 metadata-driven sub-tabs, General (Account fields) and Segment (Account Segment records): visual cards (toggle, number, currency, date, text, continuum, doughnut), colour ranges, editable cards with pencil / Clear and toggle switch.</p>
+<p>Insight Segment grid on Account Segment records: rows by Therapeutic Area and/or Team depending on the CBU, NOB / CL / Segment letter columns with descriptions, inline edit. <b>NOB and CL are editable inline; Segment letter is read-only</b> <span class="new">New</span>.</p>
+
+<h4>13.2 Affiliation <span class="new">New</span></h4>
+<p>Shows the affiliations of the account, between HCP and HCP and between HCP and HCO.</p>
+<table>
+<tr><th>Column</th><th>Description</th><th>Editable</th></tr>
+<tr><td>From</td><td>HCP or HCO. Mandatory: an affiliation always has both From and To.</td><td>Soft: yes. Hard: no (lock icon)</td></tr>
+<tr><td>To</td><td>HCP or HCO. Mandatory.</td><td>Soft: yes. Hard: no (lock icon)</td></tr>
+<tr><td>Decision maker</td><td>Multipicklist: <i>Discharge Decision Maker</i>, <i>Product Decision Maker</i>. A row can have both, or none.</td><td>Always, on Hard and Soft (pencil, Save / Cancel)</td></tr>
+<tr><td>Relationship type</td><td>Soft or Hard</td><td>Never</td></tr>
+</table>
+<ul>
+<li><b>+ New affiliation</b> button: the user picks From and To (both mandatory, and they must be different) and can set the Decision maker. The new affiliation is created as Soft.</li>
+</ul>
+
+<h4>13.3 Questionnaire <span class="new">New</span></h4>
+<p>Lists the questionnaires assigned to the HCP/HCO.</p>
+<table>
+<tr><th>Column</th><th>Description</th></tr>
+<tr><td>Questionnaire</td><td>Name of the questionnaire</td></tr>
+<tr><td>Status</td><td>Answered / Not answered</td></tr>
+<tr><td>Mandatory</td><td>Mandatory / Optional</td></tr>
+<tr><td>Assigned / answered</td><td>Assignment or answer date</td></tr>
+<tr><td>Action</td><td><b>Start</b> button on questionnaires not yet answered, to launch the questionnaire; <b>View answers</b> on answered ones</td></tr>
+</table>
+<p>A summary above the list shows "x of y answered" and "n mandatory open". A filter switches between All, Open and Answered.</p>
+
+<h4>13.4 Sample <span class="new">New</span></h4>
+<p>Shows, per product, the sample limit and the quantity already used or delivered <b>for the current year</b>. Limits are annual, so the quantities restart from 0 every year.</p>
+<table>
+<tr><th>Column</th><th>Description</th></tr>
+<tr><td>Product</td><td>Product name</td></tr>
+<tr><td>Annual limit</td><td>Sample limit for the current year</td></tr>
+<tr><td>Delivered</td><td>Quantity already used or delivered in the current year</td></tr>
+<tr><td>Remaining</td><td>Limit minus delivered. Shows "limit reached" at 0</td></tr>
+</table>
+<p>No usage chart: the numbers are enough.</p>
+
+<h4>13.5 Custom metadata <code>Account_Insight_Card__mdt</code></h4>
+<p>One record per card or grid column. Used for the General and Segment sub-tabs only.</p>
+<table>
+<tr><th>Group</th><th>Fields</th></tr>
+<tr><td>Selection keys</td><td><code>Page__c</code>, <code>CBU__c</code>, <code>Team__c</code>, <code>Record_Type__c</code>, <code>Is_Active__c</code> (same fallback as item 3)</td></tr>
+<tr><td>Placement</td><td><code>Sub_Tab__c</code> (General / Segment), <code>Section__c</code>, <code>Sort_Order__c</code>, <code>Card_Label__c</code></td></tr>
+<tr><td>Source</td><td><code>Source_Object__c</code> (Account or Account Segment), <code>Source_Field__c</code>, <code>Account_Lookup_Field__c</code> (for Account Segment)</td></tr>
+<tr><td>Display</td><td><code>Display_Type__c</code> (Toggle / Number / Currency / Date / Text / Continuum / Doughnut), <code>Decimal_Places__c</code>, <code>Show_Relative_Date__c</code></td></tr>
+<tr><td>Doughnut / continuum</td><td><code>Max_Value__c</code> or <code>Max_Value_Field__c</code> and <code>Potential_Field__c</code> (Doughnut), <code>Continuum_Order__c</code> (e.g. D;C;B;A)</td></tr>
+<tr><td>Editing</td><td><code>Is_Editable__c</code> (pencil / Clear / toggle). False for the Segment letter column</td></tr>
+<tr><td>Grid</td><td><code>Layout__c</code> (Card / Grid), <code>Grid_Key__c</code>, <code>Grid_Row_Field_1__c</code> (e.g. Therapeutic Area), <code>Grid_Row_Field_2__c</code> (e.g. Team), <code>Grid_Row_Sort_Field__c</code>, <code>Column_Description__c</code></td></tr>
+</table>
+
+<h4>13.6 Custom metadata <code>Account_Insight_Range__mdt</code></h4>
+<p>Colour ranges, up to 10 per card.</p>
+<table>
+<tr><th>Field</th><th>Description</th></tr>
+<tr><td><code>Insight_Card__c</code></td><td>Relationship to the card</td></tr>
+<tr><td><code>Sort_Order__c</code></td><td>Order of the range</td></tr>
+<tr><td><code>From_Value__c</code> / <code>To_Value__c</code></td><td>Numbers</td></tr>
+<tr><td><code>Values__c</code></td><td>Picklist / text values, e.g. "C;D"</td></tr>
+<tr><td><code>Colour_Hex__c</code>, <code>Label__c</code>, <code>Is_Active__c</code></td><td>Colour, label and active flag</td></tr>
+</table>
+
+<div class="note"><b>Metadata impact of the new sub-tabs:</b> <code>Sub_Tab__c</code> stays General / Segment only. Affiliation, Questionnaire and Sample are not card-driven, and the 6-step resolution does not apply to them: they are the same for every CBU, Team and Record type.</div>
+</div>
+
+<div class="item">
+<h3>14. Extra: wording</h3>
+<p>Wording in both pages: Contact → HCP, Account → HCO.</p>
+</div>
+
+<h2>Explanation of custom metadata</h2>
+
+<h3>Who sees which configuration (selection keys)</h3>
+<p>Each custom metadata record has 4 filters. Together they decide which users and accounts the record applies to:</p>
+<ul>
+<li><b>Page:</b> HCP page or HCO page.</li>
+<li><b>CBU:</b> the country code (e.g. DE, AT). Use DEFAULT for records that apply to every country without its own setup.</li>
+<li><b>Team:</b> the user's team (e.g. Adults, Paediatrics). Leave it empty to apply to all teams.</li>
+<li><b>Record type:</b> the account record type. Leave it empty to apply to all record types.</li>
+</ul>
+<p>Only records with Is_Active = true are used.</p>
+
+<h3>How the app picks the configuration (resolution)</h3>
+<p>The app looks for the most specific configuration for the logged-in user and the opened account. It checks the steps below in order and stops at the first step that finds records:</p>
+<ol>
+<li>User's CBU + user's Team + account Record type</li>
+<li>User's CBU + user's Team</li>
+<li>User's CBU + account Record type</li>
+<li>User's CBU only</li>
+<li>DEFAULT + account Record type</li>
+<li>DEFAULT only</li>
+</ol>
+<p>The whole configuration always comes from one step. The app never mixes steps: it never takes position 1 from one step and position 2 from another.</p>
+
+<h3>Example (line 3, HCP page)</h3>
+<p>Records configured:</p>
+<table>
+<tr><th>Record</th><th>Position 1</th><th>Position 2</th><th>Position 3</th><th>Position 4</th></tr>
+<tr><td>DEFAULT</td><td>Phone</td><td>Email</td><td>Specialty</td><td>Preferred address</td></tr>
+<tr><td>DE</td><td>Phone</td><td>Email</td><td>Preferred channel</td><td>Preferred address</td></tr>
+<tr><td>AT + Paediatrics</td><td>Phone</td><td>Email</td><td>Hospital ward</td><td>Preferred channel</td></tr>
+</table>
+<table>
+<tr><th>User</th><th>What they see</th><th>Why</th></tr>
+<tr><td>DE rep, any team</td><td>DE configuration</td><td>Step 4: DE has no team-specific setup</td></tr>
+<tr><td>AT rep, Paediatrics</td><td>AT + Paediatrics configuration</td><td>Step 2</td></tr>
+<tr><td>AT rep, Adults</td><td>DEFAULT configuration</td><td>AT has no setup for Adults and none for AT only</td></tr>
+<tr><td>IT rep</td><td>DEFAULT configuration</td><td>IT has no setup of its own</td></tr>
+</table>
+<p>Insight cards use the same filters and the same 6 steps. The chosen step gives the complete list of cards for the General and Segment sub-tabs.</p>
+
+<h2>Open points to confirm <span class="new">New</span></h2>
+<ol>
+<li><b>Source objects</b> for Affiliation, Questionnaire and Sample: affiliation object, questionnaire assignment object, and where the product sample limit and delivered quantity are stored.</li>
+<li><b>Decision maker:</b> editable by the rep on every affiliation. Confirm the field-level security and whether changes on Hard affiliations need an audit trail.</li>
+<li><b>Sample period:</b> the limit is annual. Does the year mean the calendar year, or a fiscal year?</li>
+<li><b>Plan a call:</b> does the calendar create a Pitcher call or a calendar event?</li>
+<li><b>Questionnaire Start:</b> confirm it opens the existing Pitcher questionnaire, and whether mandatory ones must block anything (for example the call).</li>
+<li><b>Questionnaire and Sample on HCO:</b> both are shown on both pages. Confirm they are needed on HCO.</li>
+<li><b>Affiliation Soft / Hard:</b> who creates Hard affiliations (integration, back office)? In the mockup users create only Soft ones.</li>
+</ol>
+</main>
+</body>
+</html>
