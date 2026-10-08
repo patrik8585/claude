@@ -275,6 +275,10 @@ table.grid{width:100%;border-collapse:separate;border-spacing:0;min-width:560px;
 .cell .pencil{position:absolute;top:6px;right:8px;border:0;background:none;color:var(--faint);font-size:11px;padding:2px;opacity:0;transition:opacity .12s}
 .grid tr:hover .cell .pencil,.cell.editing .pencil{opacity:1}
 .cell .pencil:hover{color:var(--link)}
+.cell .clr{position:absolute;top:6px;left:8px;border:0;background:none;color:var(--faint);font-size:10.5px;padding:2px;opacity:0;transition:opacity .12s}
+.grid tr:hover .cell .clr,.cell.editing .clr{opacity:1}
+.cell .clr:hover{color:var(--link)}
+.dmrow .clr{border:0;background:none;color:var(--link);font-size:10.5px;padding:0}
 .cell.editing{background:var(--accent-soft);border-radius:10px;box-shadow:0 0 0 2px var(--accent) inset}
 .cell .num{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
 .cell .cap{font-size:10px;color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
@@ -600,7 +604,7 @@ const P={
   insight:{DE:{General:[
      {l:'Institution Sector',t:'text',v:'frei / gemeinnützig',c:'#2556A8',upd:'1 month ago'},
      {l:'Structure Type',t:'text',v:'ETA',c:'#2556A8',upd:'1 month ago'},
-     {l:'Number of Beds',t:'doughnut',v:'320',max:500,c:'#2E7D32',pot:'Region max 500',upd:'1 month ago',edit:true}],
+     {l:'Number of Beds',t:'doughnut',v:'320',max:500,c:'#2E7D32',upd:'1 month ago',edit:true}],
     Segment:{grid:{dims:['Team'],cols:[{t:'NOB',sub:'Patients per year'},{t:'CL',sub:'Commitment level, 1 low – 5 high'},{t:'Segment letter',sub:'A highest – D lowest potential'}],rows:[
        {keys:['FI Hospital'],upd:'5 days ago',cells:[{t:'num',v:'210'},{t:'cl',v:5},{t:'letter',v:'A'}]},
        {keys:['NO Pharmacy'],upd:'5 days ago',cells:[{t:'num',v:'75'},{t:'cl',v:3},{t:'letter',v:'B'}]},
@@ -732,7 +736,7 @@ function insightCard(c){
     body=`<div><div class="dots">${c.steps.map((_,i)=>`<i style="${i<=c.idx?`background:${c.scale[i]};border-color:${c.scale[i]}`:''}" title="${esc(c.steps[i])}"></i>`).join('')}</div><div class="dotlab" style="color:${col}">${esc(c.v)}</div></div>`}
   else if(c.t==='doughnut'||c.t==='doughnut%'){
     const num=parseFloat(c.v)||0, pct=Math.max(0,Math.min(1,num/c.max)), C=2*Math.PI*34;
-    body=`<div><div class="ring2"><svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="34" fill="none" stroke="var(--surface-2)" stroke-width="10"/><circle cx="43" cy="43" r="34" fill="none" stroke="${c.c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}"/></svg><span class="mid" style="color:${c.c}">${esc(c.v)}${c.t==='doughnut%'?'%':''}</span></div>${c.pot?`<div class="pot">${esc(c.pot)}</div>`:''}</div>`}
+    body=`<div><div class="ring2"><svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="34" fill="none" stroke="var(--surface-2)" stroke-width="10"/><circle cx="43" cy="43" r="34" fill="none" stroke="${c.c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}"/></svg><span class="mid" style="color:${c.c}">${esc(c.v)}${c.t==='doughnut%'?'%':''}</span></div><div class="pot">of ${esc(c.max)}</div></div>`}
   return `<div class="icard"><div class="top"><span class="nm">${esc(c.l)}</span>${c.edit&&state.editPick!==c.l?`<button class="pencil" type="button" aria-label="Edit"${c.t==='picklist'?` data-pick="${esc(c.l)}"`:''}>✎</button>`:''}</div><div class="body">${body}</div>${state.editPick===c.l?`<div class="foot"><span></span><span class="cellbtns"><button type="button" class="ok" data-pick-save="${esc(c.l)}">Save</button><button type="button" data-pick-cancel="1">Cancel</button></span></div>`:`<div class="foot${c.edit?'':' ro'}"><span>Updated ${esc(c.upd)}</span>${c.edit?`<button type="button"${c.t==='picklist'?` data-pick-clear="${esc(c.l)}"`:''}>Clear</button>`:''}</div>`}</div>`;
 }
 
@@ -745,16 +749,16 @@ function gridCell(c,r,i){
   if(c.t==='num'){
     inner = ed
       ? `<input class="gin" id="gin-${r}-${i}" type="number" value="${esc(c.v)}" aria-label="Value"><div class="cellbtns"><button type="button" class="ok" data-save="${r}-${i}">Save</button><button type="button" data-cancel="1">Cancel</button></div>`
-      : `<span class="num">${esc(c.v)}</span>`;
+      : `<span class="num">${c.v===''?'—':esc(c.v)}</span>`;
   } else if(c.t==='cl'){
-    const col=clCol(c.v);
+    const col=c.v?clCol(c.v):'';
     inner = `<div class="pips">${[1,2,3,4,5].map(n=>{const on=n<=c.v;const st=on?`background:${col};border-color:${col}`:'';
-      return ed?`<button class="pip" type="button" data-set="${r}-${i}-${n}" style="${st}" aria-label="${n}"></button>`:`<b style="${st}"></b>`}).join('')}</div><span class="num" style="font-size:14px;color:${col}">CL ${c.v}</span>`;
+      return ed?`<button class="pip" type="button" data-set="${r}-${i}-${n}" style="${st}" aria-label="${n}"></button>`:`<b style="${st}"></b>`}).join('')}</div><span class="num" style="font-size:14px;color:${col}">CL ${c.v||'—'}</span>`;
   } else {
     inner = `<div class="chips">${LETTERS.map(L=>{const on=L===c.v;const st=on?`background:${LCOL[L]};border-color:${LCOL[L]};color:#fff`:'';
       return `<b style="${st}">${L}</b>`}).join('')}</div>`;
   }
-  return `<div class="cell${ed?' editing':''}" ${at}>${inner}${(c.t==='num'&&ed)||c.t==='letter'?'':`<button class="pencil" type="button" data-edit="${r}-${i}" aria-label="Edit">✎</button>`}</div>`;
+  return `<div class="cell${ed?' editing':''}" ${at}>${inner}${(c.t==='num'&&ed)||c.t==='letter'?'':`<button class="pencil" type="button" data-edit="${r}-${i}" aria-label="Edit">✎</button>`}${c.t!=='letter'&&c.v!==''&&c.v!==0&&!(c.t==='num'&&ed)?`<button class="clr" type="button" data-clear="${r}-${i}">Clear</button>`:''}</div>`;
 }
 function segmentGrid(g){
   const used=g.dims.filter((d,i)=>g.rows.some(r=>r.keys[i]));
@@ -791,14 +795,14 @@ function renderAff(d){
     const edFT=canEdit('from',r[5])||canEdit('to',r[5]), ed=ea===i&&edFT;
     const dmed=ed2===i;
     const dmcell=dmed?`${dmEdit('aff-dm',r[4])}<span class="cellbtns" style="margin-top:6px"><button type="button" class="ok" data-dm-save="${i}">Save</button><button type="button" data-dm-cancel="1">Cancel</button></span>`
-      :`<div class="dmrow">${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}${canEdit('dm',r[5])?`<button class="pencil" type="button" data-dm-edit="${i}" aria-label="Edit decision maker">✎</button>`:''}</div>`;
+      :`<div class="dmrow">${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}${canEdit('dm',r[5])?`<button class="pencil" type="button" data-dm-edit="${i}" aria-label="Edit decision maker">✎</button>${r[4].length?`<button class="clr" type="button" data-dm-clear="${i}">Clear</button>`:''}`:''}</div>`;
     const act=ed?`<span class="cellbtns"><button type="button" class="ok" data-aff-save="${i}">Save</button><button type="button" data-aff-cancel="1">Cancel</button></span>`
       :edFT?`<button class="pencil" type="button" data-aff-edit="${i}" aria-label="Edit from / to">✎</button>`:`<span class="lock" title="From and To cannot be changed for this affiliation">🔒</span>`;
     return `<tr><td>${ed&&canEdit('from',r[5])?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed&&canEdit('to',r[5])?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td>${xc.map(k=>k==='dm'?`<td>${dmcell}</td>`:k==='rel'?`<td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td>`:`<td>${(r[6]||{})[k]?esc(r[6][k]):'<span class="faint">—</span>'}</td>`).join('')}<td style="text-align:right">${act}</td></tr>`}).join('');
   const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td>${xc.map(k=>k==='dm'?`<td>${dmEdit('aff-dm','')}</td>`:k==='rel'?`<td>${pill('Soft','soft')}</td>`:'<td><span class="faint">—</span></td>').join('')}<td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
   return `<div class="qsum"><span>${rows.length} affiliations</span><button class="btn sm primary" type="button" data-aff-new="1" style="margin-left:auto"${na?' disabled':''}>+ New affiliation</button></div>
    <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th>${xc.map(k=>`<th>${esc(AFFLAB[k]||k)}</th>`).join('')}<th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
-   <p class="sample">Example affiliations. From and To are always both filled and can each be an HCP or an HCO. Which columns are editable, and on which affiliations (None / Soft / All), is set in the custom metadata, not in the app. Default: From and To editable on Soft only (locked on Hard), Decision maker (${DM_OPTS.join(' / ')}) editable on Hard and Soft, Relationship type read-only. Use the switch above the device to see From/To switched to read-only. New affiliations are created as Soft. Only From and To are fixed: always shown, first, for every CBU. All other columns (Decision maker, Relationship type, extra fields) come from custom metadata per CBU and Team, so they can be shown, hidden or reordered. Switch CBU/Team above the device to compare, e.g. AT Adults has no Decision maker column.</p>`;
+   <p class="sample">Example affiliations. From and To are always both filled (so they have a pencil but no Clear) and can each be an HCP or an HCO. Every other editable value has a pencil and a Clear. Which columns are editable, and on which affiliations (None / Soft / All), is set in the custom metadata, not in the app. Default: From and To editable on Soft only (locked on Hard), Decision maker (${DM_OPTS.join(' / ')}) editable on Hard and Soft, Relationship type read-only. Use the switch above the device to see From/To switched to read-only. New affiliations are created as Soft. Only From and To are fixed: always shown, first, for every CBU. All other columns (Decision maker, Relationship type, extra fields) come from custom metadata per CBU and Team, so they can be shown, hidden or reordered. Switch CBU/Team above the device to compare, e.g. AT Adults has no Decision maker column.</p>`;
 }
 function renderQuest(d){
   const f=state.qf||'All', all=d.quest, open=all.filter(q=>q[1]!=='Answered'), mand=open.filter(q=>q[2]==='Yes');
@@ -847,7 +851,7 @@ function renderRatings(d){
   const sec=conf[cur], grid=Array.isArray(sec)?null:sec.grid, cards=Array.isArray(sec)?sec:(sec.cards||[]);
   return subtabBar(all,cur)+
    `<div class="isec"><h4>${esc(cur)}</h4>${grid?segmentGrid(grid):''}${cards.length?`<div class="icards"${grid?' style="margin-top:10px"':''}>${cards.map(insightCard).join('')}</div>`:''}</div>`+
-   `<p class="sample">Example cards. Display type, colour scale and thresholds come from custom metadata (see CR section 10.2). Each row is one segment record. The first column shows what the CBU segments by – therapeutic area, team, or both (team as a chip). Switch CBU/Team above the device to compare. Sub-tabs: General, Segment and Affiliation, all from custom metadata. Questionnaire and Sample are separate tabs.</p>`;
+   `<p class="sample">Example cards. Display type, colour scale and thresholds come from custom metadata (see CR item 13). Each row is one segment record. The first column shows what the CBU segments by – therapeutic area, team, or both (team as a chip). Switch CBU/Team above the device to compare. Sub-tabs: General, Segment and Affiliation, all from custom metadata. Questionnaire and Sample are separate tabs.</p>`;
 }
 
 
@@ -873,11 +877,13 @@ function bind(d){
   $$('[data-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editCell=null;render()}));
   $$('[data-save]').forEach(b=>b.addEventListener('click',()=>{const [r,i]=b.dataset.save.split('-').map(Number);const g=gridOf();const inp=$('#gin-'+r+'-'+i);
     if(g&&inp){g.rows[r].cells[i].v=inp.value.trim()||'0';g.rows[r].upd='just now'}state.editCell=null;render()}));
+  $$('[data-clear]').forEach(b=>b.addEventListener('click',()=>{const [ri,ci]=b.dataset.clear.split('-').map(Number);const g=gridOf();if(g){const cell=g.rows[ri].cells[ci];cell.v=cell.t==='cl'?0:'';g.rows[ri].upd='just now'}state.editCell=null;render()}));
   $$('[data-set]').forEach(b=>b.addEventListener('click',()=>{const p=b.dataset.set.split('-');const r=+p[0],i=+p[1],v=p[2];const g=gridOf();
     if(g){g.rows[r].cells[i].v=isNaN(+v)?v:+v;g.rows[r].upd='just now'}state.editCell=null;render()}));
   $$('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{const on=b.getAttribute('aria-checked')==='true';b.setAttribute('aria-checked',!on);b.classList.toggle('on',!on);const c=findCard(d,b.dataset.toggle);if(c)c.v=on?'No':'Yes'}));
   $$('[data-aff-new]').forEach(b=>b.addEventListener('click',()=>{state.newAff=true;state.editAff=null;state.editDM=null;render()}));
   $$('[data-dm-edit]').forEach(b=>b.addEventListener('click',()=>{state.editDM=+b.dataset.dmEdit;state.editAff=null;state.newAff=false;render()}));
+  $$('[data-dm-clear]').forEach(b=>b.addEventListener('click',()=>{d.aff.rows[+b.dataset.dmClear][4]=[];render()}));
   $$('[data-dm-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editDM=null;render()}));
   $$('[data-dm-save]').forEach(b=>b.addEventListener('click',()=>{d.aff.rows[+b.dataset.dmSave][4]=dmRead('aff-dm');state.editDM=null;render()}));
   $$('[data-aff-edit]').forEach(b=>b.addEventListener('click',()=>{state.editAff=+b.dataset.affEdit;state.editDM=null;state.newAff=false;render()}));
