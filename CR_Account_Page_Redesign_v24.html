@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CR Account Page Redesign v24</title>
+<style>
+:root{--ink:#1B2430;--muted:#5B6675;--line:#DCE1E8;--accent:#1F3A68;--soft:#EEF2F8;--new:#6B3FA0;--new-soft:#F1EAF9}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:15px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:26px;margin:0 0 4px;color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 24px}
+h2{font-size:19px;color:var(--accent);margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent)}
+h3{font-size:15.5px;margin:22px 0 6px}
+h4{font-size:14px;margin:16px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+p{margin:6px 0 10px}
+ul,ol{margin:6px 0 12px;padding-left:22px}
+li{margin:3px 0}
+code{background:var(--soft);border-radius:4px;padding:1px 5px;font:12.5px ui-monospace,Menlo,Consolas,monospace}
+table{border-collapse:collapse;width:100%;margin:10px 0 16px;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+.new{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--new);background:var(--new-soft);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.item{border:1px solid var(--line);border-radius:10px;padding:2px 16px 8px;margin:14px 0}
+.item h3{margin-top:12px}
+.note{background:var(--soft);border-left:4px solid var(--accent);padding:8px 12px;border-radius:0 8px 8px 0;margin:10px 0}
+.key{font-weight:600}
+@media print{main{padding:0}.item{break-inside:avoid}}
+.scroll{overflow-x:auto;margin:10px 0 16px}
+.mx{margin:0;font-size:12px;min-width:100%}
+.mx th,.mx td{padding:5px 8px;white-space:nowrap}
+.mx td:first-child,.mx th:first-child{position:sticky;left:0;background:var(--soft);font-weight:600}
+.mx td:first-child{background:#fff}
+h4{page-break-after:avoid}
+</style>
+</head>
+<body>
+<main>
+<h1>Account Page Redesign (HCP and HCO)</h1>
+<p class="sub">Change request description. Reference mockup: Account_Page_Redesign_Mockup_v24.</p>
+
+<h2>Macro requirement</h2>
+
+<div class="item">
+<h3>1. Account page layout</h3>
+<p>Account page layout (HCP and HCO) with a fixed highlight panel and tab bar, single vertical scroll, Pitcher top bar and left menu unchanged.</p>
+</div>
+
+<div class="item">
+<h3>2. Highlight panel, lines 1 and 2</h3>
+<p>Highlight panel with name, Target chip, Consent chip, Start call and actions button on line 1, plus fixed fields defined by the global team on line 2:</p>
+<ul>
+<li><b>HCP:</b> Workplace, Address, Specialty, Last call</li>
+<li><b>HCO:</b> Address, WorkPlace Type, Last call, XX – 4th field to be decided by global team</li>
+</ul>
+<p>The list of the second line is also saved in the custom metadata for easy maintenance.</p>
+</div>
+
+<div class="item">
+<h3>3. Highlight panel, line 3 (custom metadata)</h3>
+<p>Highlight panel line 3 with 4 fields driven by custom metadata per Country, Team and Record type (with fallback to DEFAULT).</p>
+<p class="key">Custom metadata <code>Account_Header_Field__mdt</code> (used for line 2 and line 3):</p>
+<table>
+<tr><th>Field</th><th>Description</th></tr>
+<tr><td><code>Label</code></td><td>Standard field, mandatory. Always equal to the <code>DeveloperName</code> (account header guide, section 2.1). Maximum 40 characters</td></tr>
+<tr><td><code>DeveloperName</code></td><td>Standard field (Name in Setup), mandatory. Unique name of the record, with the mandatory naming convention <code>PAGE_CBU_TEAM_RT_LINE_Name</code> (account header guide, section 2.1), e.g. <code>HCP_DEF_DEF_DEF_L2_Workplace</code>. Letters, numbers and single underscores only, starts with a letter, maximum 40 characters</td></tr>
+<tr><td><code>Page__c</code></td><td>HCP / HCO</td></tr>
+<tr><td><code>Line__c</code></td><td>2 = fixed line, global records (CBU DEFAULT) / 3 = configurable line</td></tr>
+<tr><td><code>CBU__c</code></td><td>Country code, DEFAULT as fallback</td></tr>
+<tr><td><code>Team__c</code></td><td>Team within the CBU, e.g. Adults, Paediatrics – Default = all teams</td></tr>
+<tr><td><code>Record_Type__c</code></td><td>Account record type – Default = all</td></tr>
+<tr><td><code>Position__c</code></td><td>1 to 4</td></tr>
+<tr><td><code>Display_Type__c</code></td><td>Field / Link / Last Call</td></tr>
+<tr><td><code>Source_Object__c</code> and <code>Source_Field__c</code></td><td>Metadata relationships to the object and field</td></tr>
+<tr><td><code>Short_Label__c</code></td><td>Label shown in the panel</td></tr>
+<tr><td><code>Is_Active__c</code></td><td>Only active records are used</td></tr>
+</table>
+<p class="key">Resolution for line 3:</p>
+<p>CBU + Team + Record type → CBU + Team → CBU + Record type → CBU → DEFAULT + Record type → DEFAULT</p>
+</div>
+
+<div class="item">
+<h3>4. Target chip</h3>
+<p>Target chip with engagement plan popover per channel (Goal / Actual / Planned, progress bars, Touchpoints / CEQ toggle).</p>
+</div>
+
+<div class="item">
+<h3>5. Consent Status chip</h3>
+<p>Consent Status chip (green / red) with popover showing channel-level consent detail and link to Consent Management History; removal of the current consent and last call banners.</p>
+</div>
+
+<div class="item">
+<h3>6. Last call field</h3>
+<p>Last call field with Last Call Details popover (call time, brands, products, TA, channel, pre-call and post-call notes) – same information as-is.</p>
+</div>
+
+<div class="item">
+<h3>7. Actions button</h3>
+<p>Actions button ("•••") next to Start call opening the context features, in this order:</p>
+<ol>
+<li><b>Share box</b></li>
+<li><b>Plan a call</b> – opens the calendar, where the user picks a day and a free slot to plan a call with the HCP/HCO.</li>
+<li><b>Open in Salesforce (online)</b> – always the last option.</li>
+</ol>
+</div>
+
+<div class="item">
+<h3>8. New tab structure</h3>
+<ul>
+<li><b>HCP</b> = Summary 360 / Timeline 360 / Details / Insight / Questionnaire / Sample</li>
+<li><b>HCO</b> = HCPs / Summary 360 / Timeline 360 / Details / Insight / Questionnaire / Sample</li>
+</ul>
+<p>Removal of current toggles and Details sub-tabs.</p>
+</div>
+
+<div class="item">
+<h3>9. Summary 360 tab rework</h3>
+<p>Basic info without fields already in the panel, full-width sections, anchor bar, engagement plan link in Last Visit Summary. The Summary 360 tab shows the new 360 page for CDP and non-CDP countries.</p>
+</div>
+
+<div class="item">
+<h3>10. Timeline 360 tab</h3>
+<p>Timeline 360 tab (moved out of Summary 360): activities grouped by month, filters (6/12 months, TA, HCP for HCO, activity type, only my activities), call details and attendees for Calls saved in pitcher. This is the rework of the Last Activity Summary that is currently in the new 360 page.</p>
+</div>
+
+<div class="item">
+<h3>11. Details tab rework</h3>
+<p>Left navigation with sections and related lists (with counts), search by field name or value, Hide empty toggle, edit button for editing the information of the account.</p>
+</div>
+
+<div class="item">
+<h3>12. HCPs tab on the HCO page</h3>
+<p>Renamed from Contacts, same content.</p>
+</div>
+
+<div class="item">
+<h3>13. Insight tab</h3>
+<p>The Insight tab has <b>3 sub-tabs</b>, in this order: <b>General, Segment, Affiliation</b>. The Insight tab contains only what each CBU can configure with custom metadata.</p>
+<ul>
+<li><b>General, Segment and Affiliation</b> are driven by the same two custom metadata types, <code>Account_Insight_Card__mdt</code> (always) and <code>Account_Insight_Range__mdt</code> (optional colours), with the same selection keys and the same 6-step resolution (see 13.4 and 13.5, and the attached Insight tab guide). The layout is decided by the sub-tab: <b>General = cards, Segment = grid, Affiliation = table</b>.</li>
+</ul>
+
+<h4>13.1 General</h4>
+<p>Sub-tab with the Account fields shown as visual cards (switch, number, date, text, continuum, doughnut; see 13.4.1), with colour ranges. Editable values have a pencil and a Clear, in all sub-tabs, also the switch. Which cards are shown, in which order and whether they are editable is defined in <code>Account_Insight_Card__mdt</code> (see 13.4). The colours of the values are defined in <code>Account_Insight_Range__mdt</code> (optional, see 13.5).</p>
+
+<h4>13.2 Segment</h4>
+<p>Sub-tab with the Account Segment records of the account, shown as a grid: rows by Therapeutic Area, by Team, or by Therapeutic Area and Team, as defined in the metadata records (per CBU, Team and Record type), NOB / CL / Segment letter columns with descriptions, inline edit. In the default configuration <b>NOB and CL are editable inline and Segment letter is read-only</b>. Which columns are shown, in which order and whether they are editable is defined in <code>Account_Insight_Card__mdt</code> (see 13.4), so the default can be changed in the future by changing the metadata records only. The rows are the Account Segment records of the account, labelled by the row fields of the metadata (<code>Grid_Row_Field_1__c</code>, <code>Grid_Row_Field_2__c</code>). The colours of the values are defined in <code>Account_Insight_Range__mdt</code> (optional, see 13.5).</p>
+
+<h4>13.3 Affiliation</h4>
+<p>Shows the affiliations of the account, between HCP and HCP and between HCP and HCO: all the affiliation records where the opened account is <b>From</b> or <b>To</b>.</p>
+<p>The sub-tab is a table with one row per affiliation. Which columns are shown, in which order and whether they are editable is defined in <code>Account_Insight_Card__mdt</code> (see 13.4), per CBU, Team and Record type, with the same 6-step resolution as item 3. A column is shown only if it has a record. The colours of the values are defined in <code>Account_Insight_Range__mdt</code> (optional, see 13.5).</p>
+<table>
+<tr><th>Column</th><th>Source field</th><th>Description</th><th>Default editability</th></tr>
+<tr><td>From</td><td>From (account lookup)</td><td>HCP or HCO. Mandatory on an affiliation.</td><td>Soft only (locked on Hard)</td></tr>
+<tr><td>To</td><td>To (account lookup)</td><td>HCP or HCO. Mandatory on an affiliation.</td><td>Soft only (locked on Hard)</td></tr>
+<tr><td>Decision maker</td><td>Decision maker (multipicklist)</td><td><i>Discharge Decision Maker</i>, <i>Product Decision Maker</i>. A row can have both, or none.</td><td>Hard and Soft</td></tr>
+<tr><td>Relationship type</td><td>Relationship type (picklist)</td><td>Soft or Hard.</td><td>Never</td></tr>
+<tr><td>Any other column</td><td>Any other field of the affiliation object</td><td>For example Role, Start date, Notes.</td><td>Read-only unless the record says otherwise</td></tr>
+</table>
+<ul>
+<li>An affiliation cannot exist without From and To. So <b>every Affiliation configuration must contain a record for From and a record for To</b> (they should have Sort_Order 1 and 2, so that they are the first two columns). They are normal records like all the others: if tomorrow From and To must be read-only, only the record changes (<code>Editable__c</code> = No), not the app.</li>
+<li><b>+ New affiliation</b> button: the user picks From and To (both mandatory, and they must be different) and fills the other configured columns that are editable. The new affiliation is created as <i>Soft</i>.</li>
+<li><code>Editable__c</code> = Soft only means: editable only on affiliations whose Relationship type is Soft (Hard ones show a lock). Yes = editable on all, No = read-only.</li>
+</ul>
+
+<h4>13.4 Custom metadata <code>Account_Insight_Card__mdt</code></h4>
+<p>One record per <b>card</b> (General), per <b>grid column</b> (Segment) or per <b>table column</b> (Affiliation). It is always the same custom metadata type with the same fields. The sub-tab decides what a record builds and which records are read:</p><table><tr><th><code>Sub_Tab__c</code></th><th>Each record is</th><th>Records read</th></tr><tr><td>General</td><td>A card</td><td>The opened account (Account)</td></tr><tr><td>Segment</td><td>A column of the grid</td><td>The Account Segment records of the opened account, one row each</td></tr><tr><td>Affiliation</td><td>A column of the table</td><td>The affiliation records where the opened account is From or To, one row each</td></tr></table><p>Only the fields that are really needed are in the metadata. Everything else comes from the Salesforce field itself: label, decimals, currency, help text, picklist values and their order. The <code>DeveloperName</code> is the key that <code>Account_Insight_Range__mdt</code> uses to point to a card (see 13.5).</p>
+<table><tr><th>Field</th><th>Mandatory</th><th>Used in</th><th>Description</th></tr><tr><td><code>Label</code></td><td>Yes</td><td>All</td><td>Standard field. Always equal to the <code>DeveloperName</code> (Insight tab guide, section 2.0). Maximum 40 characters.</td></tr><tr><td><code>DeveloperName</code></td><td>Yes</td><td>All</td><td>Standard field (Name in Setup). Unique name of the record and key used by <code>Account_Insight_Range__mdt</code> to point to the card. Mandatory naming convention <code>PAGE_CBU_TEAM_RT_SUB_Name</code> (Insight tab guide, section 2.0), e.g. <code>HCP_DE_DEF_DEF_GEN_BabiesPerYear</code>. Letters, numbers and single underscores only, starts with a letter, maximum 40 characters.</td></tr><tr><td><code>Page__c</code></td><td>Yes</td><td>All</td><td>HCP / HCO</td></tr><tr><td><code>CBU__c</code></td><td>Yes</td><td>All</td><td>Country code of the user. DEFAULT = fallback for countries without their own setup.</td></tr><tr><td><code>Team__c</code></td><td>Yes</td><td>All</td><td>Team of the user within the CBU, e.g. Adults, Paediatrics. Default = all teams.</td></tr><tr><td><code>Record_Type__c</code></td><td>Yes</td><td>All</td><td>Record type of the opened account. Default = all record types.</td></tr><tr><td><code>Is_Active__c</code></td><td>Yes (checkbox, default ticked)</td><td>All</td><td>Only active records are used. Untick to switch a card or column off without deleting it.</td></tr><tr><td><code>Sub_Tab__c</code></td><td>Yes</td><td>All</td><td>General / Segment / Affiliation: the Insight sub-tab where the record appears.</td></tr><tr><td><code>Sort_Order__c</code></td><td>Yes</td><td>All</td><td>Position: cards in the order of the number, columns from left to right. Should be unique within the same configuration and sub-tab. If two records have the same number, they are shown in alphabetical order of their label.</td></tr><tr><td><code>Source_Field__c</code></td><td>Yes</td><td>All</td><td>API name of the field that is shown. The object comes from the sub-tab.</td></tr><tr><td><code>Card_Label__c</code></td><td>No</td><td>All</td><td>Title of the card or header of the column. Blank = label of the Salesforce field.</td></tr><tr><td><code>Display_Type__c</code></td><td>Yes</td><td>All</td><td>Switch / Number / Date / Text / Name / Continuum / Doughnut. It must fit the type of the field specified in Salesforce (see 13.4.1).</td></tr><tr><td><code>Max_Value__c</code></td><td>Yes, if Display_Type__c = Doughnut. Otherwise blank</td><td>Doughnut</td><td>Maximum of the doughnut (e.g. 500).</td></tr><tr><td><code>Editable__c</code></td><td>Yes</td><td>All</td><td>No / Yes / Soft only. Same behaviour in all sub-tabs: an editable value shows a pencil (to edit it, with Save / Cancel) and a Clear (to empty it), also the switch, so that it cannot be changed by accident. Clear is not shown when the Salesforce field is required (e.g. From and To). Soft only = only on affiliations with Relationship type Soft (valid for Affiliation only).</td></tr><tr><td><code>Grid_Row_Field_1__c</code></td><td>Yes, if Sub_Tab__c = Segment. Otherwise blank</td><td>Segment</td><td>Field of Account Segment that gives the rows, e.g. Therapeutic Area. Same value on all columns of the grid. Rows are sorted by this field, then by Grid_Row_Field_2__c.</td></tr><tr><td><code>Grid_Row_Field_2__c</code></td><td>No</td><td>Segment</td><td>Second row field, e.g. Team (shown as a chip). Blank = rows by Grid_Row_Field_1__c only.</td></tr></table>
+<h4>13.4.1 How the value is shown (<code>Display_Type__c</code>)</h4><p><code>Display_Type__c</code> is mandatory and says how the value is shown. It must fit the type of the Salesforce field: a record whose <code>Display_Type__c</code> does not fit its field is ignored.</p><table><tr><th><code>Display_Type__c</code></th><th>Field type</th><th>What the user sees</th><th>Colour</th><th>Editing</th></tr><tr><td><b>Switch</b></td><td>Checkbox</td><td>Switch, on or off</td><td>On = green, off = grey. No ranges</td><td>Pencil, then the switch with Save / Cancel. Clear sets it to off</td></tr><tr><td><b>Number</b></td><td>Number, percent, currency</td><td>Big number, with the decimals and the currency of the field</td><td>From the numeric ranges</td><td>Pencil, input, Clear</td></tr><tr><td><b>Date</b></td><td>Date, date/time</td><td>Date in the user format</td><td>No ranges</td><td>Pencil, date picker, Clear</td></tr><tr><td><b>Text</b></td><td>Text, picklist, <b>multipicklist</b></td><td>Value as text. A multipicklist shows one chip per selected value</td><td>From the ranges on <code>Values__c</code></td><td>Pencil, then: text = input, picklist = dropdown with the values of the field, multipicklist = checkboxes with the values of the field. Clear</td></tr><tr><td><b>Name</b></td><td>Lookup to Account</td><td>Name of the HCP or HCO with a small HCP / HCO tag</td><td>No ranges</td><td>Pencil, dropdown of HCPs and HCOs. Clear, unless the field is required</td></tr><tr><td><b>Continuum</b></td><td>Picklist (single value)</td><td>A row of steps in the order of the picklist values of the field, filled up to the current value, with the value written below. In a grid: dots (e.g. CL 1 to 5) or letter chips (e.g. A to D)</td><td>From the ranges on <code>Values__c</code></td><td>Pencil, then pick a step. Clear</td></tr><tr><td><b>Doughnut</b></td><td>Number, percent, currency</td><td>Ring filled in proportion value / <code>Max_Value__c</code>, value in the centre, "of" and the maximum under it</td><td>From the numeric ranges</td><td>Pencil, input, Clear</td></tr></table><p>A multipicklist can only be shown with <b>Text</b>. Every card also shows "Updated …" (last modification of the value) at the bottom. An empty value is shown as "—". In the Segment grid the columns can be Number, Text or Continuum; in the Affiliation table Name, Text, Date or Number.</p>
+<h4>13.5 Custom metadata <code>Account_Insight_Range__mdt</code></h4>
+<p>Optional. Colour ranges of a card or column, up to 10 per card record. They apply only to the card record they point to. Ranges of the same record must not overlap. A range belongs to <b>one card record only</b>: if the same card exists in several configurations (for example DEFAULT and DE), each card record needs its own ranges. </p>
+<table><tr><th>Field</th><th>Mandatory</th><th>Description</th></tr><tr><td><code>Label</code></td><td>Yes</td><td>Standard field. Always equal to the <code>DeveloperName</code> of the range. Maximum 40 characters.</td></tr><tr><td><code>DeveloperName</code></td><td>Yes</td><td>Standard field (Name in Setup). Unique name of the range: <code>DeveloperName</code> of the card + <code>_</code> + number of the range (1 to 10), e.g. <code>HCP_DE_DEF_DEF_GEN_BabiesPerYear_1</code>. Same character rules as the card.</td></tr><tr><td><code>Insight_Card__c</code></td><td>Yes</td><td>Metadata relationship to the card record (<code>Account_Insight_Card__mdt</code>). The record stores the <code>DeveloperName</code> of the card, e.g. <code>HCP_DE_DEF_DEF_GEN_BabiesPerYear</code>.</td></tr><tr><td><code>From_Value__c</code> / <code>To_Value__c</code></td><td>For numeric ranges (Number, Doughnut): at least one of the two. Blank for Text and Continuum</td><td>Both limits are included. Blank From = no lower limit, blank To = no upper limit.</td></tr><tr><td><code>Values__c</code></td><td>For Text and Continuum ranges: yes. Blank for numeric ranges</td><td>One or more values separated by ; (e.g. "C;D").</td></tr><tr><td><code>Colour_Hex__c</code></td><td>Yes</td><td>Colour of the value, e.g. #2E7D32.</td></tr></table><p>A range uses either the numeric limits or <code>Values__c</code>, never both. To switch a range off, delete the record.</p>
+<h4>13.5.1 What happens without ranges</h4><p>Ranges are optional. If a card record has <b>no range</b>, or the value matches <b>none</b> of them, the value is still shown, with the default colours of the app, described below. No error is raised.</p><table><tr><th>How it is shown</th><th>Default colour</th></tr><tr><td>Number, Text, Date, Name</td><td>Standard text colour</td></tr><tr><td>Switch</td><td>On = green, off = grey (ranges are never used)</td></tr><tr><td>Doughnut</td><td>Filled part of the ring in the primary colour of the app (the colour of the selected tab and of the primary buttons), the rest of the ring in light grey</td></tr><tr><td>Continuum</td><td>All the steps up to the current value in the primary colour of the app, the remaining steps empty (grey outline)</td></tr></table>
+<div class="note"><b>Metadata impact of the sub-tabs:</b> <code>Sub_Tab__c</code> has three values, General / Segment / Affiliation, all in <code>Account_Insight_Card__mdt</code>, and it decides the layout (cards, grid, table).</div>
+</div>
+
+<div class="item">
+<h3>14. Questionnaire tab</h3>
+<p>Fixed tab, always shown on the HCP and HCO page, with standard data and no metadata. Lists the questionnaires assigned to the HCP/HCO.</p>
+<table>
+<tr><th>Column</th><th>Description</th></tr>
+<tr><td>Questionnaire</td><td>Name of the questionnaire</td></tr>
+<tr><td>Status</td><td>Answered / Not answered</td></tr>
+<tr><td>Mandatory</td><td>Mandatory / Optional</td></tr>
+<tr><td>Assigned / answered</td><td>Assignment or answer date</td></tr>
+<tr><td>Action</td><td><b>Start</b> button on questionnaires not yet answered, to launch the questionnaire; <b>View answers</b> on answered ones</td></tr>
+</table>
+<p>A summary above the list shows "x of y answered" and "n mandatory open". A filter switches between All, Open and Answered.</p>
+</div>
+
+<div class="item">
+<h3>15. Sample tab</h3>
+<p>Fixed tab, always shown on the HCP and HCO page, with standard data and no metadata.</p>
+<p>Shows, per product, the sample limit and the quantity already used or delivered <b>for the current year</b>. Limits are annual, so the quantities restart from 0 every year.</p>
+<table>
+<tr><th>Column</th><th>Description</th></tr>
+<tr><td>Product</td><td>Product name</td></tr>
+<tr><td>Annual limit</td><td>Sample limit for the current year</td></tr>
+<tr><td>Delivered</td><td>Quantity already used or delivered in the current year</td></tr>
+<tr><td>Remaining</td><td>Limit minus delivered. Shows "limit reached" at 0</td></tr>
+</table>
+<p>No usage chart: the numbers are enough.</p>
+</div>
+
+<div class="item">
+<h3>16. Extra: wording</h3>
+<p>Wording in both pages: Contact → HCP, Account → HCO.</p>
+</div>
+
+<h2>Configuration guides (attachments)</h2>
+<p>Two attached files explain how the custom metadata works and how to create the records, with complete examples. Each one is self-contained: selection keys, the 6-step resolution and Default are explained in both.</p>
+<ul>
+<li><b>Guide_Account_Header_Custom_Metadata.html</b>: the account header (<code>Account_Header_Field__mdt</code>).</li>
+<li><b>Guide_Insight_Tab_Custom_Metadata.html</b>: the Insight tab (<code>Account_Insight_Card__mdt</code> and <code>Account_Insight_Range__mdt</code>).</li>
+</ul>
+
+<h2>Open points to confirm</h2>
+<ol>
+<li><b>Source objects</b> for Affiliation, Questionnaire and Sample: affiliation object, questionnaire assignment object, and where the product sample limit and delivered quantity are stored.</li>
+<li><b>Decision maker:</b> editable by the rep on every affiliation. Confirm the field-level security and whether changes on Hard affiliations need an audit trail.</li>
+<li><b>Sample period:</b> the limit is annual. Does the year mean the calendar year, or a fiscal year?</li>
+<li><b>Plan a call:</b> does the calendar create a Pitcher call or a calendar event?</li>
+<li><b>Questionnaire Start:</b> confirm it opens the existing Pitcher questionnaire, and whether mandatory ones must block anything (for example the call).</li>
+<li><b>Questionnaire and Sample tabs on HCO:</b> both are shown on both pages. Confirm they are needed on HCO.</li>
+<li><b>Tab bar:</b> HCP has 6 tabs and HCO 7. Confirm that the tab bar works well on iPad with this number of tabs.</li>
+<li><b>Affiliation columns:</b> which columns does the business want per CBU and Team (Decision maker, Relationship type, Role, Start date, …)? Are the extra ones read-only, or editable (<code>Editable__c</code>)?</li>
+<li><b>Account Segment and Affiliation objects:</b> the link to the opened account is taken from the object of the sub-tab. Confirm Account Segment has a single lookup to Account. For Affiliation both From and To point to Account, and the sub-tab shows the records where the opened account is either of them.</li>
+<li><b>Ranges:</b> From and To limits are both included and ranges of the same record must not overlap. Confirm this rule.</li>
+<li><b>Default colours</b> when no range is defined (13.5.1): confirm with the business.</li>
+<li><b>Invalid records:</b> a card record whose <code>Display_Type__c</code> does not fit the field type is ignored (13.4.1). Confirm this behaviour, and whether an admin warning is needed.</li>
+<li><b>Account_Header_Field__mdt:</b> the mandatory fields in the attached account header guide are proposed. Confirm in particular whether <code>Source_Field__c</code> is needed for Last Call, and the 4th field of the HCO line 2.</li>
+<li><b>Card groups:</b> General shows a single list of cards in the order of <code>Sort_Order__c</code>, without section titles. Confirm the business does not need groups.</li>
+<li><b>Affiliation Soft / Hard:</b> who creates Hard affiliations (integration, back office)? Users create only Soft ones.</li>
+</ol>
+</main>
+</body>
+</html>

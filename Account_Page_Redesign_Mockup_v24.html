@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account Page Redesign</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#EEF1F5; --surface:#FFFFFF; --surface-2:#F5F7FA; --ink:#18202E; --muted:#5E6878; --faint:#98A1AF;
+  --line:#DCE1E8; --accent:#1F3A68; --accent-ink:#FFFFFF; --accent-soft:#E4EAF4; --link:#2556A8;
+  --bad:#B83229; --bad-soft:#FBE9E7; --good:#237A4B; --good-soft:#E3F2E8; --warn:#9A6400; --warn-soft:#FBF1DC;
+  --new:#6B4FB8; --new-soft:#EEE9FA; --rail:#FFFFFF; --rail-ink:#7C8696;
+  --sans:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0F141C; --surface:#18202B; --surface-2:#1E2734; --ink:#E6EAF0; --muted:#A3ADBB; --faint:#6D7786;
+  --line:#2C3644; --accent:#8FB0E6; --accent-ink:#0F1726; --accent-soft:#233149; --link:#8FB5F0;
+  --bad:#F08A80; --bad-soft:#3A2224; --good:#7CCB9C; --good-soft:#1C3326; --warn:#E6B45C; --warn-soft:#352B18;
+  --new:#B7A3F0; --new-soft:#2A2340; --rail:#18202B; --rail-ink:#8595B0;}}
+:root[data-theme="dark"]{
+  --ground:#0F141C; --surface:#18202B; --surface-2:#1E2734; --ink:#E6EAF0; --muted:#A3ADBB; --faint:#6D7786;
+  --line:#2C3644; --accent:#8FB0E6; --accent-ink:#0F1726; --accent-soft:#233149; --link:#8FB5F0;
+  --bad:#F08A80; --bad-soft:#3A2224; --good:#7CCB9C; --good-soft:#1C3326; --warn:#E6B45C; --warn-soft:#352B18;
+  --new:#B7A3F0; --new-soft:#2A2340; --rail:#18202B; --rail-ink:#8595B0;}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:14px;padding-inline:16px;padding-block:24px 48px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:16px}
+.intro h1{font-size:22px;margin:0;font-weight:600;text-wrap:balance}
+.intro p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+.cfg{display:inline-flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.hl-line{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:4px 20px;padding:0 18px 8px 62px}
+.hl-line:last-of-type{padding-bottom:10px}
+.hl-line > div{display:grid;min-width:0}
+.hl-line .lbl{font-size:10px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hl-line .val,.hl-line a,.hl-line button.link{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-align:left}
+.hl-line a{color:var(--link);text-decoration:none;font-weight:500}
+@media (max-width:640px){.hl-line{padding-left:18px;--cols:2!important}}
+.calldet{margin-top:6px}
+.calldet summary{cursor:pointer;color:var(--link);font-size:12.5px}
+.calldet .dl{margin:8px 0 2px;background:var(--surface-2);border-radius:8px;padding:10px 12px}
+.calldet dd.note{white-space:normal;max-width:60ch}
+.sample{font-size:12px;color:var(--faint)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:5px 10px;font-size:12px;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+
+/* device */
+.device{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px -18px rgba(20,30,50,.35);display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto 1fr;height:980px}
+@media (max-width:640px){.device{height:800px;grid-template-columns:minmax(0,1fr)}}
+.appbar{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;overflow:hidden}
+.appbar .brand{font-weight:700;color:var(--accent);letter-spacing:.02em;text-transform:none;font-size:16px;margin-right:auto}
+.appbar span{white-space:nowrap}
+.appbar .pillbtn{background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:5px 11px;font-weight:600}
+@media (max-width:760px){.appbar .x{display:none}}
+.rail{background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:20px;padding-top:18px;color:var(--rail-ink);font-size:15px}
+.rail .on{color:var(--accent);background:var(--accent-soft);border-radius:8px;padding:3px 6px}
+@media (max-width:640px){.rail{display:none}}
+.scroller{overflow-y:auto;background:var(--ground);position:relative;min-width:0}
+
+/* highlight panel: 2 lines */
+.hl{position:sticky;top:0;z-index:6;background:var(--surface);border-bottom:1px solid var(--line)}
+.hl-main{display:flex;align-items:center;gap:12px;padding:10px 18px}
+.back{border:0;background:none;color:var(--link);padding:4px 2px 4px 0;font-size:14px;white-space:nowrap}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:600;font-size:12px;flex:none}
+.who{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who .name{font-size:17px;font-weight:600}
+.who .sub{color:var(--muted);font-size:13.5px}
+.who .sub a{color:var(--link);text-decoration:none}
+.actions{display:flex;gap:8px;align-items:center;flex:none;flex-wrap:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 11px;font-size:12.5px;font-weight:500;border:1px solid transparent;background:var(--surface-2);white-space:nowrap}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.good{background:var(--good-soft);color:var(--good)}
+button.chip:hover{border-color:currentColor}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:500;display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{padding:5px 9px;font-size:12px}
+.btn.ghost{border-color:transparent;background:none;color:var(--link)}
+.split{display:inline-flex}
+.split .btn:first-child{border-radius:8px 0 0 8px}
+.split .btn+.btn{border-radius:0 8px 8px 0;border-left:1px solid rgba(255,255,255,.35);padding-inline:9px}
+@media (max-width:760px){.who .sub{display:none}.chip .t{display:none}}
+.hl-meta{display:flex;gap:6px 30px;padding:0 18px 10px 62px;overflow-x:auto;white-space:nowrap}
+.hl-meta > div{display:flex;gap:6px;align-items:baseline}
+@media (max-width:640px){.hl-meta{padding-left:18px}}
+.lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.hl-meta .lbl{font-size:10.5px}
+.val{font-size:13.5px;overflow-wrap:anywhere}
+.val.empty{color:var(--faint)}
+button.link{color:var(--link);background:none;border:0;padding:0;font-size:13.5px}
+.tabs{display:flex;gap:4px;padding:0 18px;border-top:1px solid var(--line);background:var(--surface);overflow-x:auto}
+.tab{border:0;background:none;padding:10px 12px;font-size:14px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.newtag{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--new);background:var(--new-soft);border-radius:4px;padding:1px 5px}
+.anchors{display:flex;flex-wrap:wrap;gap:6px;padding:8px 18px;background:var(--surface-2);border-top:1px solid var(--line)}
+.anchors button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;color:var(--muted)}
+.anchors button:hover{color:var(--ink)}
+
+/* popovers */
+.pop{position:absolute;top:52px;width:min(380px,calc(100% - 36px));background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.35);padding:14px;z-index:10;right:18px}
+.pop h4{margin:0 0 8px;font-size:14px}
+.pop p{margin:0 0 10px;color:var(--muted);font-size:13px}
+.menu{padding:6px;width:220px}
+.menu button{display:flex;width:100%;border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px;gap:10px;align-items:center;font-size:13.5px}
+.menu button:hover{background:var(--surface-2)}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;font-size:13px;margin:0 0 10px}
+.dl dt{color:var(--muted)}.dl dd{margin:0}
+.ep{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;font-variant-numeric:tabular-nums}
+.ep th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:500;text-align:right;padding:4px 0 6px}
+.ep th:first-child,.ep td:first-child{text-align:left}
+.ep td{padding:7px 0;border-top:1px solid var(--line);text-align:right}
+.ep tr.tot td{font-weight:600}
+.bar{height:6px;border-radius:3px;background:var(--surface-2);position:relative;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;left:0;background:var(--good)}
+.bar b{position:absolute;top:0;bottom:0;background:var(--good);opacity:.35}
+.legend{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin:2px 0 4px}
+.legend span::before{content:"";display:inline-block;width:10px;height:6px;border-radius:2px;background:var(--good);margin-right:5px;vertical-align:middle}
+.legend span.pl::before{opacity:.35}
+
+.panel{padding:16px 18px 40px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;min-width:0;scroll-margin-top:calc(var(--hlh,150px) + 10px)}
+.card.wide{grid-column:1/-1}
+.card-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.card-h h3{margin:0;font-size:14px;font-weight:600;margin-right:auto}
+.card-b{padding:12px 14px}
+.emptytxt{color:var(--faint);font-size:13px}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kv .val{margin-top:2px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.tile{background:var(--surface-2);border-radius:8px;padding:10px}
+.warnline{color:var(--warn);font-size:13px;font-weight:500}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:6px;width:28px;height:28px;display:grid;place-items:center;color:var(--link);font-size:13px}
+
+/* timeline */
+.tl-wrap{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:14px;align-items:start}
+@media (max-width:760px){.tl-wrap{grid-template-columns:1fr}}
+.filters{position:sticky;top:calc(var(--hlh,150px) + 12px)}
+.filters label{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}
+.filters label:first-of-type{border-top:0}
+.ticon{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:10.5px;font-weight:600;flex:none}
+.t-call{background:#E1ECFA;color:#2556A8}.t-f2f{background:#E3F2E8;color:#237A4B}.t-email{background:#FBF1DC;color:#9A6400}.t-pres{background:#EEE9FA;color:#6B4FB8}.t-sample{background:#FBE9E7;color:#B83229}
+.tlbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.tlbar .lbl{text-transform:none;letter-spacing:0;font-size:12.5px}
+select{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;font-size:12.5px;background:var(--surface);color:var(--ink)}
+.months{display:grid;gap:10px}
+.month{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.month-h{display:flex;align-items:center;gap:12px;padding:10px 14px;width:100%;border:0;background:none;text-align:left;flex-wrap:wrap}
+.month-h .m{font-weight:600;min-width:100px}
+.month-h .caret{color:var(--muted);transition:transform .15s}
+.month.open .caret{transform:rotate(90deg)}
+.counts{display:flex;gap:12px;flex-wrap:wrap}
+.counts span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.counts .ticon{width:22px;height:22px;font-size:9px}
+.items{list-style:none;margin:0;padding:12px 14px;border-top:1px solid var(--line);display:none;gap:10px}
+.month.open .items{display:grid}
+.items li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start}
+.tmeta{color:var(--muted);font-size:12px;margin-top:2px}
+.nomonth{color:var(--faint);font-size:13px;padding:2px 14px}
+.you{font-size:10.5px;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:0 5px;margin-left:4px;font-weight:600}
+
+/* details */
+.md{display:grid;grid-template-columns:230px minmax(0,1fr);align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:720px}
+@media (max-width:760px){.md{grid-template-columns:1fr}}
+.side{position:sticky;top:var(--hlh,150px);max-height:calc(980px - var(--hlh,150px) - 60px);overflow-y:auto;border-right:1px solid var(--line);background:var(--surface-2);border-radius:10px 0 0 10px;padding:6px 0}
+@media (max-width:760px){.side{position:static;max-height:240px;border-right:0;border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}}
+.side h5{margin:10px 14px 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--faint);font-weight:500}
+.side button{display:flex;justify-content:space-between;gap:8px;width:100%;border:0;background:none;text-align:left;padding:7px 14px;font-size:13px;color:var(--ink);border-left:3px solid transparent}
+.side button:hover{background:var(--surface)}
+.side button[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600;border-left-color:var(--accent)}
+.side .n{font-family:var(--mono);font-size:11px;color:var(--faint);font-weight:400}
+.side button.zero{color:var(--faint)}
+.main{min-width:0;padding:14px 18px 30px}
+.dtools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;position:sticky;top:var(--hlh,150px);background:var(--surface);padding:8px 0;z-index:2}
+.search{flex:1 1 220px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;font:inherit;color:var(--ink)}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.sec{border-top:1px solid var(--line);padding-top:6px;margin-top:10px;scroll-margin-top:calc(var(--hlh,150px) + 60px)}
+.sec:first-of-type{border-top:0;margin-top:0}
+.sec-h{display:flex;align-items:center;gap:8px;padding:6px 0}
+.sec-h h3{margin:0;font-size:14.5px;color:var(--accent);margin-right:auto;font-weight:600}
+.sec.editing{background:var(--surface-2);border-radius:8px;padding:6px 12px 12px;box-shadow:0 0 0 2px var(--link) inset}
+.rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+@media (max-width:900px){.rows{grid-template-columns:1fr}}
+.row{display:grid;grid-template-columns:minmax(120px,44%) 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}
+.row .l{color:var(--muted);font-size:13px}
+.row .v{font-size:13.5px;overflow-wrap:anywhere}
+.row .v.empty{color:var(--faint)}
+.row .v a{color:var(--link);text-decoration:none}
+.row.hide{display:none}
+.row input{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink)}
+.editing .row.ro .v{color:var(--faint)}
+.mono{font-family:var(--mono);font-size:12.5px}
+mark{background:var(--warn-soft);color:inherit;border-radius:2px}
+.noresult{color:var(--faint);padding:20px 0}
+.rl-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.rl-h h3{margin:0;font-size:17px;margin-right:auto}
+.rl-h h3 span{color:var(--faint);font-weight:400}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table.rt{width:100%;border-collapse:collapse;font-size:13.5px}
+.rt th,.rt td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.rt th{font-size:11.5px;color:var(--link);font-weight:600;background:var(--surface-2);cursor:pointer;user-select:none}
+.rt th[aria-sort]::after{content:" ▲";font-size:9px}
+.rt th[aria-sort="descending"]::after{content:" ▼"}
+.rt tbody tr:nth-child(even){background:var(--surface-2)}
+.rt tbody tr:last-child td{border-bottom:0}
+
+/* insight cards (OCE-style) */
+.subtabs{display:flex;gap:6px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+.subtabs button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 14px;font-size:12.5px;color:var(--muted)}
+.subtabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.isec{margin-bottom:16px}
+.isec h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:8px}
+.isec h4::after{content:"";flex:1;height:1px;background:var(--line)}
+.icards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.icard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-rows:auto 1fr auto;gap:8px;min-height:132px}
+.icard .top{display:flex;align-items:start;gap:6px;font-size:12px;color:var(--muted)}
+.icard .top .nm{font-weight:600;color:var(--ink);font-size:12.5px}
+.icard .pencil{border:0;background:none;color:var(--link);padding:0 2px;font-size:12px;margin-left:auto}
+.icard .body{display:grid;place-items:center;text-align:center}
+.icard .foot{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);align-items:center}
+.icard .foot button{border:0;background:none;color:var(--link);font-size:10.5px;padding:0}
+.big{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.chg{font-size:11px;margin-left:6px;font-weight:500}
+.chg.up{color:var(--good)}.chg.down{color:var(--bad)}
+.txtval{font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.sw{width:42px;height:24px;border-radius:999px;background:var(--line);position:relative;display:inline-block;border:0;padding:0}
+button.sw{cursor:pointer}
+.sw i{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .15s}
+.sw.on{background:var(--good)}.sw.on i{left:21px}
+.dots{display:flex;gap:7px;justify-content:center;align-items:center;margin-bottom:8px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);display:inline-block}
+.dotlab{font-size:22px;font-weight:700;line-height:1.1}
+.icard .foot.ro{justify-content:flex-start}
+.ring2{position:relative;width:86px;height:86px}
+.ring2 svg{transform:rotate(-90deg)}
+.ring2 .mid{position:absolute;inset:0;display:grid;place-items:center;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.pot{font-size:10.5px;color:var(--muted)}
+/* consent */
+.ctab{width:100%;border-collapse:collapse;font-size:13px;margin:0 0 10px}
+.ctab td{padding:6px 0;border-top:1px solid var(--line)}
+.ctab tr:first-child td{border-top:0}
+.ctab td:last-child{text-align:right}
+.st{font-size:12.5px;font-weight:500}
+.st.in{color:var(--good)}.st.out{color:var(--bad)}.st.none{color:var(--faint)}
+.clist{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px 24px}
+.crow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.cch{font-size:13px}
+/* segment grid */
+.gwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table.grid{width:100%;border-collapse:separate;border-spacing:0;min-width:560px;table-layout:fixed}
+.grid col.c1{width:30%}
+.hsub{font-weight:400;text-transform:none;letter-spacing:0;color:var(--faint);font-size:10px;margin-top:3px}
+.teamchip{display:inline-block;margin-left:8px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;vertical-align:middle}
+.grid th{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:10px 14px;text-align:center;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.grid th:first-child{text-align:left}
+.grid td{padding:0;border-bottom:1px solid var(--line);vertical-align:middle;height:78px}
+.grid tbody tr:last-child td{border-bottom:0}
+.grid tbody tr:hover td{background:var(--surface-2)}
+.ta{display:flex;align-items:center;gap:10px;padding:0 14px}
+.ta.sub{padding-left:30px}
+.na{color:var(--faint);font-weight:500}
+.grid tr.grp .na{font-weight:500;text-transform:none;letter-spacing:0;font-size:10.5px}
+.grid tr.grp td{background:var(--surface-2);padding:7px 14px;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);height:auto}
+.grid tr.grp:hover td{background:var(--surface-2)}
+.gtag{display:inline-grid;place-items:center;width:24px;height:20px;border-radius:5px;background:var(--accent-soft);color:var(--accent);font-size:9.5px;margin-right:8px;vertical-align:middle}
+.ta .tag{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+.rowlab{font-weight:600;font-size:13.5px}
+.rowsub{font-size:10.5px;color:var(--faint);margin-top:2px}
+.cell{position:relative;display:grid;place-items:center;gap:5px;padding:10px 12px;min-height:78px;align-content:center}
+.cell .pencil{position:absolute;top:6px;right:8px;border:0;background:none;color:var(--faint);font-size:11px;padding:2px;opacity:0;transition:opacity .12s}
+.grid tr:hover .cell .pencil,.cell.editing .pencil{opacity:1}
+.cell .pencil:hover{color:var(--link)}
+.cell .clr{position:absolute;top:6px;left:8px;border:0;background:none;color:var(--faint);font-size:10.5px;padding:2px;opacity:0;transition:opacity .12s}
+.grid tr:hover .cell .clr,.cell.editing .clr{opacity:1}
+.cell .clr:hover{color:var(--link)}
+.dmrow .clr{border:0;background:none;color:var(--link);font-size:10.5px;padding:0}
+.cell.editing{background:var(--accent-soft);border-radius:10px;box-shadow:0 0 0 2px var(--accent) inset}
+.cell .num{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.cell .cap{font-size:10px;color:var(--faint);letter-spacing:.04em;text-transform:uppercase}
+.pips{display:flex;gap:5px}
+.pips b{width:13px;height:13px;border-radius:50%;border:2px solid var(--line);display:block;background:none;padding:0}
+.pips button.pip{cursor:pointer}
+.chips{display:flex;gap:5px}
+.chips b{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:11.5px;font-weight:700;border:1px solid var(--line);color:var(--faint);background:var(--surface)}
+.chips button.chipb{cursor:pointer;font:inherit}
+.cell input.gin{width:76px;text-align:center;border:1px solid var(--link);border-radius:8px;padding:5px 6px;font:inherit;font-size:15px;font-weight:600;background:var(--surface);color:var(--ink)}
+.cellbtns{display:flex;gap:6px}
+.cellbtns button{border:1px solid var(--line);background:var(--surface);border-radius:6px;font-size:11px;padding:2px 8px}
+.cellbtns button.ok{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* ratings */
+.newbanner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--new-soft);color:var(--ink);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+.newbanner b{color:var(--new)}
+.rgroup{margin-bottom:16px}
+.rgroup h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;display:flex;gap:8px;align-items:center}
+.rcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-rows:2.4em auto auto;gap:8px;align-content:start}
+.rcard .v{overflow-wrap:anywhere;font-size:15px;font-weight:600;border-radius:6px;padding:9px 8px;text-align:center;background:var(--surface-2);font-variant-numeric:tabular-nums}
+.rcard .v.good{background:var(--good-soft);color:var(--good)}
+.rcard .v.bad{background:var(--bad-soft);color:var(--bad)}
+.rcard .v.warn{background:var(--warn-soft);color:var(--warn)}
+.rcard .v.none{color:var(--faint);font-weight:500}
+.rcard .src{font-size:11px;color:var(--faint);font-family:var(--mono)}
+.dots{display:flex;gap:4px;justify-content:center;margin-top:6px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--good)}
+
+
+/* Pitcher shell (top bar + left navigation, as in the app) */
+.appbar{gap:8px;padding:10px 14px;letter-spacing:.07em;font-size:10.5px;font-weight:600;color:var(--ink)}
+.logo{margin-right:auto;border:1px dashed var(--line);border-radius:6px;padding:6px 12px;font-size:10px;color:var(--faint);letter-spacing:.08em}
+.tb{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);border:0;border-radius:999px;padding:7px 12px;font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;position:relative}
+.tb.dark{background:var(--accent);color:var(--accent-ink)}
+.tb .reddot{position:absolute;top:3px;right:4px;width:7px;height:7px;border-radius:50%;background:#D93A3A}
+.tbi{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:0;background:var(--surface-2);font-size:13px;flex:none}
+.tbi.help{background:#23B5E8;color:#fff;font-weight:700}
+.tbi.power{background:var(--accent);color:var(--accent-ink)}
+@media (max-width:900px){.tb .tl{display:none}.tb{padding:7px 9px}}
+.nav{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:10px 8px;gap:4px;width:52px;transition:width .15s;overflow:hidden}
+.nav.open{width:190px}
+.nav .grp{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding:10px 6px 2px;white-space:nowrap;height:24px}
+.nav:not(.open) .grp{visibility:hidden;height:10px;padding:0}
+.nav button.it{display:flex;align-items:center;gap:10px;border:0;background:var(--surface-2);border-radius:7px;padding:7px 8px;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;text-align:left;color:var(--ink)}
+.nav button.it .ic{width:18px;text-align:center;flex:none;font-size:13px;color:var(--muted)}
+.nav:not(.open) button.it .lb{display:none}
+.nav .toggle{margin-top:auto;border:0;background:none;color:var(--muted);font-size:16px;padding:8px}
+@media (max-width:640px){.nav{display:none}}
+.pageswitch{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.iconsq{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:34px;height:32px;display:grid;place-items:center;color:var(--accent);font-size:15px}
+.contacts-tools{display:flex;gap:10px;margin-bottom:10px}
+.contacts-tools .search{flex:1}
+.pager{display:flex;justify-content:flex-end;gap:18px;align-items:center;padding:10px 12px;font-size:12.5px;color:var(--muted)}
+.rt td .go{border:1px solid var(--line);background:var(--surface);border-radius:50%;width:26px;height:26px}
+.visit{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.vbox{background:var(--surface-2);border-radius:8px;padding:8px 12px}
+.vbox.red{background:var(--bad-soft);color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 30%,transparent)}
+.vbox .lbl{text-transform:none;letter-spacing:0}
+.ring{width:40px;height:40px;border-radius:50%;border:3px solid var(--line);display:grid;place-items:center;font-size:11px;font-weight:600}
+.aff{list-style:none;margin:0;padding:0}
+.aff li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.aff .av{width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:11.5px;font-weight:600;flex:none}
+.aff .nm{color:var(--link);font-weight:500}
+.aff .pref{background:var(--accent);color:var(--accent-ink);border-radius:999px;font-size:10.5px;padding:2px 8px;margin-left:auto}
+.aff .b360{border:1px solid var(--line);background:var(--surface);border-radius:999px;font-size:11.5px;padding:3px 9px;color:var(--accent);font-weight:600}
+.cdl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;margin:0}
+.cdl dt{color:var(--muted)}.cdl dd{margin:0}
+/* v24: insight sub-tabs, calendar */
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.dm{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.pill.hard{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.pill.ok{color:var(--good);border-color:var(--good);background:transparent}
+.pill.open{color:var(--faint)}
+.pill.mand{color:var(--bad);border-color:var(--bad);background:transparent}
+.faint{color:var(--faint)}
+.atype{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 5px;margin-top:2px}
+.dmrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dmed{display:grid;gap:4px;font-size:12.5px}.dmed label{display:flex;gap:6px;align-items:center;white-space:nowrap}
+.lock{font-size:13px;opacity:.7}
+.newrow{background:var(--accent-soft)}
+.qsum{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:10px}
+.qsum .warn{color:var(--bad)}.qsum .seg{margin-left:auto}
+.pick{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:13px}
+.modal-bg{position:fixed;inset:0;background:rgba(10,15,25,.45);display:grid;place-items:center;z-index:100;padding:16px}
+.modal{background:var(--surface);color:var(--ink);border-radius:14px;width:min(640px,100%);box-shadow:0 24px 60px -12px rgba(0,0,0,.5);padding:16px 18px}
+.modal .mh{display:flex;align-items:center;gap:8px;margin-bottom:12px}.modal .mh h3{margin:0;font-size:15px;margin-right:auto}
+.modal .x{border:0;background:none;font-size:16px;color:var(--muted)}
+.modal .mf{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.modal .btn:disabled{opacity:.5}
+.calbody{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px}
+@media(max-width:560px){.calbody{grid-template-columns:1fr}}
+.calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:13.5px}
+.calnav button{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:30px;height:28px;color:var(--ink)}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.calgrid .dow{font-size:10.5px;color:var(--faint);padding:3px 0}
+.cd{border:1px solid transparent;background:none;border-radius:8px;height:34px;font-size:12.5px;color:var(--ink);position:relative}
+.cd:disabled{color:var(--faint);opacity:.5}
+.cd:not(:disabled):hover{background:var(--surface-2)}
+.cd.today{border-color:var(--accent)}
+.cd.sel{background:var(--accent);color:var(--accent-ink)}
+.cd.has::after{content:"";position:absolute;bottom:4px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--link)}
+.cd.sel.has::after{background:var(--accent-ink)}
+.slots h4{margin:0 0 8px;font-size:13px}
+.slot{display:block;width:100%;margin-bottom:6px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px;font-size:13px;color:var(--ink)}
+.slot.sel{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Account page redesign — draft v24</h1>
+    <p>Pitcher with navigation. Original section and field names, example data. The Insight tab is a new, optional feature.</p>
+    <div class="pageswitch">
+      <div class="seg" id="pageSeg"><button type="button" aria-pressed="true" data-page="hcp">HCP page</button><button type="button" aria-pressed="false" data-page="hco">HCO page</button></div>
+      <label class="cfg" style="margin:0">Line 3 custom metadata demo – CBU: <select id="hdrCbu"><option value="DE">Germany</option><option value="AT">Austria</option></select> Team: <select id="hdrTeam"><option value="Adults">Adults</option><option value="Paediatrics">Paediatrics</option></select></label>
+      <label class="cfg" style="margin:0">Affiliation From/To editable (metadata): <select id="affFT"><option value="Soft">Soft only</option><option value="None">Never (read-only)</option></select></label>
+    </div>
+  </div>
+
+  <div class="device">
+    <div class="appbar">
+      <span class="logo">CUSTOMER LOGO</span>
+      <button class="tb dark" type="button">▶ <span class="tl">Start call</span></button>
+      <button class="tb" type="button">🎧︎ <span class="tl">Start live! call</span></button>
+      <button class="tb" type="button">↪ <span class="tl">Quick share</span></button>
+      <button class="tb" type="button">⚲ <span class="tl">Find</span></button>
+      <button class="tb" type="button">⟳ <span class="tl">Sync</span><span class="reddot"></span></button>
+      <button class="tbi" type="button" aria-label="Notifications">🔔︎</button>
+      <button class="tbi help" type="button" aria-label="Help">?</button>
+      <button class="tbi power" type="button" aria-label="Log out">⏻</button>
+    </div>
+    <nav class="nav" id="nav">
+      <button class="it" type="button"><span class="ic">▤</span><span class="lb">KAM</span></button>
+      <button class="it" type="button"><span class="ic">✧</span><span class="lb">Next best action</span></button>
+      <div class="grp">Manage</div>
+      <button class="it" type="button"><span class="ic">✍︎</span><span class="lb">Consents</span></button>
+      <button class="it" type="button"><span class="ic">▣</span><span class="lb">Preferred address</span></button>
+      <button class="it" type="button"><span class="ic">⚗︎</span><span class="lb">Samples</span></button>
+      <button class="it" type="button"><span class="ic">◧</span><span class="lb">Coaching</span></button>
+      <button class="it" type="button"><span class="ic">☷</span><span class="lb">TOT</span></button>
+      <button class="it" type="button"><span class="ic">▯</span><span class="lb">Contracts</span></button>
+      <button class="it" type="button"><span class="ic">⟳</span><span class="lb">OneKey VR status</span></button>
+      <div class="grp">Extras</div>
+      <button class="it" type="button"><span class="ic">▦</span><span class="lb">(2424) Master chan…</span></button>
+      <button class="it" type="button"><span class="ic">☰</span><span class="lb">Questionnaire</span></button>
+      <button class="toggle" type="button" id="navToggle" aria-label="Expand menu">›</button>
+    </nav>
+    <div class="scroller" id="scroller"><div id="app"></div></div>
+  </div>
+</div>
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const E='';
+const scroller=$('#scroller');
+const state={page:'hcp',tab:null,cbu:'DE',team:'Adults',isub:'General',editCell:null,open:new Set(),active:null};
+
+/* ------------ shared helpers ------------ */
+const TYPES={phone:['Phone','☎','t-call'],f2f:['F2F','F2F','t-f2f'],email:['Email','✉','t-email'],visit:['Visit','●','t-pres'],pres:['Presentation','▶','t-pres'],sample:['Sample','◆','t-sample']};
+const MONTHS=['2026-09','2026-08','2026-07','2026-06','2026-05','2026-04','2026-03','2026-02','2026-01','2025-12','2025-11','2025-10'];
+const mName=k=>new Date(k+'-01T00:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+const CALL_FIELDS=['Call Time','Discussed Brands','Discussed Products','Therapeutic Area','Channel','Pre-call Notes','Post-call Notes'];
+
+/* ------------ page data ------------ */
+const P={
+ hcp:{
+  name:'Dr. med. Katrin Vogel', initials:'KV',
+  line2:[['Workplace','Praxis Vogel/Brandt/Huber','hco'],['Address','Lindenstraße 12, 48653 Coesfeld'],['Specialty','Haematology and Oncology'],['Last call','@call']],
+  line2cols:'repeat(4,minmax(0,1fr))',
+  line3cfg:{DE:[['Phone',''],['Email',''],['Preferred channel',''],['Preferred address','Lindenstraße 12, 48653 Coesfeld']],'AT|Adults':[['Phone',''],['Email',''],['Nutricia Specialty','Oncologist_Community'],['GO Rating','No']],'AT|Paediatrics':[['Phone',''],['Babies per year',''],['Nutricia Specialty','Oncologist_Community'],['Customer Status','Valid']]},
+  consent:{ok:true,title:'Main Consent Status',msg:'Consent is valid. The channels below are opted in.',
+   rows:[['Email','in','Opted in · 12/02/2026'],['Phone','in','Opted in · 12/02/2026'],['Approved email','in','Opted in · 12/02/2026'],['Post','out','Not opted in'],['Website registration','in','Opted in · 03/09/2026']]},
+  lastCall:['11/06/2026, 16:45','Fortimel','Fortimel Juicy','Cancer Care','Email','Ask about tolerance of Fortimel Juicy in patients on chemotherapy.','Sent product sheet. Wants samples for 2 patients at the next visit.'],
+  lastCallShort:'11/06/26 16:45 · Email',
+  ep:[['Email',5,2,1,0.5],['Phone',3,2,1,1]],
+  tabs:[['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight'],['qst','Questionnaire'],['smp','Sample']],
+  anchors:[['c-basic','Basic HCP info'],['c-nba','Next Best Action'],['c-consent','Consent info'],['c-seg','Segment & Commitment'],['c-visit','Last Visit'],['c-ins','Behavioural Insights'],['c-kpi','HCO KPIs']],
+  basic:{title:'Basic HCP info',fields:[['Preferred channel for the rep',''],['Last website login (CDP)',''],['Preferred workplace (HCO)','Praxis Vogel/Brandt/Huber'],['Alternative address','Lindenstraße 12, 48653 Coesfeld']]},
+  cards:['nba','consent','seg','visit','ins','kpi'],
+  visit:{date:'Jun 11, 2026',who:'',planned:'',plannedRed:false,ring:'4/8',plan:'4 Actual · 8 Target'},
+  act:[
+   ['2026-09','f2f','F2F: "Face to Face visit"','Sep 10, 2026','You','Pitcher',{Attendees:'Dr. med. Katrin Vogel',TA:'Cancer Care'},['10/09/2026, 11:00','Fortimel','Fortimel Compact','Cancer Care','F2F','Bring the new compact data sheet.','Agreed to try Fortimel Compact with 3 patients. Samples requested.']],
+   ['2026-09','pres','Presentation: "Fortimel Compact – clinical data"','Sep 10, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-09','sample','Sample: "Fortimel Compact" · 3 units','Sep 10, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-09','email','Approved email: "Congress follow-up"','Sep 03, 2026','Medical team','Marketing Cloud',{TA:'Cancer Care'}],
+   ['2026-08','phone','Phone: "Phone call"','Aug 26, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-08','f2f','F2F: "Face to Face visit"','Aug 12, 2026','You','Pitcher',{Attendees:'Dr. med. Katrin Vogel · Dr. M. Keller · S. Weber (3)',TA:'Cancer Care'},['12/08/2026, 15:30','Fortimel','Fortimel Juicy','Cancer Care','F2F','Check how the 2 patients on Fortimel Juicy are doing.','Good tolerance. Wants nutrition material for the ward.']],
+   ['2026-08','pres','Presentation: "Oncology nutrition pathway"','Aug 12, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-07','email','Approved email: "Summer product update"','Jul 21, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-07','phone','Phone: "Phone call"','Jul 07, 2026','A. Brandl','Pitcher',{TA:'Cancer Care'}],
+   ['2026-06','email','Email: "Fortimel Juicy follow-up"','Jun 11, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-06','phone','Phone: "Phone call"','Jun 11, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-06','f2f','F2F: "Face to Face visit"','Jun 04, 2026','You','Pitcher',{Attendees:'Dr. med. Katrin Vogel',TA:'Cancer Care'},['04/06/2026, 09:15','Fortimel','Fortimel Juicy','Cancer Care','F2F','Follow up on the samples left in March.','Interested in the juicy range for younger patients.']],
+   ['2026-05','sample','Sample: "Fortimel Juicy" · 4 units','May 20, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-05','phone','Phone: "Phone call"','May 06, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-04','f2f','F2F: "Face to Face visit"','Apr 22, 2026','You','Pitcher',{Attendees:'Dr. med. Katrin Vogel · Dr. M. Keller (2)',TA:'Cancer Care'},['22/04/2026, 10:45','Fortimel','Fortimel Compact','Cancer Care','F2F','Introduce the compact range.','Asked for clinical data before deciding.']],
+   ['2026-04','pres','Presentation: "Fortimel range overview"','Apr 22, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-03','f2f','F2F: "Face to Face visit"','Mar 30, 2026','You','Pitcher',{Attendees:'Dr. med. Katrin Vogel',TA:'Cancer Care'},['30/03/2026, 09:00','Fortimel','Fortimel Compact, Fortimel Juicy','Cancer Care','F2F','First visit after congress.','Interested in samples. Presentation shown.']],
+   ['2026-03','pres','Presentation: "Fortimel Compact"','Mar 30, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2026-03','sample','Sample: "Fortimel Juicy" · 2 units','Mar 30, 2026','You','Pitcher',{TA:'Cancer Care'}],
+   ['2025-11','f2f','F2F: "Face to Face visit"','Nov 19, 2025','A. Brandl','Pitcher',{Attendees:'Dr. med. Katrin Vogel',TA:'Cancer Care'},['19/11/2025, 14:30','Fortimel','—','Cancer Care','F2F','—','—']]
+  ],
+  sections:[
+   ['Accountinformationen',[['Accountname','Ms. Katrin Vogel','r'],['First Name','Katrin'],['Position','Dr. med.'],['Last Name','Vogel'],['Primary Workplace Name','Praxis Vogel/Brandt/Huber','r'],['Government Official',E],['Primary Workplace','Praxis Vogel/Brandt/Huber','l'],['HCP Name','Vogel, Katrin','r'],['Primary HCO','Praxis Vogel/Brandt/Huber','l'],['Portal URL',E],['Accessibility',E],['Comments',E],['Adoption Ladder',E],['Beschreibung',E],['GO Rating','No'],['GO Rating Details',E],['Reimbursed Last Update Date','2026-03-31','r'],['Reimbursed Call Count','0','r'],['Restricted Access',E],['Restricted Access Message',E],['Bring HO Offline',E],['Channel Preference from Company',E],['Channel Preference from the Rep',E],['Content Format Preference',E],['Content Topic Preference',E]]],
+   ['Onekey/MDM Fields',[['Locally Managed Account',E],['Country','DE','r'],['Customer Status','Valid','r'],['Inactive Reason',E,'r'],['Specialty','Haematology and Oncology','r'],['Professional Type','Physician','r'],['Specialty2',E,'r'],['Workplace Location',E,'r'],['Specialty3',E,'r'],['OneKey Last Modified Date','07/01/2021, 17:10:14','r'],['Nutricia Specialty','Oncologist_Community','r'],['OneKey Privacy Law Status',E,'r'],['OneKey ID','WDEM00000000','rm'],['Tendency 1',E,'r'],['Integration External ID',E,'rm'],['Tendency 2',E,'r'],['Integration External ID2',E,'rm'],['Onekey Standard Opening','Sehr geehrte Frau Dr.','r'],['SAP Id',E,'rm'],['Onekey Fiscal Code',E,'rm'],['Onekey Registration Number',E,'rm']]],
+   ['Landspezifische CRM-Felder',[['Qualifica Prevalente',E],['Number of Babies per year',E],['Resident Field',E],['Subspecialty',E],['Nutricia Specific Specialty','Onkologie'],['Key Contact for Medical',E],['No Info per Post',E],['Related With Homecare',E],['No Neocate Samples per Post','✓'],['Aptamil Samples Shipping by Post',E]]],
+   ['Gesamtsegment',[['Overall Segment',E,'r'],['Last Segment Calculated date',E,'r']]],
+   ['KOL-Abschnitt',[['KOL Identification',E]]],
+   ['Auto-Fill Questionnaire Section',[1,2,3,4,5].flatMap(n=>[['Question '+n,E],['Answer '+n,E]])],
+   ['Abschnitt über Datenschutzmodulinformationen',[['Consent Email',E],['Consent Fiscal Code',E],['Consent Phone',E],['Consent Data Privacy Signed Date',E],['Consent Data Storage Signed Date',E]]],
+   ['Adressinformationen',[['Billing Street','Lindenstraße 12'],['Billing Postal Code','48653'],['Billing City','Coesfeld'],['Billing State',E],['Billing Country','GERMANY']]],
+   ['Brick',[['BrickID',E,'rm'],['Brick Label','Coesfeld Westfalen','r'],...[1,2,3,4,5,8,9,10].map(n=>['Brick - UG '+n,E,'r']),...[2,3,4,5].map(n=>['Brick Label '+n,E,'r'])]],
+   ['Systeminformationen',[['Erstellt von','Pitcher Admin, 11/06/2024 21:33:04','r'],['Zuletzt geändert von','M. Keller, 17/06/2026 16:46:46','r']]]
+  ],
+  related:[
+   ['Affiliation',['Account','Type','Role'],[['Praxis Vogel/Brandt/Huber','HCO','Primary workplace'],['St. Elisabeth Klinikum','HCO','Consultant']]],
+   ['Preferred HCP Data (HCP)',['Field','Value'],[['Preferred workplace','Praxis Vogel/Brandt/Huber']]],
+   ['Engagement Plan Targets',['Channel','Goal','Actual','Planned'],[['Email','5','2','1'],['Phone','3','2','1']]],
+   ['Segments',[],[]],
+   ['Consent Managements',['Date','Consent type','Status','Source'],[['02/05/2026','Main consent','Revoked','Website']]],
+   ['Inventory Transactions',['Date','Product','Quantity'],[['30/03/2026','Fortimel Juicy','2']]],
+   ['Pitcher Sent Messages',['Date','Template','Status'],[['11/06/2026','Fortimel Juicy follow-up','Sent']]],
+   ['Pitcher Questionnaire Response Items',[],[]],
+   ['Congress Invitees',[],[]],
+   ['Congress Invitee Expenses',[],[]],
+   ['Pitcher Presentations',['Date','Presentation','Duration'],[['30/03/2026','Fortimel Compact','6 min']]],
+   ['Pitcher Questionnaire Responses (Account)',[],[]],
+   ['Pitcher Activities',['Date','Type','Owner','TA'],[['11/06/2026','Phone','You','Cancer Care'],['30/03/2026','F2F','You','Cancer Care']]],
+   ['Call In Activities',[],[]],
+   ['Territories',['Territory','Owner'],[['DE-NW-07','You']]]
+  ],
+  affx:{DEFAULT:['dm','rel'],DE:['dm','rel','Role','Start date'],'AT|Adults':['rel','Role'],'AT|Paediatrics':['dm','rel','Role','Notes']},
+  aff:{rows:[['Katrin Vogel','HCP','Praxis Vogel/Brandt/Huber','HCO',['Discharge Decision Maker'],'Hard',{Role:'Owner',"Start date":'01/03/2019',Notes:'Main workplace'}],['Katrin Vogel','HCP','St. Elisabeth Klinikum','HCO',['Product Decision Maker'],'Soft',{Role:'Consultant',"Start date":'15/09/2022',Notes:''}],['Katrin Vogel','HCP','Jonas Brandt','HCP',['Product Decision Maker'],'Hard',{Role:'Colleague',"Start date":'01/03/2019',Notes:''}],['Lena Albers','HCP','Katrin Vogel','HCP',[],'Soft',{Role:'Nurse',"Start date":'10/01/2024',Notes:'Supports tube-feeding patients'}]]},
+  quest:[['Customer needs assessment 2026','Not answered','Yes','Assigned 02/09/2026'],['GDPR awareness check','Answered','Yes','Answered 14/06/2026'],['Product satisfaction survey','Answered','No','Answered 04/05/2026'],['Nutrition habits survey','Not answered','No','Assigned 20/09/2026']],
+  samp:[['Fortimel Juicy',20,12],['Nutrison Standard',10,10],['Neocate LCP',5,1]],
+  insight:{DE:{General:[
+     {l:'Customer Status',t:'continuum',v:'Valid',steps:['Inactive','Pending','Valid'],idx:2,scale:['#C62828','#F9A825','#2E7D32'],upd:'2 days ago'},
+     {l:'Nutricia Specialty',t:'picklist',v:'Oncologist_Community',c:'#2556A8',upd:'2 days ago',edit:true}],
+    Segment:{grid:{dims:['Therapeutic Area','Team'],cols:[{t:'NOB',sub:'Patients per year'},{t:'CL',sub:'Commitment level, 1 low – 5 high'},{t:'Segment letter',sub:'A highest – D lowest potential'}],rows:[
+       {keys:['Cancer Care','ADULT'],upd:'5 days ago',cells:[{t:'num',v:'120'},{t:'cl',v:4},{t:'letter',v:'A'}]},
+       {keys:['Cancer Care','PED COMM'],upd:'5 days ago',cells:[{t:'num',v:'60'},{t:'cl',v:3},{t:'letter',v:'B'}]},
+       {keys:['DRM','ADULT'],upd:'5 days ago',cells:[{t:'num',v:'45'},{t:'cl',v:3},{t:'letter',v:'B'}]},
+       {keys:['Allergy','ADULT'],upd:'1 month ago',cells:[{t:'num',v:'18'},{t:'cl',v:2},{t:'letter',v:'C'}]},
+       {keys:['Allergy','PED COMM'],upd:'1 month ago',cells:[{t:'num',v:'8'},{t:'cl',v:1},{t:'letter',v:'D'}]}]},
+      cards:[]}},
+   'AT|Adults':{General:[
+     {l:'Customer Status',t:'continuum',v:'Valid',steps:['Inactive','Pending','Valid'],idx:2,scale:['#C62828','#F9A825','#2E7D32'],upd:'2 days ago'},
+     {l:'Nutricia Specialty',t:'picklist',v:'Oncologist_Community',c:'#2556A8',upd:'2 days ago',edit:true}],
+    Segment:{grid:{dims:['Team'],cols:[{t:'NOB',sub:'Patients per year'},{t:'CL',sub:'Commitment level, 1 low – 5 high'},{t:'Segment letter',sub:'A highest – D lowest potential'}],rows:[
+       {keys:['Adult AT'],upd:'3 days ago',cells:[{t:'num',v:'90'},{t:'cl',v:4},{t:'letter',v:'A'}]},
+       {keys:['Paeds AT'],upd:'3 days ago',cells:[{t:'num',v:'25'},{t:'cl',v:2},{t:'letter',v:'C'}]}]},cards:[]}},
+   'AT|Paediatrics':{General:[
+     {l:'Customer Status',t:'continuum',v:'Valid',steps:['Inactive','Pending','Valid'],idx:2,scale:['#C62828','#F9A825','#2E7D32'],upd:'2 days ago'},
+     {l:'Number of Babies per year',t:'number',v:'—',upd:'—',edit:true}],
+    Segment:{grid:{dims:['Therapeutic Area'],cols:[{t:'NOB',sub:'Patients per year'},{t:'CL',sub:'Commitment level, 1 low – 5 high'},{t:'Segment letter',sub:'A highest – D lowest potential'}],rows:[
+       {keys:['Pre-term'],upd:'5 days ago',cells:[{t:'num',v:'30'},{t:'cl',v:2},{t:'letter',v:'C'}]},
+       {keys:['Challenged Growth'],upd:'5 days ago',cells:[{t:'num',v:'12'},{t:'cl',v:1},{t:'letter',v:'D'}]}]},cards:[]}}}
+ },
+ hco:{
+  name:'St. Elisabeth Klinikum', initials:'SE',
+  line2:[['Address','Rheinstraße 40, 40210 Düsseldorf'],['WorkPlace Type','General Hospital'],['Last call','@call'],['Field TBD (global team)','']],
+  line2cols:'repeat(4,minmax(0,1fr))',
+  line3cfg:{DE:[['Phone','0211 555 0100'],['Email',''],['Website',''],['Structure Type','ETA']],AT:[['Phone','0211 555 0100'],['Fax','0211 555 0140'],['Structure Type','ETA'],['Institution Sector','frei / gemeinnützig']]},
+  consent:{ok:false,title:'Main Consent Status',msg:'This HCP/HCO has revoked their consent or the consent has expired. No channels are currently opted in.',
+   rows:[['Email','out','Opted out · 14/02/2026'],['Phone','out','Opted out · 14/02/2026'],['Approved email','out','Opted out · 14/02/2026'],['Post','out','Not opted in'],['Website registration','none','No channel-level details']]},
+  lastCall:['29/05/2026, 11:15','Nutrison','Nutrison Standard','DRM','Email','Confirm tender timeline with the pharmacy.','Pharmacy asked for updated price list.'],
+  lastCallShort:'29/05/26 11:15 · Email',
+  ep:[['F2F',4,0,1,1],['Email',4,0,0,0.5]],
+  tabs:[['con','HCPs'],['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight'],['qst','Questionnaire'],['smp','Sample']],
+  anchors:[['c-basic','Basic HCO info'],['c-nba','Next Best Action'],['c-visit','Last Visit'],['c-kpi','HCO KPIs'],['c-aff','Affiliated HCPs']],
+  basic:{title:'Basic HCO info',fields:[['Website',''],['City','Düsseldorf'],['Structure Type','ETA']]},
+  cards:['nba','visit','kpi','aff'],
+  visit:{date:'May 29, 2026',who:'Jonas Brandt',planned:'Sep 4, 2026',plannedRed:true,ring:'0/8',plan:'0 Actual · 8 Target'},
+  contacts:[['Lena','Albers','Nurse/Male nurse'],['Jonas','Brandt','Internal Medicine'],['Petra','Claßen','Nurse/Male nurse'],['Sofia','Hartmann','Nurse/Male nurse'],['Mia','Horn',"Nurse's Aide"]],
+  act:[
+   ['2026-09','f2f','F2F: "Face to Face visit"','Sep 08, 2026','You','Pitcher',{Attendees:'Jonas Brandt · Lena Albers (2)',TA:'DRM'},['08/09/2026, 09:30','Nutrison','Nutrison Advanced','DRM','F2F','Discuss the tender for enteral nutrition.','Tender decision expected in November. Send price list.']],
+   ['2026-09','visit','Visit: "Visit"','Sep 08, 2026','','-',{HCP:'Lena Albers',TA:'DRM',Product:'Nutrison Standard',Brand:'Nutrison'}],
+   ['2026-08','phone','Phone: "Phone call"','Aug 20, 2026','You','Pitcher',{HCP:'Sofia Hartmann',TA:'DRM'}],
+   ['2026-08','f2f','F2F: "Face to Face visit"','Aug 05, 2026','You','Pitcher',{Attendees:'Petra Claßen · Sofia Hartmann · Mia Horn (3)',TA:'DRM'},['05/08/2026, 14:00','Nutrison','Nutrison Standard','DRM','F2F','Training request from the ward team.','Training booked for October. 6 nurses.']],
+   ['2026-08','pres','Presentation: "Dysphagia management"','Aug 05, 2026','You','Pitcher',{HCP:'Petra Claßen',TA:'DRM'}],
+   ['2026-07','email','Approved email: "Product update"','Jul 15, 2026','Medical team','Marketing Cloud',{TA:'DRM'}],
+   ['2026-07','visit','Visit: "Visit"','Jul 02, 2026','','-',{HCP:'Mia Horn',TA:'DRM',Product:'Nutrison Advanced',Brand:'Nutrison'}],
+   ['2026-06','f2f','F2F: "Face to Face visit"','Jun 17, 2026','You','Pitcher',{Attendees:'Lena Albers',TA:'DRM'},['17/06/2026, 11:20','Nutrison','Nutrison Standard','DRM','F2F','Check stock in the pharmacy.','Pharmacy will reorder in July.']],
+   ['2026-06','sample','Sample: "Nutrison Standard" · 6 units','Jun 17, 2026','You','Pitcher',{HCP:'Lena Albers',TA:'DRM'}],
+   ['2026-05','phone','Phone: "Phone call"','May 29, 2026','You','Pitcher',{HCP:'Lena Albers',TA:'DRM'}],
+   ['2026-05','visit','Visit: "Visit"','May 29, 2026','','-',{HCP:'Lena Albers',TA:'DRM',Product:'Nutrison Standard',Brand:'Nutrison'}],
+   ['2026-05','f2f','F2F: "Face to Face visit"','May 29, 2026','You','Pitcher',{Attendees:'Sofia Hartmann · Petra Claßen (2)',TA:'DRM'},['29/05/2026, 10:30','Nutrison','Nutrison Advanced','DRM','F2F','Bring dysphagia study.','Interested in training for the ward team.']],
+   ['2026-05','visit','Visit: "Visit"','May 29, 2026','','-',{HCP:'Sofia Hartmann',TA:'DRM',Product:'Nutrison Standard',Brand:'Nutrison'}],
+   ['2026-05','f2f','F2F: "Face to Face visit"','May 29, 2026','You','Pitcher',{Attendees:'Jonas Brandt',TA:'DRM'},['29/05/2026, 12:00','Nutrison','Nutrison Standard','DRM','F2F','Follow up on sample request.','Samples delivered to the ward.']],
+   ['2026-05','visit','Visit: "Visit"','May 29, 2026','','-',{HCP:'Petra Claßen',TA:'DRM',Product:'Nutrison Advanced',Brand:'Nutrison, Fortimel'}],
+   ['2026-04','phone','Phone: "Phone call"','Apr 14, 2026','A. Brandl','Pitcher',{HCP:'Mia Horn',TA:'DRM'}]
+  ],
+  sections:[
+   ['Accountinformationen',[['Accountname','St. Elisabeth Klinikum','r'],['Account-Datensatztyp','Business Account','r'],['Accountinhaber','Pitcher Admin','r'],['HCO Type',E],['Main Institution',E],['Telefon','0211 555 0100'],['Primary HCO',E,'l'],['Fax','0211 555 0140'],['Primary HCO Name',E,'r'],['Comments',E],['Beschreibung',E],['Last Segment Calculated date',E,'r'],['Account Group',E],['Homecare',E],['Belongs to Hospital Group',E],['Related With Homecare',E],['Groupment',E],['Platform',E],['Accessibility',E],['Wholesaler',E],['GO Rating','No'],['GO Rating Details',E],['Last Call Location',E,'r'],['Last Call Distance [km]',E,'r'],['Reimbursed Last Update Date','2026-03-06','r'],['Reimbursed Call Count','0','r'],['Restricted Access',E],['Restricted Access Message',E],['Bring HO Offline',E]]],
+   ['OneKey/MDM Fields',[['Locally Managed Account',E],['Country','DE','r'],['Customer Status','Valid','r'],['Inactive Reason','Quality control','r'],['Speciality','Miscellaneous','r'],['WorkPlace Type','General Hospital','r'],['Speciality2',E,'r'],['Structure Type','ETA','r'],['Specialty3',E,'r'],['Chain Label',E,'r'],['Nutricia Specific Specialty',E,'r'],['Building label',E,'r'],['Übergeordneter Account',E,'r'],['Workplace Location','Hospital','r'],['OneKey ID','WDEH00000000','rm'],['OneKey Last Modified Date','16/01/2026, 09:48:07','r'],['Integration External ID',E,'rm'],['Onekey Fiscal Code',E,'rm'],['Integration External ID2',E,'rm'],['Onekey Registration Number',E,'rm'],['SAP Id',E,'rm'],['Onekey Standard Opening',E,'r'],['Institution Sector','frei / gemeinnützig','r']]],
+   ['Landspezifische CRM -Felder',[['Overall Segment',E,'r'],['HCO_Accessibility',E],['Adoption Ladder',E],['Tendency 1',E,'r'],['Tendency 2',E,'r'],['Key Contact for Medical',E]]],
+   ['HCO Section',[['Number of Beds',E],['Number of Babies per year',E],['Number of HCPs in the team',E],['Number of nurses for child specialty',E],['Number of Patients in Home Care',E],['Number of Patients from other institutions',E]]],
+   ['Adressinformationen',[['Billing Street','Rheinstraße 40'],['Billing Postal Code','40210'],['Billing City','Düsseldorf'],['Billing State',E],['Billing Country','GERMANY']]],
+   ['Brick',[['BrickID',E,'rm'],['Brick Label','Düsseldorf-Hafen','r'],['Brick - UG 1','0511123','r'],['Brick - UG 3',E,'r'],['Brick Label 2',E,'r'],['Brick - UG 2',E,'r'],['Brick Label 3',E,'r'],['Brick - UG 4','0000402','r'],['Brick Label 4','PLZ 40200-40299','r'],['Brick - UG 5',E,'r'],['Brick Label 5',E,'r'],['Brick - UG 8',E,'r'],['Brick - UG 9',E,'r'],['Brick - UG 10',E,'r']]],
+   ['Systeminformationen',[['Erstellt von','Pitcher Admin, 11/06/2024, 19:18:30','r'],['Zuletzt geändert von','Pitcher Admin, 26/06/2026, 01:24:02','r']]]
+  ],
+  related:[
+   ['Affiliation (Real HCO)',['HCP','Specialty','Preferred'],[['Lena Albers','Nurse/Male nurse','Yes'],['Jonas Brandt','Internal Medicine','Yes'],['Petra Claßen','Nurse/Male nurse','Yes'],['Sofia Hartmann','Nurse/Male nurse','Yes'],['Mia Horn',"Nurse's Aide",'Yes']]],
+   ['Consent Managements',['Date','Consent type','Status'],[['14/02/2026','Main consent','Expired']]],
+   ['Pitcher Questionnaire Responses (Account)',[],[]],
+   ['Pitcher Questionnaire Response Items',[],[]],
+   ['Pitcher Presentations',['Date','Presentation','HCP'],[['29/05/2026','Nutrison Standard','Sofia Hartmann']]],
+   ['Pitcher Activities',['Date','Type','HCP','TA'],[['29/05/2026','Phone','Lena Albers','DRM'],['29/05/2026','F2F','Sofia Hartmann','DRM'],['29/05/2026','F2F','Jonas Brandt','DRM']]],
+   ['Pitcher Questionnaire Responses (Parent Account)',[],[]],
+   ['Pitcher Presentations (Parent Account)',[],[]],
+   ['Pitcher Questionnaire Response Items (Parent Account)',[],[]],
+   ['Call In Activities',[],[]]
+  ],
+  affx:{DEFAULT:['dm','rel'],DE:['dm','rel','Role','Start date'],'AT|Adults':['rel','Role'],'AT|Paediatrics':['dm','rel','Role','Notes']},
+  aff:{rows:[['Lena Albers','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker'],'Hard',{Role:'Nurse',"Start date":'01/06/2018',Notes:''}],['Jonas Brandt','HCP','St. Elisabeth Klinikum','HCO',['Discharge Decision Maker','Product Decision Maker'],'Hard',{Role:'Head of department',"Start date":'01/01/2016',Notes:'Decides on tenders'}],['Petra Claßen','HCP','St. Elisabeth Klinikum','HCO',[],'Soft',{Role:'Nurse',"Start date":'01/02/2021',Notes:''}],['St. Elisabeth Klinikum','HCO','Sofia Weber','HCP',['Product Decision Maker'],'Soft',{Role:'Pharmacist',"Start date":'01/09/2020',Notes:''}]]},
+  quest:[['Institution profile 2026','Answered','Yes','Answered 11/03/2026'],['Tender readiness check','Not answered','Yes','Assigned 15/09/2026'],['Pharmacy contact survey','Not answered','No','Assigned 01/09/2026']],
+  samp:[['Nutrison Standard',40,26],['Fortimel Compact',30,30]],
+  insight:{DE:{General:[
+     {l:'Institution Sector',t:'text',v:'frei / gemeinnützig',c:'#2556A8',upd:'1 month ago'},
+     {l:'Structure Type',t:'text',v:'ETA',c:'#2556A8',upd:'1 month ago'},
+     {l:'Number of Beds',t:'doughnut',v:'320',max:500,c:'#2E7D32',upd:'1 month ago',edit:true}],
+    Segment:{grid:{dims:['Team'],cols:[{t:'NOB',sub:'Patients per year'},{t:'CL',sub:'Commitment level, 1 low – 5 high'},{t:'Segment letter',sub:'A highest – D lowest potential'}],rows:[
+       {keys:['FI Hospital'],upd:'5 days ago',cells:[{t:'num',v:'210'},{t:'cl',v:5},{t:'letter',v:'A'}]},
+       {keys:['NO Pharmacy'],upd:'5 days ago',cells:[{t:'num',v:'75'},{t:'cl',v:3},{t:'letter',v:'B'}]},
+       {keys:['PED HOSP'],upd:'2 months ago',cells:[{t:'num',v:'20'},{t:'cl',v:2},{t:'letter',v:'C'}]}]},cards:[]}}}
+ }
+};
+
+/* ------------ render ------------ */
+const cfg=o=>o[state.cbu+'|'+state.team]||o[state.cbu]||o.DEFAULT||[];
+function field(l,v){return `<div><span class="lbl">${esc(l)}</span><span class="val${v?'':' empty'}" title="${esc(v)}">${v?esc(v):'—'}</span></div>`}
+function render(){
+  const d=P[state.page];
+  if(!state.tab||!d.tabs.some(t=>t[0]===state.tab))state.tab=d.tabs[0][0];
+  const callBtn=()=>`<div><span class="lbl">Last call</span><button class="link" type="button" data-pop="callPop" aria-expanded="false">${esc(d.lastCallShort)} ▾</button></div>`;
+  const l2=d.line2.map(([l,v,link])=>v==='@call'?callBtn():link?`<div><span class="lbl">${esc(l)}</span><a href="#" data-link="${link}" title="${esc(v)}">${esc(v)} ›</a></div>`:field(l,v)).join('');
+  const l3=cfg(d.line3cfg).map(([l,v])=>field(l,v)).join('');
+  $('#app').innerHTML=`
+  <header class="hl" id="hl">
+    <div class="hl-main">
+      <button class="back" type="button">‹ Back</button>
+      <div class="avatar">${d.initials}</div>
+      <div class="who"><span class="name">${esc(d.name)}</span></div>
+      <div class="actions">
+        <button class="chip good" type="button" data-pop="targetPop" aria-expanded="false">✓ <span class="t">Target</span> ▾</button>
+        <button class="chip ${d.consent.ok?'good':'bad'}" type="button" data-pop="consentPop" aria-expanded="false">${d.consent.ok?'✓':'✕'} <span class="t">Consent Status</span> ▾</button>
+        <div class="split"><button class="btn primary" type="button">▶ Start call</button><button class="btn primary" type="button" data-pop="morePop" aria-label="More actions" aria-expanded="false">•••</button></div>
+      </div>
+    </div>
+    <div class="hl-line" style="grid-template-columns:${d.line2cols}">${l2}</div>
+    <div class="hl-line" style="grid-template-columns:repeat(4,minmax(0,1fr))">${l3}</div>
+    <div class="pop" id="targetPop" hidden>
+      <h4 style="color:var(--good)">Target · Rep engagement plan</h4>
+      <div class="seg" id="ceqSeg" style="margin:2px 0 6px"><button type="button" aria-pressed="true" data-w="0">Touchpoints</button><button type="button" aria-pressed="false" data-w="1">CEQ</button></div>
+      <div class="legend"><span>Actual</span><span class="pl">Planned</span></div>
+      <div id="epTable"></div><p class="sample" id="ceqNote" style="margin:0"></p>
+    </div>
+    <div class="pop" id="consentPop" hidden>
+      <h4 style="color:var(--${d.consent.ok?'good':'bad'})">${esc(d.consent.title)}</h4>
+      <p>${esc(d.consent.msg)}</p>
+      <table class="ctab">${d.consent.rows.map(([ch,st,txt])=>`<tr><td>${esc(ch)}</td><td class="st ${st}">${st==='in'?'✓':st==='out'?'✕':'—'} ${esc(txt)}</td></tr>`).join('')}</table>
+      <button class="btn sm" type="button" data-rel-name="Consent Managements">Consent Management History ›</button>
+    </div>
+    <div class="pop" id="callPop" style="right:auto;left:auto;right:18px;top:84px" hidden>
+      <h4>Last Call Details</h4>
+      <dl class="dl">${CALL_FIELDS.map((k,i)=>`<dt>${k}</dt><dd>${esc(d.lastCall[i])}</dd>`).join('')}</dl>
+      <button class="btn sm" type="button" data-tabgo="las">Open in Timeline 360 ›</button>
+    </div>
+    <div class="pop menu" id="morePop" hidden>
+      <button type="button">▤ Share box</button><button type="button" data-plan="1">▦ Plan a call</button><button type="button">☁︎ Open in Salesforce (online)</button>
+    </div>
+    <nav class="tabs" role="tablist">${d.tabs.map(([id,l])=>`<button class="tab" role="tab" type="button" data-tab="${id}" aria-selected="${id===state.tab}">${esc(l)}${id==='rat'?' <span class="newtag">New</span>':''}</button>`).join('')}</nav>
+    ${state.tab==='p360'?`<div class="anchors">${d.anchors.map(([id,l])=>`<button type="button" data-go="${id}">${esc(l)}</button>`).join('')}</div>`:''}
+  </header>
+  <section class="panel">${({con:renderContacts,p360:render360,las:renderLAS,det:renderDetails,rat:renderRatings,qst:renderQuest,smp:renderSamp})[state.tab](d)}</section>`;
+  bind(d);
+}
+
+function renderContacts(d){
+  return `<div class="card"><div class="card-b">
+   <div class="contacts-tools"><input class="search" id="conSearch" type="search" placeholder="Search HCP"><button class="iconsq" type="button" aria-label="Filter">⚲</button></div>
+   <div class="tablewrap"><table class="rt"><thead><tr><th>First Name</th><th>Last Name</th><th>Specialty 1</th><th>Phone</th><th>City</th><th>Address</th><th></th></tr></thead>
+   <tbody id="conBody">${d.contacts.map(([f,l,s])=>`<tr data-q="${esc((f+' '+l+' '+s).toLowerCase())}"><td>${esc(f)}</td><td>${esc(l)}</td><td>${esc(s)}</td><td>—</td><td>Düsseldorf</td><td>Rheinstraße 40</td><td><button class="go" type="button" data-link="hcp" aria-label="Open HCP">›</button></td></tr>`).join('')}</tbody></table></div>
+   <div class="pager"><span>Rows per page: 50 ▾</span><span>1 - ${d.contacts.length} of ${d.contacts.length}</span><span>‹ ›</span></div>
+  </div></div>`;
+}
+
+function render360(d){
+  const C={
+   nba:`<article class="card wide" id="c-nba"><div class="card-h"><h3>Next Best Action</h3><select aria-label="Status"><option>Pending</option><option>Completed</option></select><button class="btn sm" type="button">⇅ Priority</button><button class="btn sm ghost" type="button">✕ Clear all</button></div><div class="card-b"><span class="emptytxt">No NBA records</span></div></article>`,
+   consent:`<article class="card wide" id="c-consent"><div class="card-h"><h3>Consent info</h3><span class="chip ${d.consent.ok?'good':'bad'}">${d.consent.ok?'✓':'✕'} ${d.consent.ok?'Consent valid':'No consent'}</span><button class="iconsq" type="button" aria-label="Open">↗</button></div><div class="card-b"><div class="clist">${d.consent.rows.map(([ch,st,txt])=>`<div class="crow"><span class="cch">${esc(ch)}</span><span class="st ${st}">${st==='in'?'✓':st==='out'?'✕':'—'} ${esc(txt)}</span></div>`).join('')}</div><button class="btn ghost sm" type="button" style="padding-left:0;margin-top:8px" data-rel-name="Consent Managements">Consent Management History ›</button></div></article>`,
+   seg:`<article class="card wide" id="c-seg"><div class="card-h"><h3>Segment &amp; Commitment</h3><button class="iconsq" type="button" aria-label="Open">↗</button></div><div class="card-b"><span class="emptytxt">No segment records</span></div></article>`,
+   visit:`<article class="card wide" id="c-visit"><div class="card-h"><h3>Last Visit Summary</h3><button class="iconsq" type="button" aria-label="Calendar">▦</button><button class="btn sm primary" type="button">Plan next visit</button></div><div class="card-b"><div class="visit">
+     <div class="vbox"><div class="lbl">Last visit date</div><div class="val"><b>☑ ${esc(d.visit.date)}</b></div>${d.visit.who?`<a href="#" class="sample" style="color:var(--link)">${esc(d.visit.who)}</a>`:''}</div>
+     <div class="vbox${d.visit.plannedRed?' red':''}"><div class="lbl">Planned visit</div><div class="val"><b>${d.visit.planned?'▦ '+esc(d.visit.planned)+' ⓘ':'—'}</b></div></div>
+     <div class="ring">${esc(d.visit.ring)}</div><div><div class="lbl" style="text-transform:none;letter-spacing:0">Rep engagement plan</div><button class="link" type="button" data-pop="targetPop"><b>${esc(d.visit.plan)}</b></button></div>
+     </div><div style="margin-top:10px"><div class="lbl" style="text-transform:none;letter-spacing:0">Summary last visit:</div><div class="val empty">—</div></div></div></article>`,
+   ins:`<article class="card wide" id="c-ins"><div class="card-h"><h3>Main Behavioural Insights</h3></div><div class="card-b tiles">${['Last 3 samples ordered','Last 3 websites','Newsletter subscriptions','Last 3 digital campaigns interacted'].map(t=>`<div class="tile"><div class="lbl">${t}</div><div class="sample" style="margin-top:4px">No data available</div></div>`).join('')}</div></article>`,
+   kpi:`<article class="card wide" id="c-kpi"><div class="card-h"><h3>HCO KPIs</h3><span class="sample">Last 6M vs Prior 6M</span></div><div class="card-b"><span class="emptytxt">No HCO KPI data available</span></div></article>`,
+   aff:d.contacts?`<article class="card wide" id="c-aff"><div class="card-h"><h3>Affiliated HCPs</h3></div><div class="card-b"><input class="search" type="search" placeholder="Search HCP" style="width:100%" id="affSearch"><div class="sample" style="margin:6px 0">${d.contacts.length}</div><ul class="aff" id="affList">${d.contacts.map(([f,l,s])=>`<li data-q="${esc((f+' '+l).toLowerCase())}"><span class="av">${f[0]}${l[0]}</span><div><div class="nm">${esc(f+' '+l)}</div><div class="sample">${esc(s)} · Düsseldorf</div></div><span class="pref">★ Preferred</span><button class="b360" type="button" data-link="hcp">Summary 360 ›</button></li>`).join('')}</ul></div></article>`:''
+  };
+  return `<div class="grid2"><article class="card wide" id="c-basic"><div class="card-h"><h3>${esc(d.basic.title)}</h3></div><div class="card-b kv">${d.basic.fields.map(([l,v])=>`<div><div class="lbl">${esc(l)}</div><div class="val${v?'':' empty'}">${v?esc(v):'—'}</div></div>`).join('')}</div></article>${d.cards.map(k=>C[k]).join('')}</div>`;
+}
+
+function renderLAS(d){
+  const hcps=[...new Set(d.act.map(a=>a[6].HCP).filter(Boolean))];
+  return `<div class="tl-wrap"><div>
+   <div class="tlbar"><span class="lbl">Show last:</span><div class="seg" id="periodSeg"><button type="button" aria-pressed="true" data-p="6">6 months</button><button type="button" aria-pressed="false" data-p="12">12 months</button></div>
+    <select id="taSel" aria-label="Therapeutic area"><option value="">All TAs</option>${[...new Set(d.act.map(a=>a[6].TA))].map(t=>`<option>${esc(t)}</option>`).join('')}</select>
+    ${hcps.length?`<select id="hcpSel" aria-label="HCP"><option value="">All HCPs</option>${hcps.map(h=>`<option>${esc(h)}</option>`).join('')}</select>`:''}</div>
+   <div class="months" id="months"></div></div>
+   <aside class="card filters"><div class="card-h"><h3>Show on timeline</h3></div><div class="card-b" id="tlFilters"><label style="justify-content:space-between">Only my activities <input type="checkbox" id="onlyMine"></label>
+   ${[...new Set(d.act.map(a=>a[1]))].map(k=>`<label><input type="checkbox" data-t="${k}" checked><span class="ticon ${TYPES[k][2]}" style="width:22px;height:22px;font-size:9px">${TYPES[k][1]}</span>${TYPES[k][0]}</label>`).join('')}</div></aside></div>`;
+}
+function drawTL(d){
+  const box=$('#months');if(!box)return;
+  const per=+$('#periodSeg [aria-pressed="true"]').dataset.p, ta=$('#taSel').value, hcp=$('#hcpSel')?.value||'', mine=$('#onlyMine').checked;
+  const types=new Set($$('#tlFilters [data-t]').filter(i=>i.checked).map(i=>i.dataset.t));
+  const list=d.act.filter(a=>types.has(a[1])&&(!ta||a[6].TA===ta)&&(!hcp||a[6].HCP===hcp)&&(!mine||a[4]==='You'));
+  if(!state.openInit){state.open.add(d.act[0][0]);state.openInit=true}
+  box.innerHTML=MONTHS.slice(0,per).map(m=>{
+    const it=list.filter(a=>a[0]===m);
+    if(!it.length)return `<div class="nomonth">${mName(m)} · No activities</div>`;
+    const cnt={};it.forEach(a=>cnt[a[1]]=(cnt[a[1]]||0)+1);
+    return `<div class="month${state.open.has(m)?' open':''}" data-m="${m}"><button class="month-h" type="button"><span class="caret">›</span><span class="m">${mName(m)}</span><span class="counts">${Object.entries(cnt).map(([k,n])=>`<span><span class="ticon ${TYPES[k][2]}">${TYPES[k][1]}</span>${n} ${TYPES[k][0]}</span>`).join('')}</span></button>
+    <ul class="items">${it.map((a,i)=>`<li><span class="ticon ${TYPES[a[1]][2]}">${TYPES[a[1]][1]}</span><div><div>${esc(a[2])}${a[4]==='You'?'<span class="you">You</span>':''}</div><div class="tmeta">${esc(a[3])} · Source: ${esc(a[5])}${Object.entries(a[6]).map(([k,v])=>` · ${k}: <b>${esc(v)}</b>`).join('')}${a[4]&&a[4]!=='You'?' · '+esc(a[4]):''}</div>${(a[7]&&a[1]==='f2f')?`<details class="calldet"${i===0?' open':''}><summary>Call details</summary><dl class="dl">${a[6].Attendees?`<dt>Attendees</dt><dd>${esc(a[6].Attendees)}</dd>`:''}${CALL_FIELDS.map((k,j)=>`<dt>${k}</dt><dd class="${k.includes('Notes')?'note':''}">${esc(a[7][j])}</dd>`).join('')}</dl></details>`:''}</div><span></span></li>`).join('')}</ul></div>`;
+  }).join('')+'<p class="sample">Example activities.</p>';
+  $$('.month-h').forEach(b=>b.addEventListener('click',()=>{const m=b.parentElement;m.classList.toggle('open');state.open[m.classList.contains('open')?'add':'delete'](m.dataset.m)}));
+}
+
+function renderDetails(d){
+  return `<div class="md"><nav class="side" id="side"><h5>Details</h5>${d.sections.map(([t,f],i)=>`<button type="button" data-sec="${i}"><span>${esc(t)}</span><span class="n">${f.length}</span></button>`).join('')}
+   <h5>Related</h5>${d.related.map(([t,c,r],i)=>`<button type="button" data-rel="${i}" class="${r.length?'':'zero'}"><span>${esc(t)}</span><span class="n">${r.length}</span></button>`).join('')}</nav>
+   <div class="main"><div id="fieldsView"><div class="dtools"><input class="search" id="fsearch" type="search" placeholder="Find a field or a value"><label class="switch"><input type="checkbox" id="hideEmpty"> Hide empty</label></div>
+   <div id="sections">${d.sections.map(([title,fields],i)=>`<section class="sec" id="s${i}"><div class="sec-h"><h3>${esc(title)}</h3><button class="btn sm ghost edit" type="button">✎ Edit</button><button class="btn sm cancel" type="button" hidden>Cancel</button><button class="btn sm primary save" type="button" hidden>Save</button></div>
+     <div class="rows">${fields.map(([l,v,f=''])=>`<div class="row${f.includes('r')?' ro':''}" data-label="${esc(l)}" data-empty="${v?0:1}"><div class="l">${esc(l)}</div><div class="v${v?'':' empty'}${f.includes('m')?' mono':''}" data-link="${f.includes('l')?1:0}">${v?esc(v):'—'}</div></div>`).join('')}</div></section>`).join('')}</div>
+   <p class="noresult" id="noresult" hidden>No fields or values match your search.</p></div><div id="relView" hidden></div></div></div>`;
+}
+
+function findCard(d,label){const conf=cfg(d.insight)||{};for(const k in conf){const sec=conf[k];const arr=Array.isArray(sec)?sec:(sec.cards||[]);const f=arr.find(x=>x.l===label);if(f)return f}return null}
+function insightCard(c){
+  const col=c.c||(c.scale&&c.idx!=null?c.scale[c.idx]:'');
+  let body='';
+  if(c.t==='toggle'){body=c.edit?`<button class="sw ${c.v==='Yes'?'on':''}" type="button" data-toggle="${esc(c.l)}" role="switch" aria-checked="${c.v==='Yes'}" aria-label="${esc(c.l)}"><i></i></button>`:`<span class="sw ${c.v==='Yes'?'on':''}" role="img" aria-label="${esc(c.v)}"><i></i></span>`}
+  else if(c.t==='text'){body=`<div class="txtval" style="${col?`color:${col}`:''}">${esc(c.v)}</div>`}
+  else if(c.t==='picklist'){body=state.editPick===c.l?`<select class="pick" id="pick-sel" aria-label="${esc(c.l)}">${PICK_OPTS.map(o=>`<option${o===c.v?' selected':''}>${esc(o)}</option>`).join('')}</select>`:`<div class="txtval" style="${col?`color:${col}`:''}">${esc(c.v)}</div>`}
+  else if(c.t==='date'){body=`<div class="txtval" style="font-weight:500;${col?`color:${col}`:''}">${esc(c.v)}</div>`}
+  else if(c.t==='number'){body=`<div class="big" style="${col?`color:${col}`:''}">${esc(c.v)}</div>`}
+  else if(c.t==='continuum'){
+    body=`<div><div class="dots">${c.steps.map((_,i)=>`<i style="${i<=c.idx?`background:${c.scale[i]};border-color:${c.scale[i]}`:''}" title="${esc(c.steps[i])}"></i>`).join('')}</div><div class="dotlab" style="color:${col}">${esc(c.v)}</div></div>`}
+  else if(c.t==='doughnut'||c.t==='doughnut%'){
+    const num=parseFloat(c.v)||0, pct=Math.max(0,Math.min(1,num/c.max)), C=2*Math.PI*34;
+    body=`<div><div class="ring2"><svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="34" fill="none" stroke="var(--surface-2)" stroke-width="10"/><circle cx="43" cy="43" r="34" fill="none" stroke="${c.c}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}"/></svg><span class="mid" style="color:${c.c}">${esc(c.v)}${c.t==='doughnut%'?'%':''}</span></div><div class="pot">of ${esc(c.max)}</div></div>`}
+  return `<div class="icard"><div class="top"><span class="nm">${esc(c.l)}</span>${c.edit&&state.editPick!==c.l?`<button class="pencil" type="button" aria-label="Edit"${c.t==='picklist'?` data-pick="${esc(c.l)}"`:''}>✎</button>`:''}</div><div class="body">${body}</div>${state.editPick===c.l?`<div class="foot"><span></span><span class="cellbtns"><button type="button" class="ok" data-pick-save="${esc(c.l)}">Save</button><button type="button" data-pick-cancel="1">Cancel</button></span></div>`:`<div class="foot${c.edit?'':' ro'}"><span>Updated ${esc(c.upd)}</span>${c.edit?`<button type="button"${c.t==='picklist'?` data-pick-clear="${esc(c.l)}"`:''}>Clear</button>`:''}</div>`}</div>`;
+}
+
+const PICK_OPTS=['Oncologist_Community','Oncologist_Hospital','Paediatrician','General Practitioner','Dietitian','Pharmacist'];
+const LETTERS=['A','B','C','D'], LCOL={A:'#2E7D32',B:'#8AAE24',C:'#E06C1F',D:'#C62828'};
+const clCol=v=>v>=4?'#2E7D32':v>=3?'#8AAE24':v>=2?'#E06C1F':'#C62828';
+function gridCell(c,r,i){
+  const ed=state.editCell===r+'-'+i, at=`data-cell="${r}-${i}"`;
+  let inner='';
+  if(c.t==='num'){
+    inner = ed
+      ? `<input class="gin" id="gin-${r}-${i}" type="number" value="${esc(c.v)}" aria-label="Value"><div class="cellbtns"><button type="button" class="ok" data-save="${r}-${i}">Save</button><button type="button" data-cancel="1">Cancel</button></div>`
+      : `<span class="num">${c.v===''?'—':esc(c.v)}</span>`;
+  } else if(c.t==='cl'){
+    const col=c.v?clCol(c.v):'';
+    inner = `<div class="pips">${[1,2,3,4,5].map(n=>{const on=n<=c.v;const st=on?`background:${col};border-color:${col}`:'';
+      return ed?`<button class="pip" type="button" data-set="${r}-${i}-${n}" style="${st}" aria-label="${n}"></button>`:`<b style="${st}"></b>`}).join('')}</div><span class="num" style="font-size:14px;color:${col}">CL ${c.v||'—'}</span>`;
+  } else {
+    inner = `<div class="chips">${LETTERS.map(L=>{const on=L===c.v;const st=on?`background:${LCOL[L]};border-color:${LCOL[L]};color:#fff`:'';
+      return `<b style="${st}">${L}</b>`}).join('')}</div>`;
+  }
+  return `<div class="cell${ed?' editing':''}" ${at}>${inner}${(c.t==='num'&&ed)||c.t==='letter'?'':`<button class="pencil" type="button" data-edit="${r}-${i}" aria-label="Edit">✎</button>`}${c.t!=='letter'&&c.v!==''&&c.v!==0&&!(c.t==='num'&&ed)?`<button class="clr" type="button" data-clear="${r}-${i}">Clear</button>`:''}</div>`;
+}
+function segmentGrid(g){
+  const used=g.dims.filter((d,i)=>g.rows.some(r=>r.keys[i]));
+  const k=v=>v?('0'+v):'1';
+  const rows=g.rows.map((r,ri)=>({r,ri})).sort((a,b)=>k(a.r.keys[0]).localeCompare(k(b.r.keys[0]))||k(a.r.keys[1]).localeCompare(k(b.r.keys[1])));
+  const head=used.length>1?'Segment':used[0]||'Segment';
+  const body=rows.map(({r,ri})=>{
+    const ta=r.keys[0], team=r.keys[1];
+    const main=ta||team||'—', chip=(ta&&team)?`<span class="teamchip">${esc(team)}</span>`:'';
+    return `<tr><td><div class="ta"><div><div class="rowlab">${esc(main)}${chip}</div><div class="rowsub">Updated ${esc(r.upd)}</div></div></div></td>${r.cells.map((c,ci)=>`<td>${gridCell(c,ri,ci)}</td>`).join('')}</tr>`}).join('');
+  return `<div class="gwrap"><table class="grid"><colgroup><col class="c1">${g.cols.map(()=>'<col>').join('')}</colgroup>
+   <thead><tr><th><div>${esc(head)}</div><div class="hsub">${esc(used.join(' + '))}</div></th>${g.cols.map(c=>`<th><div>${esc(c.t)}</div><div class="hsub">${esc(c.sub||'')}</div></th>`).join('')}</tr></thead>
+   <tbody>${body}</tbody></table></div>`;
+}
+
+
+
+const FIXED_SUB=['Affiliation'];
+const subtabBar=(all,cur)=>`<div class="subtabs">${all.map(g=>`<button type="button" data-isub="${g}" aria-pressed="${g===cur}">${esc(g)}</button>`).join('')}</div>`;
+const DM_OPTS=['Discharge Decision Maker','Product Decision Maker'];
+const pill=(t,k)=>`<span class="pill ${k}">${esc(t)}</span>`;
+const ACCTS=[['HCO','Praxis Vogel/Brandt/Huber'],['HCO','St. Elisabeth Klinikum'],['HCO','Klinikum Münster'],['HCP','Katrin Vogel'],['HCP','Jonas Brandt'],['HCP','Lena Albers'],['HCP','Petra Claßen'],['HCP','Sofia Weber']];
+const acctSel=(id,cur)=>`<select class="pick" id="${id}"><option value=""${cur?'':' selected'}>Select HCP / HCO…</option>${['HCO','HCP'].map(t=>`<optgroup label="${t}">${ACCTS.filter(a=>a[0]===t).map(a=>`<option value="${t}|${esc(a[1])}"${cur===t+'|'+a[1]?' selected':''}>${esc(a[1])}</option>`).join('')}</optgroup>`).join('')}</select>`;
+const dmEdit=(id,cur)=>`<div class="dmed" id="${id}">${DM_OPTS.map(o=>`<label><input type="checkbox" value="${o}"${cur.includes(o)?' checked':''}> ${o}</label>`).join('')}</div>`;
+const dmRead=id=>[...document.querySelectorAll('#'+id+' input:checked')].map(x=>x.value);
+/* editability per core column, as set in Account_Insight_Card__mdt (Is_Editable__c + Editable_For__c: None / Soft / All) */
+const AFFLAB={dm:'Decision maker',rel:'Relationship type'};
+const AFFEDIT={from:'Soft',to:'Soft',dm:'All',rel:'None'};
+const canEdit=(col,rel)=>AFFEDIT[col]==='All'||AFFEDIT[col]===rel;
+const acctCell=(n,t)=>`<div>${esc(n)}</div><span class="atype">${t}</span>`;
+function renderAff(d){
+  const xc=cfg(d.affx).length?cfg(d.affx):['dm','rel'], rows=d.aff.rows, ea=state.editAff, na=state.newAff, ed2=state.editDM;
+  const tr=rows.map((r,i)=>{
+    const edFT=canEdit('from',r[5])||canEdit('to',r[5]), ed=ea===i&&edFT;
+    const dmed=ed2===i;
+    const dmcell=dmed?`${dmEdit('aff-dm',r[4])}<span class="cellbtns" style="margin-top:6px"><button type="button" class="ok" data-dm-save="${i}">Save</button><button type="button" data-dm-cancel="1">Cancel</button></span>`
+      :`<div class="dmrow">${r[4].length?r[4].map(x=>pill(x,'dm')).join(' '):'<span class="faint">—</span>'}${canEdit('dm',r[5])?`<button class="pencil" type="button" data-dm-edit="${i}" aria-label="Edit decision maker">✎</button>${r[4].length?`<button class="clr" type="button" data-dm-clear="${i}">Clear</button>`:''}`:''}</div>`;
+    const act=ed?`<span class="cellbtns"><button type="button" class="ok" data-aff-save="${i}">Save</button><button type="button" data-aff-cancel="1">Cancel</button></span>`
+      :edFT?`<button class="pencil" type="button" data-aff-edit="${i}" aria-label="Edit from / to">✎</button>`:`<span class="lock" title="From and To cannot be changed for this affiliation">🔒</span>`;
+    return `<tr><td>${ed&&canEdit('from',r[5])?acctSel('aff-from',r[1]+'|'+r[0]):acctCell(r[0],r[1])}</td><td>${ed&&canEdit('to',r[5])?acctSel('aff-to',r[3]+'|'+r[2]):acctCell(r[2],r[3])}</td>${xc.map(k=>k==='dm'?`<td>${dmcell}</td>`:k==='rel'?`<td>${pill(r[5],r[5]==='Hard'?'hard':'soft')}</td>`:`<td>${(r[6]||{})[k]?esc(r[6][k]):'<span class="faint">—</span>'}</td>`).join('')}<td style="text-align:right">${act}</td></tr>`}).join('');
+  const nr=na?`<tr class="newrow"><td>${acctSel('aff-from','')}</td><td>${acctSel('aff-to','')}</td>${xc.map(k=>k==='dm'?`<td>${dmEdit('aff-dm','')}</td>`:k==='rel'?`<td>${pill('Soft','soft')}</td>`:'<td><span class="faint">—</span></td>').join('')}<td style="text-align:right"><span class="cellbtns"><button type="button" class="ok" id="aff-add" data-aff-add="1">Add</button><button type="button" data-aff-cancel="1">Cancel</button></span></td></tr>`:'';
+  return `<div class="qsum"><span>${rows.length} affiliations</span><button class="btn sm primary" type="button" data-aff-new="1" style="margin-left:auto"${na?' disabled':''}>+ New affiliation</button></div>
+   <div class="tablewrap"><table class="rt"><thead><tr><th>From</th><th>To</th>${xc.map(k=>`<th>${esc(AFFLAB[k]||k)}</th>`).join('')}<th></th></tr></thead><tbody>${nr}${tr}</tbody></table></div>
+   <p class="sample">Example affiliations. From and To are always both filled (so they have a pencil but no Clear) and can each be an HCP or an HCO. Every other editable value has a pencil and a Clear. Which columns are editable, and on which affiliations (None / Soft / All), is set in the custom metadata, not in the app. Default: From and To editable on Soft only (locked on Hard), Decision maker (${DM_OPTS.join(' / ')}) editable on Hard and Soft, Relationship type read-only. Use the switch above the device to see From/To switched to read-only. New affiliations are created as Soft. Only From and To are fixed: always shown, first, for every CBU. All other columns (Decision maker, Relationship type, extra fields) come from custom metadata per CBU and Team, so they can be shown, hidden or reordered. Switch CBU/Team above the device to compare, e.g. AT Adults has no Decision maker column.</p>`;
+}
+function renderQuest(d){
+  const f=state.qf||'All', all=d.quest, open=all.filter(q=>q[1]!=='Answered'), mand=open.filter(q=>q[2]==='Yes');
+  const rows=all.filter(q=>f==='All'||(f==='Open'?q[1]!=='Answered':q[1]==='Answered'));
+  return `<div class="qsum"><span><b>${all.length-open.length}</b> of ${all.length} answered</span><span class="${mand.length?'warn':''}"><b>${mand.length}</b> mandatory open</span>
+   <div class="seg" id="qSeg">${['All','Open','Answered'].map(x=>`<button type="button" data-qf="${x}" aria-pressed="${x===f}">${x}</button>`).join('')}</div></div>
+   <div class="tablewrap"><table class="rt"><thead><tr><th>Questionnaire</th><th>Status</th><th>Mandatory</th><th>Assigned / answered</th><th></th></tr></thead><tbody>${rows.map(q=>`<tr><td>${esc(q[0])}</td><td>${pill(q[1],q[1]==='Answered'?'ok':'open')}</td><td>${q[2]==='Yes'?pill('Mandatory','mand'):'<span class="faint">Optional</span>'}</td><td>${esc(q[3])}</td><td style="text-align:right">${q[1]==='Answered'?'<button class="btn sm ghost" type="button">View answers</button>':'<button class="btn sm primary" type="button">▶ Start</button>'}</td></tr>`).join('')||'<tr><td colspan="5" class="faint">No questionnaires</td></tr>'}</tbody></table></div>
+   <p class="sample">Example questionnaires assigned to this account. Start opens the questionnaire to fill in; View answers opens the answered one.</p>`;
+}
+function renderSamp(d){
+  const y=new Date().getFullYear();
+  return `<div class="qsum"><span>Annual sample limits · <b>${y}</b> (current year)</span></div>
+   <div class="tablewrap"><table class="rt"><thead><tr><th>Product</th><th>Annual limit ${y}</th><th>Delivered ${y}</th><th>Remaining ${y}</th></tr></thead><tbody>${d.samp.map(([n,lim,used])=>{const rem=lim-used,col=rem===0?'var(--bad)':rem/lim<=.2?'#E06C1F':'var(--good)';
+    return `<tr><td>${esc(n)}</td><td>${lim}</td><td>${used}</td><td style="color:${col};font-weight:600">${rem}${rem===0?' · limit reached':''}</td></tr>`}).join('')}</tbody></table></div>
+   <p class="sample">Example sample limits per product. Limits are annual: quantities count for the current year (${y}) only and start again from 0 each year. Delivered = quantity already used or delivered.</p>`;
+}
+function openCal(d){
+  $('#calModal')?.remove();
+  const today=new Date();today.setHours(0,0,0,0);
+  let view=new Date(today.getFullYear(),today.getMonth(),1),sel=null,slot=null;
+  const mark=[3,10,17].map(n=>new Date(today.getFullYear(),today.getMonth(),today.getDate()+n).toDateString());
+  const bg=document.createElement('div');bg.className='modal-bg';bg.id='calModal';document.body.appendChild(bg);
+  const key=x=>x.toDateString();
+  const draw=()=>{
+    const first=(view.getDay()+6)%7,dim=new Date(view.getFullYear(),view.getMonth()+1,0).getDate();
+    let cells='';for(let i=0;i<first;i++)cells+='<i></i>';
+    for(let n=1;n<=dim;n++){const dt=new Date(view.getFullYear(),view.getMonth(),n),past=dt<today;
+      cells+=`<button type="button" class="cd${key(dt)===key(today)?' today':''}${sel&&key(dt)===key(sel)?' sel':''}${mark.includes(key(dt))?' has':''}" data-d="${n}"${past?' disabled':''}>${n}</button>`}
+    bg.innerHTML=`<div class="modal" role="dialog" aria-label="Plan a call"><div class="mh"><h3>Plan a call · ${esc(d.name)}</h3><button type="button" class="x" data-x="1" aria-label="Close">✕</button></div>
+     <div class="calbody"><div><div class="calnav"><button type="button" data-m="-1" aria-label="Previous month">‹</button><b>${view.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}</b><button type="button" data-m="1" aria-label="Next month">›</button></div>
+      <div class="calgrid">${['Mo','Tu','We','Th','Fr','Sa','Su'].map(x=>`<span class="dow">${x}</span>`).join('')}${cells}</div><p class="sample">Dot = day with calls already planned in your calendar.</p></div>
+      <div class="slots"><h4>${sel?sel.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}):'Select a day'}</h4>${sel?['09:00','10:30','13:00','14:30','16:00'].map(t=>`<button type="button" class="slot${slot===t?' sel':''}" data-s="${t}">${t}</button>`).join(''):'<p class="sample">Pick a day to see free slots.</p>'}</div></div>
+     <div class="mf"><button class="btn" type="button" data-x="1">Cancel</button><button class="btn primary" type="button" data-ok="1"${sel&&slot?'':' disabled'}>Plan call</button></div></div>`;};
+  bg.addEventListener('click',e=>{const t=e.target;if(t===bg||t.closest('[data-x]')||t.closest('[data-ok]')){bg.remove();return}
+    const m=t.closest('[data-m]');if(m){view=new Date(view.getFullYear(),view.getMonth()+ +m.dataset.m,1);draw();return}
+    const dd=t.closest('[data-d]');if(dd){sel=new Date(view.getFullYear(),view.getMonth(),+dd.dataset.d);slot=null;draw();return}
+    const sl=t.closest('[data-s]');if(sl){slot=sl.dataset.s;draw()}});
+  draw();
+}
+function renderRatings(d){
+  const conf=cfg(d.insight)||{};
+  const groups=Object.keys(conf);
+  const all=[...groups,...FIXED_SUB];
+  const cur=all.includes(state.isub)?state.isub:all[0];
+  if(FIXED_SUB.includes(cur))return subtabBar(all,cur)+`<div class="isec"><h4>${esc(cur)}</h4>${({Affiliation:renderAff})[cur](d)}</div>`;
+  const sec=conf[cur], grid=Array.isArray(sec)?null:sec.grid, cards=Array.isArray(sec)?sec:(sec.cards||[]);
+  return subtabBar(all,cur)+
+   `<div class="isec"><h4>${esc(cur)}</h4>${grid?segmentGrid(grid):''}${cards.length?`<div class="icards"${grid?' style="margin-top:10px"':''}>${cards.map(insightCard).join('')}</div>`:''}</div>`+
+   `<p class="sample">Example cards. Display type, colour scale and thresholds come from custom metadata (see CR item 13). Each row is one segment record. The first column shows what the CBU segments by – therapeutic area, team, or both (team as a chip). Switch CBU/Team above the device to compare. Sub-tabs: General, Segment and Affiliation, all from custom metadata. Questionnaire and Sample are separate tabs.</p>`;
+}
+
+
+/* ------------ behaviour ------------ */
+function bind(d){
+  const hl=$('#hl');
+  scroller.style.setProperty('--hlh',hl.offsetHeight+'px');
+  $$('.tab').forEach(t=>t.addEventListener('click',()=>{state.tab=t.dataset.tab;render();scroller.scrollTop=0}));
+  $$('[data-tabgo]').forEach(b=>b.addEventListener('click',()=>{state.tab=b.dataset.tabgo;render();scroller.scrollTop=0}));
+  $$('[data-go]').forEach(b=>b.addEventListener('click',()=>{const el=$('#'+b.dataset.go);scroller.scrollTo({top:el.offsetTop-hl.offsetHeight-10,behavior:'smooth'})}));
+  $$('[data-link]').forEach(a=>{if(a.dataset.link==='0'||a.dataset.link==='1')return;a.addEventListener('click',e=>{e.preventDefault();const t=a.dataset.link;if(t==='contacts'){state.tab='con';render()}else if(t==='hco'||t==='hcp'){go(t)}})});
+  $$('[data-pop]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();const p=$('#'+b.dataset.pop);const was=p.hidden;$$('.pop').forEach(x=>x.hidden=true);if(b.closest('.panel'))scroller.scrollTo({top:0});p.hidden=!was;b.setAttribute('aria-expanded',!p.hidden)}));
+  $$('.pop').forEach(p=>p.addEventListener('click',e=>e.stopPropagation()));
+  // engagement plan
+  const renderEP=w=>{const f=x=>w?(Math.round(x*10)/10).toLocaleString('en-GB'):x;let G=0,A=0,Pl=0;
+    const rows=d.ep.map(([c,g,a,pl,wt])=>{const k=w?wt:1;G+=g*k;A+=a*k;Pl+=pl*k;return `<tr><td>${c}${w?` <span class="sample">×${wt}</span>`:''}</td><td>${f(g*k)}</td><td>${f(a*k)}</td><td>${f(pl*k)}</td></tr><tr><td colspan="4" style="border:0;padding:0 0 6px"><div class="bar"><i style="width:${a/g*100}%"></i><b style="left:${a/g*100}%;width:${pl/g*100}%"></b></div></td></tr>`}).join('');
+    $('#epTable').innerHTML=`<table class="ep"><thead><tr><th>Channel</th><th>Goal</th><th>Actual</th><th>Planned</th></tr></thead><tbody>${rows}<tr class="tot"><td>Total${w?' (CEQ)':''}</td><td>${f(G)}</td><td>${f(A)}</td><td>${f(Pl)}</td></tr></tbody></table>`;
+    $('#ceqNote').textContent=w?'CEQ: touchpoints × the weight of each channel':'Touchpoints: number of interactions per channel';};
+  renderEP(0);
+  $('#ceqSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#ceqSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderEP(+b.dataset.w)});
+  const gridOf=()=>{const conf=cfg(d.insight)||{};const sec=conf[state.isub];return (sec&&!Array.isArray(sec))?sec.grid:null};
+  $$('[data-edit]').forEach(b=>b.addEventListener('click',()=>{state.editCell=b.dataset.edit;render();const inp=$('#gin-'+state.editCell);if(inp){inp.focus();inp.select()}}));
+  $$('[data-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editCell=null;render()}));
+  $$('[data-save]').forEach(b=>b.addEventListener('click',()=>{const [r,i]=b.dataset.save.split('-').map(Number);const g=gridOf();const inp=$('#gin-'+r+'-'+i);
+    if(g&&inp){g.rows[r].cells[i].v=inp.value.trim()||'0';g.rows[r].upd='just now'}state.editCell=null;render()}));
+  $$('[data-clear]').forEach(b=>b.addEventListener('click',()=>{const [ri,ci]=b.dataset.clear.split('-').map(Number);const g=gridOf();if(g){const cell=g.rows[ri].cells[ci];cell.v=cell.t==='cl'?0:'';g.rows[ri].upd='just now'}state.editCell=null;render()}));
+  $$('[data-set]').forEach(b=>b.addEventListener('click',()=>{const p=b.dataset.set.split('-');const r=+p[0],i=+p[1],v=p[2];const g=gridOf();
+    if(g){g.rows[r].cells[i].v=isNaN(+v)?v:+v;g.rows[r].upd='just now'}state.editCell=null;render()}));
+  $$('[data-toggle]').forEach(b=>b.addEventListener('click',()=>{const on=b.getAttribute('aria-checked')==='true';b.setAttribute('aria-checked',!on);b.classList.toggle('on',!on);const c=findCard(d,b.dataset.toggle);if(c)c.v=on?'No':'Yes'}));
+  $$('[data-aff-new]').forEach(b=>b.addEventListener('click',()=>{state.newAff=true;state.editAff=null;state.editDM=null;render()}));
+  $$('[data-dm-edit]').forEach(b=>b.addEventListener('click',()=>{state.editDM=+b.dataset.dmEdit;state.editAff=null;state.newAff=false;render()}));
+  $$('[data-dm-clear]').forEach(b=>b.addEventListener('click',()=>{d.aff.rows[+b.dataset.dmClear][4]=[];render()}));
+  $$('[data-dm-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editDM=null;render()}));
+  $$('[data-dm-save]').forEach(b=>b.addEventListener('click',()=>{d.aff.rows[+b.dataset.dmSave][4]=dmRead('aff-dm');state.editDM=null;render()}));
+  $$('[data-aff-edit]').forEach(b=>b.addEventListener('click',()=>{state.editAff=+b.dataset.affEdit;state.editDM=null;state.newAff=false;render()}));
+  $$('[data-aff-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editAff=null;state.newAff=false;render()}));
+  const affRead=r=>{const f=$('#aff-from')?$('#aff-from').value:r[1]+'|'+r[0],t=$('#aff-to')?$('#aff-to').value:r[3]+'|'+r[2];return(f&&t&&f!==t)?[f.split('|'),t.split('|')]:null};
+  ['#aff-from','#aff-to'].forEach(q=>$(q)?.addEventListener('change',()=>{const ad=$('#aff-add');if(ad)ad.disabled=!affRead()}));
+  if($('#aff-add'))$('#aff-add').disabled=true;
+  $$('[data-aff-add]').forEach(b=>b.addEventListener('click',()=>{const v=affRead();if(!v)return;d.aff.rows.unshift([v[0][1],v[0][0],v[1][1],v[1][0],dmRead('aff-dm'),'Soft',{}]);state.newAff=false;render()}));
+  $$('[data-aff-save]').forEach(b=>b.addEventListener('click',()=>{const r=d.aff.rows[+b.dataset.affSave];const v=affRead(r);if(!v)return;[r[0],r[1],r[2],r[3]]=[v[0][1],v[0][0],v[1][1],v[1][0]];state.editAff=null;render()}));
+  $$('[data-plan]').forEach(b=>b.addEventListener('click',()=>{$$('.pop').forEach(x=>x.hidden=true);openCal(d)}));
+  $$('[data-qf]').forEach(b=>b.addEventListener('click',()=>{state.qf=b.dataset.qf;render()}));
+  $$('[data-pick]').forEach(b=>b.addEventListener('click',()=>{state.editPick=b.dataset.pick;render();$('#pick-sel')?.focus()}));
+  $$('[data-pick-cancel]').forEach(b=>b.addEventListener('click',()=>{state.editPick=null;render()}));
+  $$('[data-pick-save]').forEach(b=>b.addEventListener('click',()=>{const c=findCard(d,b.dataset.pickSave);if(c){c.v=$('#pick-sel').value;c.upd='just now'}state.editPick=null;render()}));
+  $$('[data-pick-clear]').forEach(b=>b.addEventListener('click',()=>{const c=findCard(d,b.dataset.pickClear);if(c){c.v='—';c.upd='just now'}render()}));
+  $$('[data-isub]').forEach(b=>b.addEventListener('click',()=>{state.isub=b.dataset.isub;state.editCell=null;state.editPick=null;state.editAff=null;state.editDM=null;state.newAff=false;render()}));
+  $$('[data-rel-name]').forEach(b=>b.addEventListener('click',()=>{const i=d.related.findIndex(r=>r[0]===b.dataset.relName);state.tab='det';render();openRel(d,i)}));
+  // contacts / affiliated search
+  $('#conSearch')?.addEventListener('input',e=>{const q=e.target.value.toLowerCase();$$('#conBody tr').forEach(r=>r.hidden=!r.dataset.q.includes(q))});
+  $('#affSearch')?.addEventListener('input',e=>{const q=e.target.value.toLowerCase();$$('#affList li').forEach(r=>r.hidden=!r.dataset.q.includes(q))});
+  // timeline
+  if($('#months')){drawTL(d);
+    $('#periodSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#periodSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawTL(d)});
+    ['#taSel','#hcpSel'].forEach(s=>$(s)?.addEventListener('change',()=>drawTL(d)));
+    $('#tlFilters').addEventListener('change',()=>drawTL(d));}
+  // details
+  if($('#side')){
+    $('#side').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;$$('#side button').forEach(x=>x.setAttribute('aria-current',x===b));
+      if(b.dataset.rel!=null){openRel(d,+b.dataset.rel);return}
+      $('#fieldsView').hidden=false;$('#relView').hidden=true;const el=$('#s'+b.dataset.sec);scroller.scrollTo({top:el.getBoundingClientRect().top-scroller.getBoundingClientRect().top+scroller.scrollTop-hl.offsetHeight-60,behavior:'smooth'})});
+    $$('.sec').forEach(sec=>{
+      const [eb,cb,sb]=['.edit','.cancel','.save'].map(s=>sec.querySelector(s));
+      const mode=(on,save)=>{sec.classList.toggle('editing',on);eb.hidden=on;cb.hidden=sb.hidden=!on;
+        sec.querySelectorAll('.row:not(.ro)').forEach(r=>{const val=r.querySelector('.v');
+          if(on){r.dataset.orig=val.textContent==='—'?'':val.textContent;val.hidden=true;const inp=document.createElement('input');inp.id=sec.id+'-'+r.dataset.label.replace(/\W+/g,'-');inp.value=r.dataset.orig;r.appendChild(inp)}
+          else{const inp=r.querySelector('input');const v=save?inp.value.trim():r.dataset.orig;inp.remove();val.hidden=false;val.textContent=v||'—';val.classList.toggle('empty',!v);r.dataset.empty=v?0:1}});
+        applyFilter()};
+      eb.addEventListener('click',()=>mode(true));cb.addEventListener('click',()=>mode(false,false));sb.addEventListener('click',()=>mode(false,true));
+    });
+    $('#fsearch').addEventListener('input',applyFilter);$('#hideEmpty').addEventListener('change',applyFilter);
+  }
+}
+function hi(t,q){if(!q)return esc(t);const i=t.toLowerCase().indexOf(q);return i<0?esc(t):esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+q.length))+'</mark>'+esc(t.slice(i+q.length))}
+function applyFilter(){
+  const q=$('#fsearch').value.trim().toLowerCase(),he=$('#hideEmpty').checked;let total=0;
+  $$('.sec').forEach(sec=>{let any=0;const ed=sec.classList.contains('editing');
+    sec.querySelectorAll('.row').forEach(r=>{const l=r.querySelector('.l'),v=r.querySelector('.v'),label=r.dataset.label,value=v.textContent==='—'?'':v.textContent;
+      const hide=(q&&!label.toLowerCase().includes(q)&&!value.toLowerCase().includes(q))||(he&&r.dataset.empty==='1'&&!ed);
+      r.classList.toggle('hide',hide);if(!hide)any++;l.innerHTML=hi(label,q);
+      if(!v.hidden)v.innerHTML=value?(v.dataset.link==='1'?`<a href="#">${hi(value,q)}</a>`:hi(value,q)):'—'});
+    sec.hidden=!any;total+=any});
+  $('#noresult').hidden=total>0;
+}
+function openRel(d,i){
+  const [name,cols,rows]=d.related[i];$$('#side button').forEach(x=>x.setAttribute('aria-current',x.dataset.rel==i));
+  $('#fieldsView').hidden=true;const v=$('#relView');v.hidden=false;
+  v.innerHTML=`<div class="rl-h"><h3>${esc(name)} <span>(${rows.length})</span></h3><button class="btn sm" type="button">+ New</button></div>`+(rows.length?`<div class="tablewrap"><table class="rt"><thead><tr>${cols.map((c,j)=>`<th data-i="${j}">${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="sample">Example rows. Tap a column header to sort.</p>`:'<p class="emptytxt">No records</p>');
+  const tb=v.querySelector('tbody');
+  v.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{const j=+th.dataset.i,dir=th.getAttribute('aria-sort')==='ascending'?'descending':'ascending';v.querySelectorAll('th').forEach(x=>x.removeAttribute('aria-sort'));th.setAttribute('aria-sort',dir);[...tb.rows].sort((a,b)=>a.cells[j].textContent.localeCompare(b.cells[j].textContent,undefined,{numeric:true})*(dir==='ascending'?1:-1)).forEach(r=>tb.appendChild(r))}));
+  scroller.scrollTo({top:0});
+}
+function go(page){state.page=page;state.tab=null;state.open=new Set();state.openInit=false;$$('#pageSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.page===page));render();scroller.scrollTop=0;try{localStorage.setItem('acct-page',page)}catch(e){}}
+
+document.addEventListener('click',()=>$$('.pop').forEach(p=>p.hidden=true));
+$('#pageSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.page)});
+$('#hdrCbu').addEventListener('change',e=>{state.cbu=e.target.value;render()});
+$('#affFT').addEventListener('change',e=>{AFFEDIT.from=AFFEDIT.to=e.target.value;state.editAff=null;render()});
+$('#hdrTeam').addEventListener('change',e=>{state.team=e.target.value;render()});
+$('#navToggle').addEventListener('click',e=>{const n=$('#nav');n.classList.toggle('open');e.currentTarget.textContent=n.classList.contains('open')?'‹':'›'});
+new ResizeObserver(()=>{const h=$('#hl');if(h)scroller.style.setProperty('--hlh',h.offsetHeight+'px')}).observe(scroller);
+let start='hcp';try{start=localStorage.getItem('acct-page')||'hcp'}catch(e){}
+go(P[start]?start:'hcp');
+})();
+</script>
+
+</body>
+</html>

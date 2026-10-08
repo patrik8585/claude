@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Custom metadata guide: account header</title>
+<style>
+:root{--ink:#1B2430;--muted:#5B6675;--line:#DCE1E8;--accent:#1F3A68;--soft:#EEF2F8;--new:#6B3FA0;--new-soft:#F1EAF9}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:15px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:860px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:26px;margin:0 0 4px;color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 24px}
+h2{font-size:19px;color:var(--accent);margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--accent)}
+h3{font-size:15.5px;margin:22px 0 6px}
+h4{font-size:14px;margin:16px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+p{margin:6px 0 10px}
+ul,ol{margin:6px 0 12px;padding-left:22px}
+li{margin:3px 0}
+code{background:var(--soft);border-radius:4px;padding:1px 5px;font:12.5px ui-monospace,Menlo,Consolas,monospace}
+table{border-collapse:collapse;width:100%;margin:10px 0 16px;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft);font-weight:600}
+.new{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--new);background:var(--new-soft);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.item{border:1px solid var(--line);border-radius:10px;padding:2px 16px 8px;margin:14px 0}
+.item h3{margin-top:12px}
+.note{background:var(--soft);border-left:4px solid var(--accent);padding:8px 12px;border-radius:0 8px 8px 0;margin:10px 0}
+.key{font-weight:600}
+@media print{main{padding:0}.item{break-inside:avoid}}
+.scroll{overflow-x:auto;margin:10px 0 16px}
+.mx{margin:0;font-size:12px;min-width:100%}
+.mx th,.mx td{padding:5px 8px;white-space:nowrap}
+.mx td:first-child,.mx th:first-child{position:sticky;left:0;background:var(--soft);font-weight:600}
+.mx td:first-child{background:#fff}
+h4{page-break-after:avoid}
+</style>
+</head>
+<body>
+<main>
+<h1>Custom metadata guide: account header</h1>
+<p class="sub">Account page (HCP and HCO). Attachment to the Change Request "Account Page Redesign". Everything needed to understand and create the records of the account header.</p>
+<h2>1. How the custom metadata works</h2>
+
+
+<h3>Who sees which configuration (selection keys)</h3>
+<p>Each custom metadata record of the account header has 4 filters. Together they decide which users and accounts the record applies to:</p>
+<ul>
+<li><b>Page:</b> HCP page or HCO page.</li>
+<li><b>CBU:</b> the country code (e.g. DE, AT). Use DEFAULT for records that apply to every country without its own setup.</li>
+<li><b>Team:</b> the user's team (e.g. Adults, Paediatrics). Use Default to apply to all teams.</li>
+<li><b>Record type:</b> the account record type. Use Default to apply to all record types.</li>
+</ul>
+<p>Only records with Is_Active = true are used.</p>
+
+<h3>How the app picks the configuration (resolution)</h3>
+<p>The app looks for the most specific configuration for the logged-in user and the opened account. It checks the steps below in order and stops at the first step that finds records:</p>
+<ol>
+<li>User's CBU + user's Team + account Record type</li>
+<li>User's CBU + user's Team</li>
+<li>User's CBU + account Record type</li>
+<li>User's CBU only</li>
+<li>DEFAULT + account Record type</li>
+<li>DEFAULT only</li>
+</ol>
+<p>The whole configuration always comes from one step. The app never mixes steps: it never takes position 1 from one step and position 2 from another.</p>
+
+<h3>Example (account header line 3, HCP page)</h3>
+<p>Records configured:</p>
+<table>
+<tr><th>Record</th><th>Position 1</th><th>Position 2</th><th>Position 3</th><th>Position 4</th></tr>
+<tr><td>DEFAULT</td><td><code>Phone</code></td><td><code>Email</code></td><td><code>Specialty__c</code></td><td><code>Preferred_Address__c</code></td></tr>
+<tr><td>DE</td><td><code>Phone</code></td><td><code>Email</code></td><td><code>Preferred_Channel__c</code></td><td><code>Preferred_Address__c</code></td></tr>
+<tr><td>AT + Paediatrics</td><td><code>Phone</code></td><td><code>Email</code></td><td><code>Hospital_Ward__c</code></td><td><code>Preferred_Channel__c</code></td></tr>
+</table>
+<table>
+<tr><th>User</th><th>What they see</th><th>Why</th></tr>
+<tr><td>DE rep, any team</td><td>DE configuration</td><td>Step 4: DE has no team-specific setup</td></tr>
+<tr><td>AT rep, Paediatrics</td><td>AT + Paediatrics configuration</td><td>Step 2</td></tr>
+<tr><td>AT rep, Adults</td><td>DEFAULT configuration</td><td>AT has no setup for Adults and none for AT only</td></tr>
+<tr><td>IT rep</td><td>DEFAULT configuration</td><td>IT has no setup of its own</td></tr>
+</table>
+
+
+
+<h2>2. Creating the records of the account header (<code>Account_Header_Field__mdt</code>)</h2>
+<p>The account header is the highlight panel at the top of the HCP and HCO page. Line 1 (name, chips, Start call, actions) is fixed. <b>Line 2</b> has the 4 fixed fields defined by the global team. <b>Line 3</b> has up to 4 fields that each CBU / Team / Record type can configure. Both lines are described by <code>Account_Header_Field__mdt</code>, one record per field.</p><h3>2.1 Naming convention of the records</h3>
+<p>Every record has a <code>Label</code> and a <code>DeveloperName</code>. In the examples of this guide, <b>the title of each column is the <code>DeveloperName</code> of the record</b>. Because every CBU and team creates its own records, the naming convention below is <b>mandatory</b> and the same for everybody.</p>
+<p><b>DeveloperName = <code>PAGE_CBU_TEAM_RT_LINE_Name</code></b>, six parts separated by one underscore:</p>
+<table>
+<tr><th>Part</th><th>Value</th><th>Rule</th></tr>
+<tr><td><code>PAGE</code></td><td>HCP or HCO</td><td>Same as <code>Page__c</code>.</td></tr>
+<tr><td><code>CBU</code></td><td>Country code in capitals, e.g. DE, AT. <b>DEF</b> for DEFAULT</td><td>Same as <code>CBU__c</code>.</td></tr>
+<tr><td><code>TEAM</code></td><td>Team code from the table below. <b>DEF</b> for Default</td><td>Same as <code>Team__c</code>.</td></tr>
+<tr><td><code>RT</code></td><td>Record type code from the table below. <b>DEF</b> for Default</td><td>Same as <code>Record_Type__c</code>.</td></tr>
+<tr><td><code>LINE</code></td><td><b>L2</b> or <b>L3</b></td><td>Same as <code>Line__c</code>.</td></tr>
+<tr><td><code>Name</code></td><td>Short name of the field in PascalCase, no underscores, <b>maximum 14 characters</b></td><td>Unique inside the same first five parts. Use the same name for the same field in every configuration (e.g. <code>PrefChannel</code>).</td></tr>
+</table>
+<p>The name uses only letters, numbers and single underscores, starts with a letter and has a maximum of 40 characters: the first five parts are at most 22 characters, so the rule is always respected. Examples: <code>HCP_DEF_DEF_DEF_L2_Workplace</code> (HCP page, line 2); <code>HCP_DE_DEF_DEF_L3_PrefChannel</code> (HCP page, DE, all teams, line 3); <code>HCP_AT_PAE_DEF_L3_HospitalWard</code> (HCP page, AT, Paediatrics, line 3).</p>
+<p><b>Label</b> = always equal to the <code>DeveloperName</code> (for example <code>HCP_DEF_DEF_DEF_L3_Phone</code>). The Label has a maximum of 40 characters, like the DeveloperName, so the same name always fits.</p>
+<p><b>Codes of teams and record types.</b> The codes are the same as in the Insight tab guide. When a new team or record type is created, add its code to the table before creating the records. A code has 3 or 4 capital letters, and it is never reused for another team or record type.</p>
+<table>
+<tr><th>Type</th><th>Name</th><th>Code</th></tr>
+<tr><td>Team</td><td>Default (all teams)</td><td>DEF</td></tr>
+<tr><td>Team</td><td>Adults</td><td>ADU</td></tr>
+<tr><td>Team</td><td>Paediatrics</td><td>PAE</td></tr>
+<tr><td>Record type</td><td>Default (all record types)</td><td>DEF</td></tr>
+<tr><td>Record type</td><td colspan="2"><i>Add the codes of the account record types used by the CBUs</i></td></tr>
+</table>
+<h3>2.2 Fields of <code>Account_Header_Field__mdt</code></h3><table><tr><th>Field</th><th>Mandatory</th><th>Description</th></tr><tr><td><code>Label</code></td><td>Yes</td><td>Standard field. Equal to the <code>DeveloperName</code> (see 2.1).</td></tr><tr><td><code>DeveloperName</code></td><td>Yes</td><td>Standard field (Name in Setup). Unique name of the record. Mandatory naming convention <code>PAGE_CBU_TEAM_RT_LINE_Name</code> described in 2.1, e.g. <code>HCP_DEF_DEF_DEF_L2_Workplace</code>. Letters, numbers and single underscores only, starts with a letter, maximum 40 characters.</td></tr><tr><td><code>Page__c</code></td><td>Yes</td><td>HCP / HCO.</td></tr><tr><td><code>Line__c</code></td><td>Yes</td><td>2 = fixed line, global records (CBU DEFAULT) / 3 = configurable line.</td></tr><tr><td><code>CBU__c</code></td><td>Yes</td><td>Country code. DEFAULT as fallback for countries without their own setup (line 2 always uses DEFAULT).</td></tr><tr><td><code>Team__c</code></td><td>Yes</td><td>Team within the CBU, e.g. Adults, Paediatrics. Default = all teams.</td></tr><tr><td><code>Record_Type__c</code></td><td>Yes</td><td>Account record type. Default = all.</td></tr><tr><td><code>Position__c</code></td><td>Yes</td><td>1 to 4. Position of the field in the line, from left to right.</td></tr><tr><td><code>Display_Type__c</code></td><td>Yes</td><td>Field / Link / Last Call. Field = value as text. Link = name of a related record, clickable (e.g. Workplace opens the HCO). Last Call = last call date and channel, which opens the Last Call Details popover.</td></tr><tr><td><code>Source_Object__c</code></td><td>Yes</td><td>Metadata relationship to the object.</td></tr><tr><td><code>Source_Field__c</code></td><td>Yes</td><td>Metadata relationship to the field.</td></tr><tr><td><code>Short_Label__c</code></td><td>Yes</td><td>Label shown in the panel.</td></tr><tr><td><code>Is_Active__c</code></td><td>Yes (checkbox, default ticked)</td><td>Only active records are used.</td></tr></table><h3>2.3 Rules</h3><ol><li><b>Line 2</b> is global: records with <code>Line__c</code> = 2, <code>CBU__c</code> = DEFAULT, <code>Team__c</code> = Default and <code>Record_Type__c</code> = Default. There is one set for the HCP page and one for the HCO page, maintained by the global team. Do not create other sets for line 2: it is the same for every country, so it does not use the resolution steps.</li><li><b>Line 3</b> uses the 6-step resolution described in section 1. A configuration is the complete set of records (positions 1 to 4) for one CBU / Team / Record type: the app never takes position 1 from one step and position 2 from another.</li><li>Create a DEFAULT set for the HCP page and for the HCO page first: it is the fallback for every country without its own setup.</li><li>A CBU that differs from DEFAULT needs the <b>whole</b> list of positions, not only the position that changes.</li><li><code>Position__c</code> is unique within one configuration. A position without a record is empty.</li><li>To switch a field off without losing it, untick <code>Is_Active__c</code>.</li></ol><h3>2.4 Examples (HCP page)</h3><p><b>2.4.1 Line 2: fixed fields</b> (Workplace, Address, Specialty, Last call). Workplace is a Link to the HCO; Last call has the Last Call display type. The line 2 of the HCO page has its own four records (Address, WorkPlace Type, Last call and the 4th field decided by the global team).</p><div class="scroll"><table class="mx"><tr><th>Field</th><th>HCP_DEF_DEF_DEF_L2_Workplace</th><th>HCP_DEF_DEF_DEF_L2_Address</th><th>HCP_DEF_DEF_DEF_L2_Specialty</th><th>HCP_DEF_DEF_DEF_L2_LastCall</th></tr><tr><td><code>Page__c</code></td><td>HCP</td><td>HCP</td><td>HCP</td><td>HCP</td></tr><tr><td><code>Line__c</code></td><td>2</td><td>2</td><td>2</td><td>2</td></tr><tr><td><code>CBU__c</code></td><td>DEFAULT</td><td>DEFAULT</td><td>DEFAULT</td><td>DEFAULT</td></tr><tr><td><code>Team__c</code></td><td>Default</td><td>Default</td><td>Default</td><td>Default</td></tr><tr><td><code>Record_Type__c</code></td><td>Default</td><td>Default</td><td>Default</td><td>Default</td></tr><tr><td><code>Position__c</code></td><td>1</td><td>2</td><td>3</td><td>4</td></tr><tr><td><code>Display_Type__c</code></td><td>Link</td><td>Field</td><td>Field</td><td>Last Call</td></tr><tr><td><code>Source_Object__c</code></td><td>Account</td><td>Account</td><td>Account</td><td>Account</td></tr><tr><td><code>Source_Field__c</code></td><td>Primary_Workplace__c</td><td>Primary_Address__c</td><td>Specialty__c</td><td>Last_Call_Date__c</td></tr><tr><td><code>Short_Label__c</code></td><td>Workplace</td><td>Address</td><td>Specialty</td><td>Last call</td></tr><tr><td><code>Is_Active__c</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr></table></div><p><b>2.4.2 Line 3, DEFAULT configuration</b> (all countries without their own setup).</p><div class="scroll"><table class="mx"><tr><th>Field</th><th>HCP_DEF_DEF_DEF_L3_Phone</th><th>HCP_DEF_DEF_DEF_L3_Email</th><th>HCP_DEF_DEF_DEF_L3_Specialty</th><th>HCP_DEF_DEF_DEF_L3_PrefAddress</th></tr><tr><td><code>Page__c</code></td><td>HCP</td><td>HCP</td><td>HCP</td><td>HCP</td></tr><tr><td><code>Line__c</code></td><td>3</td><td>3</td><td>3</td><td>3</td></tr><tr><td><code>CBU__c</code></td><td>DEFAULT</td><td>DEFAULT</td><td>DEFAULT</td><td>DEFAULT</td></tr><tr><td><code>Team__c</code></td><td>Default</td><td>Default</td><td>Default</td><td>Default</td></tr><tr><td><code>Record_Type__c</code></td><td>Default</td><td>Default</td><td>Default</td><td>Default</td></tr><tr><td><code>Position__c</code></td><td>1</td><td>2</td><td>3</td><td>4</td></tr><tr><td><code>Display_Type__c</code></td><td>Field</td><td>Field</td><td>Field</td><td>Field</td></tr><tr><td><code>Source_Object__c</code></td><td>Account</td><td>Account</td><td>Account</td><td>Account</td></tr><tr><td><code>Source_Field__c</code></td><td>Phone</td><td>Email</td><td>Specialty__c</td><td>Preferred_Address__c</td></tr><tr><td><code>Short_Label__c</code></td><td>Phone</td><td>Email</td><td>Specialty</td><td>Preferred address</td></tr><tr><td><code>Is_Active__c</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr></table></div><p><b>2.4.3 Line 3, DE configuration</b>: same as DEFAULT, but position 3 is Preferred channel. DE does not inherit DEFAULT, so all four records are created with <code>CBU__c</code> = DE.</p><div class="scroll"><table class="mx"><tr><th>Field</th><th>HCP_DE_DEF_DEF_L3_Phone</th><th>HCP_DE_DEF_DEF_L3_Email</th><th>HCP_DE_DEF_DEF_L3_PrefChannel</th><th>HCP_DE_DEF_DEF_L3_PrefAddress</th></tr><tr><td><code>Page__c</code></td><td>HCP</td><td>HCP</td><td>HCP</td><td>HCP</td></tr><tr><td><code>Line__c</code></td><td>3</td><td>3</td><td>3</td><td>3</td></tr><tr><td><code>CBU__c</code></td><td>DE</td><td>DE</td><td>DE</td><td>DE</td></tr><tr><td><code>Team__c</code></td><td>Default</td><td>Default</td><td>Default</td><td>Default</td></tr><tr><td><code>Record_Type__c</code></td><td>Default</td><td>Default</td><td>Default</td><td>Default</td></tr><tr><td><code>Position__c</code></td><td>1</td><td>2</td><td>3</td><td>4</td></tr><tr><td><code>Display_Type__c</code></td><td>Field</td><td>Field</td><td>Field</td><td>Field</td></tr><tr><td><code>Source_Object__c</code></td><td>Account</td><td>Account</td><td>Account</td><td>Account</td></tr><tr><td><code>Source_Field__c</code></td><td>Phone</td><td>Email</td><td>Preferred_Channel__c</td><td>Preferred_Address__c</td></tr><tr><td><code>Short_Label__c</code></td><td>Phone</td><td>Email</td><td>Preferred channel</td><td>Preferred address</td></tr><tr><td><code>Is_Active__c</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr></table></div><p><b>2.4.4 Line 3, AT + Paediatrics configuration</b>: <code>Team__c</code> = Paediatrics.</p><div class="scroll"><table class="mx"><tr><th>Field</th><th>HCP_AT_PAE_DEF_L3_Phone</th><th>HCP_AT_PAE_DEF_L3_Email</th><th>HCP_AT_PAE_DEF_L3_HospitalWard</th><th>HCP_AT_PAE_DEF_L3_PrefChannel</th></tr><tr><td><code>Page__c</code></td><td>HCP</td><td>HCP</td><td>HCP</td><td>HCP</td></tr><tr><td><code>Line__c</code></td><td>3</td><td>3</td><td>3</td><td>3</td></tr><tr><td><code>CBU__c</code></td><td>AT</td><td>AT</td><td>AT</td><td>AT</td></tr><tr><td><code>Team__c</code></td><td>Paediatrics</td><td>Paediatrics</td><td>Paediatrics</td><td>Paediatrics</td></tr><tr><td><code>Record_Type__c</code></td><td>Default</td><td>Default</td><td>Default</td><td>Default</td></tr><tr><td><code>Position__c</code></td><td>1</td><td>2</td><td>3</td><td>4</td></tr><tr><td><code>Display_Type__c</code></td><td>Field</td><td>Field</td><td>Field</td><td>Field</td></tr><tr><td><code>Source_Object__c</code></td><td>Account</td><td>Account</td><td>Account</td><td>Account</td></tr><tr><td><code>Source_Field__c</code></td><td>Phone</td><td>Email</td><td>Hospital_Ward__c</td><td>Preferred_Channel__c</td></tr><tr><td><code>Short_Label__c</code></td><td>Phone</td><td>Email</td><td>Hospital ward</td><td>Preferred channel</td></tr><tr><td><code>Is_Active__c</code></td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr></table></div><p><b>Which configuration each user sees</b> with the records above (the same example as in section 1):</p><table><tr><th>User</th><th>Configuration</th></tr><tr><td>DE rep, any team</td><td>DE (step 4)</td></tr><tr><td>AT rep, Paediatrics</td><td>AT + Paediatrics (step 2)</td></tr><tr><td>AT rep, Adults</td><td>DEFAULT (AT has no setup for Adults and none for AT only)</td></tr><tr><td>IT rep</td><td>DEFAULT (IT has no setup of its own)</td></tr></table>
+
+</main>
+</body>
+</html>
