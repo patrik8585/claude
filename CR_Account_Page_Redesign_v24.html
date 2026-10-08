@@ -63,6 +63,8 @@ h4{page-break-after:avoid}
 <p class="key">Custom metadata <code>Account_Header_Field__mdt</code> (used for line 2 and line 3):</p>
 <table>
 <tr><th>Field</th><th>Description</th></tr>
+<tr><td><code>Label</code></td><td>Standard field, mandatory. Readable name of the record, in the format described in the account header guide (section 2.1)</td></tr>
+<tr><td><code>DeveloperName</code></td><td>Standard field (Name in Setup), mandatory. Unique name of the record, with the mandatory naming convention <code>PAGE_CBU_TEAM_RT_LINE_Name</code> (account header guide, section 2.1), e.g. <code>HCP_DEF_ALL_ALL_L2_Workplace</code>. Letters, numbers and single underscores only, starts with a letter, maximum 40 characters</td></tr>
 <tr><td><code>Page__c</code></td><td>HCP / HCO</td></tr>
 <tr><td><code>Line__c</code></td><td>2 = fixed line, global records (CBU DEFAULT) / 3 = configurable line</td></tr>
 <tr><td><code>CBU__c</code></td><td>Country code, DEFAULT as fallback</td></tr>
