@@ -455,7 +455,7 @@ const P={
   lastCall:['11/06/2026, 16:45','Fortimel','Fortimel Juicy','Cancer Care','Email','Ask about tolerance of Fortimel Juicy in patients on chemotherapy.','Sent product sheet. Wants samples for 2 patients at the next visit.'],
   lastCallShort:'11/06/26 16:45 · Email',
   ep:[['Email',5,2,1,0.5],['Phone',3,2,1,1]],
-  tabs:[['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight']],
+  tabs:[['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight'],['qst','Questionnaire'],['smp','Sample']],
   anchors:[['c-basic','Basic HCP info'],['c-nba','Next Best Action'],['c-consent','Consent info'],['c-seg','Segment & Commitment'],['c-visit','Last Visit'],['c-ins','Behavioural Insights'],['c-kpi','HCO KPIs']],
   basic:{title:'Basic HCP info',fields:[['Preferred channel for the rep',''],['Last website login (CDP)',''],['Preferred workplace (HCO)','Praxis Vogel/Brandt/Huber'],['Alternative address','Lindenstraße 12, 48653 Coesfeld']]},
   cards:['nba','consent','seg','visit','ins','kpi'],
@@ -548,7 +548,7 @@ const P={
   lastCall:['29/05/2026, 11:15','Nutrison','Nutrison Standard','DRM','Email','Confirm tender timeline with the pharmacy.','Pharmacy asked for updated price list.'],
   lastCallShort:'29/05/26 11:15 · Email',
   ep:[['F2F',4,0,1,1],['Email',4,0,0,0.5]],
-  tabs:[['con','HCPs'],['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight']],
+  tabs:[['con','HCPs'],['p360','Summary 360'],['las','Timeline 360'],['det','Details'],['rat','Insight'],['qst','Questionnaire'],['smp','Sample']],
   anchors:[['c-basic','Basic HCO info'],['c-nba','Next Best Action'],['c-visit','Last Visit'],['c-kpi','HCO KPIs'],['c-aff','Affiliated HCPs']],
   basic:{title:'Basic HCO info',fields:[['Website',''],['City','Düsseldorf'],['Structure Type','ETA']]},
   cards:['nba','visit','kpi','aff'],
@@ -654,7 +654,7 @@ function render(){
     <nav class="tabs" role="tablist">${d.tabs.map(([id,l])=>`<button class="tab" role="tab" type="button" data-tab="${id}" aria-selected="${id===state.tab}">${esc(l)}${id==='rat'?' <span class="newtag">New</span>':''}</button>`).join('')}</nav>
     ${state.tab==='p360'?`<div class="anchors">${d.anchors.map(([id,l])=>`<button type="button" data-go="${id}">${esc(l)}</button>`).join('')}</div>`:''}
   </header>
-  <section class="panel">${({con:renderContacts,p360:render360,las:renderLAS,det:renderDetails,rat:renderRatings})[state.tab](d)}</section>`;
+  <section class="panel">${({con:renderContacts,p360:render360,las:renderLAS,det:renderDetails,rat:renderRatings,qst:renderQuest,smp:renderSamp})[state.tab](d)}</section>`;
   bind(d);
 }
 
@@ -772,7 +772,7 @@ function segmentGrid(g){
 
 
 
-const FIXED_SUB=['Affiliation','Questionnaire','Sample'];
+const FIXED_SUB=['Affiliation'];
 const subtabBar=(all,cur)=>`<div class="subtabs">${all.map(g=>`<button type="button" data-isub="${g}" aria-pressed="${g===cur}">${esc(g)}</button>`).join('')}</div>`;
 const DM_OPTS=['Discharge Decision Maker','Product Decision Maker'];
 const pill=(t,k)=>`<span class="pill ${k}">${esc(t)}</span>`;
@@ -843,11 +843,11 @@ function renderRatings(d){
   const groups=Object.keys(conf);
   const all=[...groups,...FIXED_SUB];
   const cur=all.includes(state.isub)?state.isub:all[0];
-  if(FIXED_SUB.includes(cur))return subtabBar(all,cur)+`<div class="isec"><h4>${esc(cur)}</h4>${({Affiliation:renderAff,Questionnaire:renderQuest,Sample:renderSamp})[cur](d)}</div>`;
+  if(FIXED_SUB.includes(cur))return subtabBar(all,cur)+`<div class="isec"><h4>${esc(cur)}</h4>${({Affiliation:renderAff})[cur](d)}</div>`;
   const sec=conf[cur], grid=Array.isArray(sec)?null:sec.grid, cards=Array.isArray(sec)?sec:(sec.cards||[]);
   return subtabBar(all,cur)+
    `<div class="isec"><h4>${esc(cur)}</h4>${grid?segmentGrid(grid):''}${cards.length?`<div class="icards"${grid?' style="margin-top:10px"':''}>${cards.map(insightCard).join('')}</div>`:''}</div>`+
-   `<p class="sample">Example cards. Display type, colour scale and thresholds come from custom metadata (see CR section 10.2). Each row is one segment record. The first column shows what the CBU segments by – therapeutic area, team, or both (team as a chip). Switch CBU/Team above the device to compare. Sub-tabs: General and Segment come from custom metadata; Affiliation, Questionnaire and Sample are always shown.</p>`;
+   `<p class="sample">Example cards. Display type, colour scale and thresholds come from custom metadata (see CR section 10.2). Each row is one segment record. The first column shows what the CBU segments by – therapeutic area, team, or both (team as a chip). Switch CBU/Team above the device to compare. Sub-tabs: General, Segment and Affiliation, all from custom metadata. Questionnaire and Sample are separate tabs.</p>`;
 }
 
 
