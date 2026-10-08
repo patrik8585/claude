@@ -101,7 +101,7 @@ h4{page-break-after:avoid}
 <h4>Range record (<code>Account_Insight_Range__mdt</code>)</h4>
 <p><b>DeveloperName = DeveloperName of the card + <code>_</code> + number of the range (1 to 10)</b>. Example: <code>HCP_DE_DEF_DEF_GEN_BabiesPerYear_1</code>, <code>HCP_DE_DEF_DEF_GEN_BabiesPerYear_2</code>. The number is the order in which you create the ranges of that card.</p>
 <h4>Label</h4>
-<p>The <code>Label</code> is the same information in readable form, parts separated by " / ". Card: <code>HCP / DE / Default / Default / General / Number of Babies per year</code>. Range: <code>Label of the card / Range 1</code>.</p>
+<p>The <code>Label</code> is <b>always equal to the <code>DeveloperName</code></b>, for cards and for ranges (for example <code>HCP_DE_DEF_DEF_GEN_BabiesPerYear</code>). The Label has a maximum of 40 characters, like the DeveloperName, so the same name always fits.</p>
 <h4>Codes of teams and record types</h4>
 <p>The codes are kept in this table. When a new team or record type is created, add its code here before creating the records. A code has 3 or 4 capital letters, and it is never reused for another team or record type.</p>
 <table>
