@@ -66,8 +66,8 @@ h4{page-break-after:avoid}
 <tr><td><code>Page__c</code></td><td>HCP / HCO</td></tr>
 <tr><td><code>Line__c</code></td><td>2 = fixed line, global records / 3 = configurable line</td></tr>
 <tr><td><code>CBU__c</code></td><td>Country code, GLOBAL for line 2, DEFAULT as fallback</td></tr>
-<tr><td><code>Team__c</code></td><td>Team within the CBU, e.g. Adults, Paediatrics – blank = all teams</td></tr>
-<tr><td><code>Record_Type__c</code></td><td>Account record type – blank = all</td></tr>
+<tr><td><code>Team__c</code></td><td>Team within the CBU, e.g. Adults, Paediatrics – Default = all teams</td></tr>
+<tr><td><code>Record_Type__c</code></td><td>Account record type – Default = all</td></tr>
 <tr><td><code>Position__c</code></td><td>1 to 4</td></tr>
 <tr><td><code>Display_Type__c</code></td><td>Field / Link / Last Call</td></tr>
 <tr><td><code>Source_Object__c</code> and <code>Source_Field__c</code></td><td>Metadata relationships to the object and field</td></tr>
@@ -226,8 +226,8 @@ h4{page-break-after:avoid}
 <ul>
 <li><b>Page:</b> HCP page or HCO page.</li>
 <li><b>CBU:</b> the country code (e.g. DE, AT). Use DEFAULT for records that apply to every country without its own setup.</li>
-<li><b>Team:</b> the user's team (e.g. Adults, Paediatrics). Leave it empty to apply to all teams.</li>
-<li><b>Record type:</b> the account record type. Leave it empty to apply to all record types.</li>
+<li><b>Team:</b> the user's team (e.g. Adults, Paediatrics). Use Default to apply to all teams.</li>
+<li><b>Record type:</b> the account record type. Use Default to apply to all record types.</li>
 </ul>
 <p>Only records with Is_Active = true are used.</p>
 
@@ -274,7 +274,6 @@ h4{page-break-after:avoid}
 <li><b>Ranges:</b> From and To limits are both included and ranges of the same record must not overlap. Confirm this rule.</li>
 <li><b>Default colours</b> when no range is defined (13.5.1): confirm with the business.</li>
 <li><b>Invalid records:</b> a card record whose <code>Display_Type__c</code> does not fit the field type is ignored (13.4.1). Confirm this behaviour, and whether an admin warning is needed.</li>
-<li><b>Default instead of blank:</b> in <code>Account_Insight_Card__mdt</code> the fields Team and Record type are mandatory and use Default for all teams / all record types. Item 3 (<code>Account_Header_Field__mdt</code>) and the explanation of custom metadata say blank. Align the two.</li>
 <li><b>Card groups:</b> General shows a single list of cards in the order of <code>Sort_Order__c</code>, without section titles. Confirm the business does not need groups.</li>
 <li><b>Affiliation Soft / Hard:</b> who creates Hard affiliations (integration, back office)? Users create only Soft ones.</li>
 </ol>
