@@ -136,7 +136,7 @@ h4{page-break-after:avoid}
 <h3>13. Insight tab</h3>
 <p>The Insight tab has <b>3 sub-tabs</b>, in this order: <b>General, Segment, Affiliation</b>. The Insight tab contains only what each CBU can configure with custom metadata.</p>
 <ul>
-<li><b>General, Segment and Affiliation</b> are driven by the same two custom metadata types, <code>Account_Insight_Card__mdt</code> (always) and <code>Account_Insight_Range__mdt</code> (optional colours), with the same selection keys and the same 6-step resolution (see 13.4 and 13.5, and part 3 of the attached configuration guide). The layout is decided by the sub-tab: <b>General = cards, Segment = grid, Affiliation = table</b>.</li>
+<li><b>General, Segment and Affiliation</b> are driven by the same two custom metadata types, <code>Account_Insight_Card__mdt</code> (always) and <code>Account_Insight_Range__mdt</code> (optional colours), with the same selection keys and the same 6-step resolution (see 13.4 and 13.5, and the attached Insight tab guide). The layout is decided by the sub-tab: <b>General = cards, Segment = grid, Affiliation = table</b>.</li>
 </ul>
 
 <h4>13.1 General</h4>
@@ -206,8 +206,12 @@ h4{page-break-after:avoid}
 <p>Wording in both pages: Contact → HCP, Account → HCO.</p>
 </div>
 
-<h2>Configuration guide (attachment)</h2>
-<p>The attached file <b>Custom_Metadata_Guide_Account_Page.html</b> explains how the custom metadata works and how to create the records, with complete examples. Part 1: selection keys, the 6-step resolution and Default. Part 2: guide for the account header (<code>Account_Header_Field__mdt</code>). Part 3: guide for the Insight tab (<code>Account_Insight_Card__mdt</code> and <code>Account_Insight_Range__mdt</code>).</p>
+<h2>Configuration guides (attachments)</h2>
+<p>Two attached files explain how the custom metadata works and how to create the records, with complete examples. Each one is self-contained: selection keys, the 6-step resolution and Default are explained in both.</p>
+<ul>
+<li><b>Guide_Account_Header_Custom_Metadata.html</b>: the account header (<code>Account_Header_Field__mdt</code>).</li>
+<li><b>Guide_Insight_Tab_Custom_Metadata.html</b>: the Insight tab (<code>Account_Insight_Card__mdt</code> and <code>Account_Insight_Range__mdt</code>).</li>
+</ul>
 
 <h2>Open points to confirm</h2>
 <ol>
@@ -223,7 +227,7 @@ h4{page-break-after:avoid}
 <li><b>Ranges:</b> From and To limits are both included and ranges of the same record must not overlap. Confirm this rule.</li>
 <li><b>Default colours</b> when no range is defined (13.5.1): confirm with the business.</li>
 <li><b>Invalid records:</b> a card record whose <code>Display_Type__c</code> does not fit the field type is ignored (13.4.1). Confirm this behaviour, and whether an admin warning is needed.</li>
-<li><b>Account_Header_Field__mdt:</b> the mandatory fields in part 2 of the attached guide are proposed. Confirm in particular whether <code>Source_Field__c</code> is needed for Last Call, and the 4th field of the HCO line 2.</li>
+<li><b>Account_Header_Field__mdt:</b> the mandatory fields in the attached account header guide are proposed. Confirm in particular whether <code>Source_Field__c</code> is needed for Last Call, and the 4th field of the HCO line 2.</li>
 <li><b>Card groups:</b> General shows a single list of cards in the order of <code>Sort_Order__c</code>, without section titles. Confirm the business does not need groups.</li>
 <li><b>Affiliation Soft / Hard:</b> who creates Hard affiliations (integration, back office)? Users create only Soft ones.</li>
 </ol>
