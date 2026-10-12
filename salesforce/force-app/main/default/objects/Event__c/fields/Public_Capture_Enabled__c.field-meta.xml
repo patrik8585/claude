@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Public_Capture_Enabled__c</fullName>
+    <inlineHelpText>When checked, the public QR/kiosk page accepts captures for this event.</inlineHelpText>
+    <label>Public Capture Enabled</label>
+    <defaultValue>true</defaultValue>
+    <type>Checkbox</type>
+</CustomField>

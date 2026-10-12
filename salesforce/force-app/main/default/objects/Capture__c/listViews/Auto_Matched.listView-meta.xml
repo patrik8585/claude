@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Auto_Matched</fullName>
+    <columns>NAME</columns>
+    <columns>First_Name__c</columns>
+    <columns>Last_Name__c</columns>
+    <columns>Match_Rule__c</columns>
+    <columns>Matched_Contact__c</columns>
+    <columns>Opt_In_Status__c</columns>
+    <columns>Captured_At__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Matching_Status__c</field>
+        <operation>equals</operation>
+        <value>Auto-matched</value>
+    </filters>
+    <label>Auto-matched</label>
+</ListView>

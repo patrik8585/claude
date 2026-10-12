@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pending</fullName>
+    <columns>NAME</columns>
+    <columns>Contact__c</columns>
+    <columns>Channel__c</columns>
+    <columns>Captured_At__c</columns>
+    <columns>Gigya_Status__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Status__c</field>
+        <operation>equals</operation>
+        <value>Pending double opt-in</value>
+    </filters>
+    <label>Pending double opt-in</label>
+</ListView>
