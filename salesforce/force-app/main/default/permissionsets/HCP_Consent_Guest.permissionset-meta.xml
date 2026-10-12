@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <classAccesses>
+        <apexClass>PublicCaptureController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <description>Assign ONLY to the guest user of the public capture site. Grants Apex access only; no object access.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>HCP Consent - Public Site Guest</label>
+</PermissionSet>
