@@ -1,0 +1,17 @@
+<template>
+    <div class="wrap">
+        <canvas
+            class="pad"
+            width="600"
+            height="260"
+            onpointerdown={handleDown}
+            onpointermove={handleMove}
+            onpointerup={handleUp}
+            onpointerleave={handleUp}
+        ></canvas>
+        <div class="foot">
+            <span>Sign here with your finger</span>
+            <button type="button" class="link" onclick={clear}>Clear</button>
+        </div>
+    </div>
+</template>

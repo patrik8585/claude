@@ -1,0 +1,148 @@
+<template>
+    <div class={rootClass}>
+        <template lwc:if={isKiosk}>
+            <aside class="kside">
+                <div class="kbadge">Kiosk mode</div>
+                <h3>{ctx.eventName}</h3>
+                <p>{ctx.eventDates}</p>
+                <p class="kwelcome">Welcome, doctor. Please leave your details and receive today’s slides by email.</p>
+            </aside>
+        </template>
+
+        <main class="card">
+            <template lwc:if={showHeader}>
+                <header class="pub-h">
+                    <small>Danone · Healthcare professionals</small>
+                    <b>{headerTitle}</b>
+                </header>
+            </template>
+
+            <div class="pad">
+                <template lwc:if={loading}>
+                    <p class="muted">Loading…</p>
+                </template>
+
+                <template lwc:if={fatalError}>
+                    <div class="alert err">{fatalError}</div>
+                </template>
+
+                <!-- FORM -->
+                <template lwc:if={isForm}>
+                    <template lwc:if={isKiosk}>
+                        <h2 class="title big">Welcome – register in 30 seconds</h2>
+                        <p class="sub">Walk-in sign-in · receive the training slides by email</p>
+                    </template>
+                    <template lwc:else>
+                        <h2 class="title">Get the congress slides by email</h2>
+                        <p class="sub">5 quick fields – no app, no account.</p>
+                    </template>
+
+                    <div class="progt"><span>About 30 seconds</span><span>{progressLabel}</span></div>
+                    <div class="prog"><i style={progressStyle}></i></div>
+
+                    <div class={gridClass}>
+                        <div class="f2">
+                            <div>
+                                <label class="l" for="firstName">First name <i>*</i></label>
+                                <input id="firstName" class={cls.firstName} data-field="firstName" value={form.firstName} oninput={handleInput} autocomplete="given-name" maxlength="80" />
+                            </div>
+                            <div>
+                                <label class="l" for="lastName">Last name <i>*</i></label>
+                                <input id="lastName" class={cls.lastName} data-field="lastName" value={form.lastName} oninput={handleInput} autocomplete="family-name" maxlength="80" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="l" for="email">Work email <i>*</i></label>
+                            <input id="email" type="email" class={cls.email} data-field="email" value={form.email} oninput={handleInput} placeholder="name@hospital.it" autocomplete="email" maxlength="80" />
+                        </div>
+                        <div>
+                            <label class="l" for="specialty">Specialty <i>*</i></label>
+                            <select id="specialty" class={cls.specialty} data-field="specialty" onchange={handleInput}>
+                                <option value="">Select…</option>
+                                <template for:each={specialtyOptions} for:item="s">
+                                    <option key={s.value} value={s.value} selected={s.selected}>{s.value}</option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="l" for="city">City of practice <i>*</i></label>
+                            <input id="city" class={cls.city} data-field="city" value={form.city} oninput={handleInput} maxlength="80" />
+                        </div>
+                        <div>
+                            <label class="l" for="reg">Registration number (optional)</label>
+                            <input id="reg" class="in" data-field="registrationNumber" value={form.registrationNumber} oninput={handleInput} placeholder="e.g. MI-20418" maxlength="30" />
+                        </div>
+                        <!-- honeypot: hidden from humans, bots fill it -->
+                        <div class="hp" aria-hidden="true">
+                            <label for="website">Website</label>
+                            <input id="website" tabindex="-1" autocomplete="off" data-field="website" value={form.website} oninput={handleInput} />
+                        </div>
+                    </div>
+
+                    <div class="consent">
+                        <label class={consentClass}>
+                            <input type="checkbox" data-field="consent" checked={form.consent} onchange={handleInput} />
+                            <span>{ctx.consentText}</span>
+                        </label>
+                        <small>Consent text {ctx.consentVersion} · no signature needed</small>
+                    </div>
+                    <label class="chk">
+                        <input type="checkbox" data-field="sendSlides" checked={form.sendSlides} onchange={handleInput} />
+                        <span><b>Send me the slides by email</b></span>
+                    </label>
+
+                    <template lwc:if={formError}>
+                        <div class="alert err">{formError}</div>
+                    </template>
+
+                    <button type="button" class="btn brand lg block" onclick={handleSubmit} disabled={submitting}>
+                        {submitLabel}
+                    </button>
+                </template>
+
+                <!-- THANK YOU -->
+                <template lwc:if={isThanks}>
+                    <div class="hero-ok">
+                        <div class="big-check">✓</div>
+                        <template lwc:if={isKiosk}>
+                            <h3 class="kthanks">Thank you, {thanksName}!</h3>
+                            <p class="klead">Check your inbox: tap <b>Confirm</b> in our email to receive the slides.</p>
+                            <div class="cd">Next visitor in <b>{countdown}</b> s – the form resets automatically</div>
+                            <button type="button" class="btn block narrow" onclick={resetKiosk}>Reset now</button>
+                        </template>
+                        <template lwc:else>
+                            <h3>Thank you, Dr. {thanksName}!</h3>
+                            <p>We have sent an email to <b>{thanksEmail}</b>.</p>
+                            <p class="small">One last step: open the email and tap <b>Confirm</b> to complete your registration and receive the slides.</p>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- CONFIRMATION (double opt-in) -->
+                <template lwc:if={isConfirmValid}>
+                    <h2 class="title">Please confirm your email to get the slides</h2>
+                    <p>Dear Dr. {conf.lastName}, please confirm that you agree to receive our scientific communications.</p>
+                    <p class="quote">{conf.consentText}<br />Consent text {conf.consentVersion}.</p>
+                    <button type="button" class="btn brand lg block" onclick={handleConfirm} disabled={submitting}>Confirm my email &amp; get the slides</button>
+                </template>
+                <template lwc:if={isConfirmed}>
+                    <div class="hero-ok">
+                        <div class="big-check">✓</div>
+                        <h3>Consent confirmed</h3>
+                        <p>Thank you, Dr. {conf.lastName}. Your slides are on their way.</p>
+                        <template lwc:if={conf.slidesUrl}>
+                            <a class="btn ok block" href={conf.slidesUrl} target="_blank" rel="noopener noreferrer">Download slides (PDF)</a>
+                        </template>
+                        <p class="tiny">Consent recorded {conf.confirmedOn} · text {conf.consentVersion}. You can withdraw at any time from any of our emails.</p>
+                    </div>
+                </template>
+                <template lwc:if={isConfirmExpired}>
+                    <div class="alert warn">This confirmation link has expired. Please register again or ask a Danone representative.</div>
+                </template>
+                <template lwc:if={isConfirmInvalid}>
+                    <div class="alert warn">This confirmation link is not valid.</div>
+                </template>
+            </div>
+        </main>
+    </div>
+</template>

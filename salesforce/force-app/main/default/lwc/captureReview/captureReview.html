@@ -1,0 +1,133 @@
+<template>
+    <div class="wrap">
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+        <template lwc:if={data}>
+            <ul class="path">
+                <template for:each={pathSteps} for:item="p">
+                    <li key={p.label} class={p.cls}>{p.label}</li>
+                </template>
+            </ul>
+
+            <template lwc:if={resultMessage}>
+                <div class={resultClass}>
+                    <span class="grow">{resultMessage}</span>
+                    <template lwc:if={consentUrl}>
+                        <a class="btn ok sm" href={consentUrl}>View consent record →</a>
+                    </template>
+                </div>
+            </template>
+            <template lwc:if={capture.Processing_Error__c}>
+                <div class="alert err">
+                    <span class="grow">Matching error: {capture.Processing_Error__c}</span>
+                    <template lwc:if={canRerun}>
+                        <button type="button" class="btn sm" onclick={rerun} disabled={busy}>Re-run matching</button>
+                    </template>
+                </div>
+            </template>
+
+            <div class="two">
+                <div class="dcard">
+                    <h3>Captured data</h3>
+                    <dl class="fl">
+                        <dt>Name</dt><dd>{capturedName}</dd>
+                        <dt>Email</dt><dd>{capture.Email__c}</dd>
+                        <dt>Specialty</dt><dd>{capture.Specialty__c}</dd>
+                        <dt>City</dt><dd>{capture.City__c}</dd>
+                        <dt>Hospital</dt><dd>{capture.Organisation__c}</dd>
+                        <dt>Reg. number</dt><dd>{capture.Registration_Number__c}</dd>
+                        <dt>Channel</dt><dd>{capture.Channel__c}</dd>
+                        <dt>Event</dt><dd>{eventName}</dd>
+                        <dt>Captured by</dt><dd>{capturedBy}</dd>
+                        <dt>Double opt-in</dt><dd><span class={optInBadge}>{optInLabel}</span></dd>
+                        <dt>Notes</dt><dd>{capture.Notes__c}</dd>
+                        <template for:each={data.tasks} for:item="t">
+                            <div key={t} class="dlrow"><dt>Task</dt><dd>{t}</dd></div>
+                        </template>
+                    </dl>
+                </div>
+
+                <div>
+                    <template lwc:if={hasCandidates}>
+                        <div class="aicard">
+                            <h4>✦ AI suggestion</h4>
+                            <div class="rec">{data.recommendation}</div>
+                            <ul>
+                                <template for:each={data.suggestionDetails} for:item="d">
+                                    <li key={d}>{d}</li>
+                                </template>
+                            </ul>
+                            <div class="aifoot">
+                                <span>Confidence: <b>{data.confidence}</b> · AI only suggests – a person decides.</span>
+                                <template lwc:if={data.canReview}>
+                                    <button type="button" class="btn sm" onclick={selectRecommended}>Select recommended</button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="dcard">
+                            <h3>Candidate HCPs ({candidateCount})</h3>
+                            <div class="legend">
+                                <span><i class="lg-ok"></i>Match</span><span><i class="lg-part"></i>Partial</span><span><i class="lg-none"></i>Different</span>
+                            </div>
+                            <div class="scroll">
+                                <table class="cmp">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>This capture</th>
+                                            <template for:each={candidateHeaders} for:item="c">
+                                                <th key={c.contactId} class={c.thClass}>
+                                                    <label>
+                                                        <input type="radio" name="cand" value={c.contactId} checked={c.selected} onchange={pick} disabled={readOnly} />
+                                                        <span>
+                                                            <a href={c.url}>{c.fullName}</a>
+                                                            <small>{c.oneKeyId}</small>
+                                                            <span class="score"><i style={c.scoreStyle}></i></span>
+                                                            <small>Match score {c.score}%</small>
+                                                        </span>
+                                                    </label>
+                                                </th>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template for:each={rows} for:item="r">
+                                            <tr key={r.label}>
+                                                <td class="lab">{r.label}</td>
+                                                <td><b>{r.captured}</b></td>
+                                                <template for:each={r.cells} for:item="cell">
+                                                    <td key={cell.key} class={cell.cls}>{cell.value}</td>
+                                                </template>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <template lwc:if={data.canReview}>
+                                <div class="acts">
+                                    <button type="button" class="btn danger" onclick={discard} disabled={busy}>Discard</button>
+                                    <button type="button" class="btn" onclick={createNew} disabled={busy}>Create new HCP</button>
+                                    <button type="button" class="btn brand" onclick={match} disabled={busy}>{matchLabel}</button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:else>
+                        <div class="dcard">
+                            <h3>Matching</h3>
+                            <dl class="fl">
+                                <dt>Status</dt><dd>{capture.Matching_Status__c}</dd>
+                                <dt>Rule</dt><dd>{capture.Match_Rule__c}</dd>
+                                <dt>HCP</dt><dd><template lwc:if={matchedUrl}><a href={matchedUrl}>{data.matchedContactName}</a></template></dd>
+                                <dt>Matched by</dt><dd>{capture.Matched_By__c}</dd>
+                            </dl>
+                            <p class="note">Only ambiguous captures need a person – exact email / registration number matches never reach the review queue.</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

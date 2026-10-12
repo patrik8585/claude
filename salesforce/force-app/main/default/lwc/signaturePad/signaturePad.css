@@ -1,0 +1,25 @@
+.pad {
+    width: 100%;
+    height: 130px;
+    border: 1px dashed #8a8a8a;
+    border-radius: 8px;
+    background: #fff;
+    touch-action: none;
+    display: block;
+    margin-top: 8px;
+}
+.foot {
+    font-size: 12px;
+    color: #706e6b;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+.link {
+    border: 0;
+    background: none;
+    color: #0176d3;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
