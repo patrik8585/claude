@@ -289,10 +289,10 @@ public without sharing class ConsentService {
         try {
             Messaging.reserveSingleEmailCapacity(1);
             ConsentCaptureConfig.ConsentText text = ConsentCaptureConfig.activeConsentText();
-            String when = signedAt == null ? '' : signedAt.format('d MMM yyyy, HH:mm', 'Europe/Rome');
+            String signedOn = signedAt == null ? '' : signedAt.format('d MMM yyyy, HH:mm', 'Europe/Rome');
             String html =
                 '<p>Dear Dr. ' + (lastName == null ? '' : lastName.escapeHtml4()) + ',</p>' +
-                '<p>This is your copy of the consent you signed on ' + when.escapeHtml4() +
+                '<p>This is your copy of the consent you signed on ' + signedOn.escapeHtml4() +
                 (String.isBlank(eventName) ? '' : ' at the <b>' + eventName.escapeHtml4() + '</b>') +
                 (String.isBlank(repName) ? '' : ', collected by ' + repName.escapeHtml4()) + ':</p>' +
                 '<p style="background:#fafafa;border-left:4px solid #0176d3;padding:10px 14px">' + text.body.escapeHtml4() +

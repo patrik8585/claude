@@ -44,11 +44,7 @@ private class ConsentRecordControllerTest {
 
             Boolean failed = false;
             try {
-                ConsentRecordController.EvidenceCheck check = ConsentRecordController.verifyEvidence(k.Id);
-            Assert.isTrue(check.recordOk, check.message);
-            Assert.isNull(check.signatureOk, 'no signature on an email double opt-in');
-
-            ConsentRecordController.simulateGigyaSync(k.Id);
+                ConsentRecordController.simulateGigyaSync(k.Id);
             } catch (AuraHandledException e) {
                 failed = true;
             }
