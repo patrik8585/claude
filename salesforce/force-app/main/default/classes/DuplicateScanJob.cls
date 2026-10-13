@@ -63,7 +63,7 @@ public without sharing class DuplicateScanJob implements Database.Batchable<Stri
                     continue;
                 }
                 HcpMatchEngine.Comparison cmp = HcpMatchEngine.compare(a, b);
-                if (!cmp.isCandidate() || cmp.score < cfg.duplicateMinScore) {
+                if (!isProposed(cmp, cfg)) {
                     continue;
                 }
                 HCP_Duplicate_Pair__c pair = toPair(a, b, cmp);
@@ -71,6 +71,24 @@ public without sharing class DuplicateScanJob implements Database.Batchable<Stri
             }
         }
         return save(found);
+    }
+
+    /**
+     * A pair goes to the steward when its score reaches the duplicate minimum, or when it shares an
+     * identical email or registration number AND the names match: that is the evidence that auto-matches
+     * a capture, so it must not be lost because everything else (hospital, city, email) changed,
+     * e.g. an HCP who moved to another hospital and was entered again. An identical identifier with
+     * unrelated names (a shared secretariat email) is not enough.
+     */
+    @TestVisible
+    private static Boolean isProposed(HcpMatchEngine.Comparison cmp, MatchingConfig cfg) {
+        if (!cmp.isCandidate()) {
+            return false;
+        }
+        if (cmp.score >= cfg.duplicateMinScore) {
+            return true;
+        }
+        return (cmp.regIdentical || cmp.emailIdentical) && cmp.nameKind != HcpMatchEngine.NAME_NONE;
     }
 
     /** Cheap pre-filter before the full comparison. */

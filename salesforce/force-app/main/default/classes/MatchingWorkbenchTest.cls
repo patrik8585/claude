@@ -93,6 +93,26 @@ private class MatchingWorkbenchTest {
     }
 
     @IsTest
+    static void duplicateScanKeepsMovedHcpWithSameRegistration() {
+        ConsentTestFactory.settings();
+        Contact original;
+        Contact moved;
+        Contact other;
+        System.runAs(admin()) {
+            Account milan = ConsentTestFactory.department(ConsentTestFactory.hospital('Ospedale Niguarda', 'Milan', 'niguarda-example.it', 'Niguarda'), 'Neonatology');
+            Account venice = ConsentTestFactory.department(ConsentTestFactory.hospital('Ospedale dell Angelo', 'Venice', 'angelo-example.it', 'Angelo'), 'Paediatrics');
+            original = ConsentTestFactory.contactAt('Laura', 'Amato', 'l.amato@niguarda-example.it', 'Neonatology', 'Milan', 'MI-89190', milan.Id);
+            moved = ConsentTestFactory.contactAt('Laura', 'Amato', 'laura.amato@angelo-example.it', 'Paediatrics', 'Venice', 'MI-89190', venice.Id);
+            // same registration number typed for an unrelated person: not proposed
+            other = ConsentTestFactory.contactAt('Paolo', 'Ferretti', 'p.ferretti@angelo-example.it', 'Paediatrics', 'Venice', 'MI-89190', venice.Id);
+        }
+        DuplicateScanJob.scanBlock(DuplicateScanJob.IDENTIFIERS);
+        List<HCP_Duplicate_Pair__c> pairs = [SELECT Score__c FROM HCP_Duplicate_Pair__c WHERE Pair_Key__c = :DuplicateScanJob.pairKey(original.Id, moved.Id)];
+        Assert.areEqual(1, pairs.size(), 'same name + same registration number is proposed even below the minimum score');
+        Assert.areEqual(0, [SELECT COUNT() FROM HCP_Duplicate_Pair__c WHERE Pair_Key__c = :DuplicateScanJob.pairKey(original.Id, other.Id)], 'different names: no pair');
+    }
+
+    @IsTest
     static void duplicateScanMergeAndEvidence() {
         ConsentTestFactory.settings();
         Event__c ev = ConsentTestFactory.event();
