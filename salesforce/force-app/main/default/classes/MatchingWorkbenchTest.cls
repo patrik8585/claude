@@ -108,6 +108,7 @@ private class MatchingWorkbenchTest {
         Assert.areEqual(0, [SELECT COUNT() FROM HCP_Duplicate_Pair__c WHERE Contact_A__r.LastName = 'Verdi' OR Contact_B__r.LastName = 'Verdi']);
 
         User steward = ConsentTestFactory.user('HCP_Consent_Data_Steward');
+        String mergeId;
         System.runAs(steward) {
             Assert.isTrue(MatchingWorkbenchController.getHcoOptions().size() >= 2);
             Assert.areEqual(2, MatchingWorkbenchController.getPairs('Open', hosp.Id, null, 0).size());
@@ -117,7 +118,7 @@ private class MatchingWorkbenchTest {
             Assert.areEqual(b.Id, detail.suggestedMaster, 'B has the consent and the attendance');
             Assert.isFalse(detail.explanation.isEmpty());
 
-            String mergeId = MatchingWorkbenchController.mergePair(ab.Id, a.Id, new Map<String, String>{ 'Email' => 'master', 'Registration_Number__c' => 'master' });
+            mergeId = MatchingWorkbenchController.mergePair(ab.Id, a.Id, new Map<String, String>{ 'Email' => 'master', 'Registration_Number__c' => 'master' });
             Assert.isNotNull(mergeId);
 
             MatchingWorkbenchController.markNotDuplicate(cd.Id, 'Two different people');
