@@ -1,8 +1,10 @@
 /**
  * Consent record page: Gigya synchronisation timeline (mockup step 6),
  * demo "simulate sync" and consent withdrawal.
+ * without sharing: stewards update consents they do not own; writes check the
+ * HCP_Capture_Data_Steward custom permission, class access is limited by permission sets.
  */
-public with sharing class ConsentRecordController {
+public without sharing class ConsentRecordController {
     public class Step {
         @AuraEnabled
         public String title;

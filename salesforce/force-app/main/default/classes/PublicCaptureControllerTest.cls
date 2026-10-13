@@ -113,7 +113,7 @@ private class PublicCaptureControllerTest {
         Consent_Capture_Settings__c s = Consent_Capture_Settings__c.getOrgDefaults();
         s.Max_Per_Email_Per_Day__c = 1;
         update s;
-        ConsentCaptureConfig.cached = null;
+        ConsentCaptureConfig.resetCache();
         Event__c e = ev();
         String token = PublicCaptureController.getFormContext(e.Id).formToken;
         Assert.isTrue(PublicCaptureController.submitCapture(e.Id, 'qr', token, validSubmission()).success);

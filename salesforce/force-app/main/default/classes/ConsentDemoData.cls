@@ -48,7 +48,7 @@ public with sharing class ConsentDemoData {
             s.Email_Sender_Name__c = 'Danone Events';
         }
         upsert s;
-        ConsentCaptureConfig.cached = null;
+        ConsentCaptureConfig.resetCache();
     }
 
     /** Puts the running user in the demo rep territory. Run on its own (mixed DML with data inserts). */

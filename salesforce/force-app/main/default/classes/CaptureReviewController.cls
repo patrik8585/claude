@@ -1,8 +1,11 @@
 /**
  * Review console (data steward): side-by-side candidate comparison and the
  * Match / Create new HCP / Discard actions on a Capture__c record page.
+ * without sharing: stewards resolve captures they do not own. Access is limited to the
+ * HCP Consent Data Steward / Admin permission sets (class access) and every write checks
+ * the HCP_Capture_Data_Steward custom permission.
  */
-public with sharing class CaptureReviewController {
+public without sharing class CaptureReviewController {
     public class ReviewData {
         @AuraEnabled
         public Capture__c capture;

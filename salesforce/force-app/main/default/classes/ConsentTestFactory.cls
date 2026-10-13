@@ -13,7 +13,7 @@ public class ConsentTestFactory {
             Token_Validity_Days__c = 30
         );
         insert s;
-        ConsentCaptureConfig.cached = null;
+        ConsentCaptureConfig.resetCache();
         return s;
     }
 

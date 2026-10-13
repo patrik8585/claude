@@ -22,6 +22,11 @@ public without sharing class ConsentCaptureConfig {
     @TestVisible
     private static Consent_Capture_Settings__c cached;
 
+    /** Forces the next settings() call to re-read the custom setting. */
+    public static void resetCache() {
+        cached = null;
+    }
+
     public static Consent_Capture_Settings__c settings() {
         if (cached == null) {
             cached = Consent_Capture_Settings__c.getOrgDefaults();
