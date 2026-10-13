@@ -303,6 +303,14 @@ export default class RepCaptureHub extends LightningElement {
         return this.method ? 'Save capture' : 'Choose a consent option above';
     }
 
+    deviceInfo() {
+        try {
+            return `${navigator.userAgent} | screen ${window.screen.width}x${window.screen.height}`;
+        } catch (e) {
+            return null;
+        }
+    }
+
     signatureDataUrl() {
         const pad = this.template.querySelector('c-signature-pad');
         return this.method === 'sign' && pad ? pad.getDataUrl() : null;
@@ -317,7 +325,8 @@ export default class RepCaptureHub extends LightningElement {
                 eventId: this.eventId,
                 contactId: hcp.id,
                 method: hcp.consentStatus === 'valid' ? null : this.method,
-                signatureDataUrl: this.signatureDataUrl()
+                signatureDataUrl: this.signatureDataUrl(),
+                deviceInfo: this.deviceInfo()
             });
             this.added = { ...this.added, [hcp.id]: r.message };
             this.toast('Added to event');
@@ -481,7 +490,8 @@ export default class RepCaptureHub extends LightningElement {
                     taskDueDate: x ? x.taskDueDate : null
                 },
                 method: this.method,
-                signatureDataUrl: this.signatureDataUrl()
+                signatureDataUrl: this.signatureDataUrl(),
+                deviceInfo: this.deviceInfo()
             });
             this.toast(x ? 'Capture saved · follow-up task created' : 'Capture saved');
             this.walk = {};

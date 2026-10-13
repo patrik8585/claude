@@ -122,6 +122,9 @@ public with sharing class ConsentDemoData {
             legacyConsent(contacts.get('H14').Id, Date.newInstance(2026, 1, 21), 'v3.2', false),
             legacyConsent(contacts.get('H3').Id, Date.newInstance(2025, 6, 8), 'v3.1', true)
         };
+        for (Consent__c k : legacy) {
+            k.Evidence_Hash__c = ConsentService.evidenceHash(k);
+        }
         insert legacy;
         Set<Id> contactIds = new Set<Id>();
         for (Contact c : contacts.values()) {

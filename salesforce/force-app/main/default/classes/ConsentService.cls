@@ -230,10 +230,17 @@ public without sharing class ConsentService {
         }
     }
 
-    // ------------------------------------------------------------ signature
+    // ------------------------------------------------------------ signature and evidence
 
-    /** Stores a PNG data URL (from the signature canvas) as a file on the capture. */
-    public static Id saveSignature(Id captureId, String captureName, String dataUrl) {
+    public static String sha256Hex(Blob data) {
+        return EncodingUtil.convertToHex(Crypto.generateDigest('SHA-256', data));
+    }
+
+    /**
+     * Stores a PNG data URL (from the signature canvas) as a file on the capture
+     * and returns the SHA-256 of the image bytes (kept on the capture and the consent).
+     */
+    public static String saveSignature(Id captureId, String captureName, String dataUrl) {
         if (String.isBlank(dataUrl)) {
             return null;
         }
@@ -241,13 +248,75 @@ public without sharing class ConsentService {
         if (b64.length() > 2000000) {
             throw new IllegalArgumentException('Signature image too large.');
         }
+        Blob png = EncodingUtil.base64Decode(b64);
         ContentVersion cv = new ContentVersion(
             Title = 'Consent signature - ' + captureName,
             PathOnClient = 'signature.png',
-            VersionData = EncodingUtil.base64Decode(b64),
+            VersionData = png,
             FirstPublishLocationId = captureId
         );
         insert cv;
-        return cv.Id;
+        return sha256Hex(png);
+    }
+
+    /**
+     * SHA-256 over the consent evidence: HCP, capture time (to the second, GMT), consent text and version,
+     * opt-in method, signature hash, captured by, source capture. Recomputed by "Verify evidence".
+     */
+    public static String evidenceHash(Consent__c k) {
+        List<String> parts = new List<String>{
+            str(k.Contact__c),
+            k.Captured_At__c == null ? '' : k.Captured_At__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\''),
+            str(k.Consent_Text_Version__c),
+            str(k.Consent_Text__c),
+            str(k.Opt_In_Method__c),
+            str(k.Signature_Hash__c),
+            str(k.Captured_By__c),
+            str(k.Source_Capture__c)
+        };
+        return sha256Hex(Blob.valueOf(String.join(parts, '|')));
+    }
+
+    private static String str(Object o) {
+        return o == null ? '' : String.valueOf(o);
+    }
+
+    /** Emails the HCP a copy of the consent just signed on the rep's device. Never throws. */
+    public static Boolean sendSignedCopyEmail(String toAddress, String lastName, String eventName, Datetime signedAt, String repName) {
+        if (String.isBlank(toAddress)) {
+            return false;
+        }
+        try {
+            Messaging.reserveSingleEmailCapacity(1);
+            ConsentCaptureConfig.ConsentText text = ConsentCaptureConfig.activeConsentText();
+            String when = signedAt == null ? '' : signedAt.format('d MMM yyyy, HH:mm', 'Europe/Rome');
+            String html =
+                '<p>Dear Dr. ' + (lastName == null ? '' : lastName.escapeHtml4()) + ',</p>' +
+                '<p>This is your copy of the consent you signed on ' + when.escapeHtml4() +
+                (String.isBlank(eventName) ? '' : ' at the <b>' + eventName.escapeHtml4() + '</b>') +
+                (String.isBlank(repName) ? '' : ', collected by ' + repName.escapeHtml4()) + ':</p>' +
+                '<p style="background:#fafafa;border-left:4px solid #0176d3;padding:10px 14px">' + text.body.escapeHtml4() +
+                '<br/><small>Consent text ' + text.version.escapeHtml4() + '</small></p>' +
+                '<p>You can withdraw your consent at any time using the link in every email or by replying to this message.</p>';
+            Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+            mail.setToAddresses(new List<String>{ toAddress });
+            mail.setSubject('Your consent - copy for your records');
+            mail.setHtmlBody(html);
+            mail.setPlainTextBody(html.stripHtmlTags());
+            mail.setSaveAsActivity(false);
+            mail.setUseSignature(false);
+            Id oweaId = orgWideAddressId();
+            if (oweaId != null) {
+                mail.setOrgWideEmailAddressId(oweaId);
+            } else {
+                String sender = ConsentCaptureConfig.settings().Email_Sender_Name__c;
+                mail.setSenderDisplayName(String.isBlank(sender) ? 'Danone Events' : sender);
+            }
+            List<Messaging.SendEmailResult> results = Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ mail }, false);
+            return !results.isEmpty() && results[0].isSuccess();
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Signed copy email not sent: ' + e.getMessage());
+            return false;
+        }
     }
 }

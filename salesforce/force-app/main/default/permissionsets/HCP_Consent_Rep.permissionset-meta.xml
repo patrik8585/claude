@@ -20,6 +20,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Capture__c.Capture_Device__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Capture__c.Captured_At__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -171,6 +176,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Capture__c.Signature_Captured__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Capture__c.Signature_Copy_Sent__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Capture__c.Signature_Hash__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

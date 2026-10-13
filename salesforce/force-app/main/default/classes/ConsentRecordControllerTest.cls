@@ -33,6 +33,10 @@ private class ConsentRecordControllerTest {
             Assert.areEqual('New HCP created', t.steps[2].title);
             Assert.isNotNull(t.taskSubject);
 
+            ConsentRecordController.EvidenceCheck check = ConsentRecordController.verifyEvidence(k.Id);
+            Assert.isTrue(check.recordOk, check.message);
+            Assert.isNull(check.signatureOk, 'no signature on an email double opt-in');
+
             ConsentRecordController.simulateGigyaSync(k.Id);
             t = ConsentRecordController.getTimeline(k.Id);
             Assert.isTrue(t.sent);
@@ -40,7 +44,11 @@ private class ConsentRecordControllerTest {
 
             Boolean failed = false;
             try {
-                ConsentRecordController.simulateGigyaSync(k.Id);
+                ConsentRecordController.EvidenceCheck check = ConsentRecordController.verifyEvidence(k.Id);
+            Assert.isTrue(check.recordOk, check.message);
+            Assert.isNull(check.signatureOk, 'no signature on an email double opt-in');
+
+            ConsentRecordController.simulateGigyaSync(k.Id);
             } catch (AuraHandledException e) {
                 failed = true;
             }

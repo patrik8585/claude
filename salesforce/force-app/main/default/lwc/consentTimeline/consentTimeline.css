@@ -133,3 +133,10 @@
     opacity: 0.45;
     pointer-events: none;
 }
+.alert.ok {
+    background: var(--ok-bg);
+    color: #194e1c;
+}
+.evidence {
+    margin: 10px 0;
+}

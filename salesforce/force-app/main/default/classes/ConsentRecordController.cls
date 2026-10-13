@@ -118,6 +118,70 @@ public without sharing class ConsentRecordController {
         return t;
     }
 
+    public class EvidenceCheck {
+        @AuraEnabled
+        public Boolean recordOk;
+        /** null when no signature was captured */
+        @AuraEnabled
+        public Boolean signatureOk;
+        @AuraEnabled
+        public String message;
+    }
+
+    /**
+     * Recomputes the evidence hash from the current field values and the SHA-256 of the
+     * signature file(s) linked to the consent or its source capture.
+     */
+    @AuraEnabled
+    public static EvidenceCheck verifyEvidence(Id consentId) {
+        Consent__c k = [
+            SELECT
+                Id,
+                Contact__c,
+                Captured_At__c,
+                Consent_Text_Version__c,
+                Consent_Text__c,
+                Opt_In_Method__c,
+                Signature_Captured__c,
+                Signature_Hash__c,
+                Captured_By__c,
+                Source_Capture__c,
+                Evidence_Hash__c
+            FROM Consent__c
+            WHERE Id = :consentId
+        ];
+        EvidenceCheck r = new EvidenceCheck();
+        List<String> notes = new List<String>();
+        if (String.isBlank(k.Evidence_Hash__c)) {
+            r.recordOk = false;
+            notes.add('No evidence hash on this record (created before evidence hashing).');
+        } else {
+            r.recordOk = ConsentService.evidenceHash(k) == k.Evidence_Hash__c;
+            notes.add(r.recordOk ? 'Record evidence intact.' : 'Record evidence does NOT match its hash (data changed, e.g. HCP merge).');
+        }
+        if (k.Signature_Captured__c) {
+            r.signatureOk = false;
+            Set<Id> entities = new Set<Id>{ k.Id };
+            if (k.Source_Capture__c != null) {
+                entities.add(k.Source_Capture__c);
+            }
+            Set<Id> docIds = new Set<Id>();
+            for (ContentDocumentLink l : [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId IN :entities]) {
+                docIds.add(l.ContentDocumentId);
+            }
+            if (!docIds.isEmpty() && String.isNotBlank(k.Signature_Hash__c)) {
+                for (ContentVersion cv : [SELECT VersionData FROM ContentVersion WHERE ContentDocumentId IN :docIds AND IsLatest = TRUE]) {
+                    if (ConsentService.sha256Hex(cv.VersionData) == k.Signature_Hash__c) {
+                        r.signatureOk = true;
+                    }
+                }
+            }
+            notes.add(r.signatureOk ? 'Signature image matches its hash.' : 'Signature image missing or altered.');
+        }
+        r.message = String.join(notes, ' ');
+        return r;
+    }
+
     /** Demo only: stands in for the existing Gigya integration marking the record as sent. */
     @AuraEnabled
     public static void simulateGigyaSync(Id consentId) {

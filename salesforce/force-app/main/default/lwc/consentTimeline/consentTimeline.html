@@ -29,6 +29,12 @@
                     <dt>Follow-up task</dt>
                     <dd>{taskLabel}</dd>
                 </dl>
+                <div class="evidence">
+                    <button type="button" class="btn" onclick={verify} disabled={busy}>Verify evidence</button>
+                    <template lwc:if={evidence}>
+                        <div class={evidenceClass}>{evidence.message}</div>
+                    </template>
+                </div>
                 <template lwc:if={data.canWithdraw}>
                     <button type="button" class="btn danger" onclick={withdraw} disabled={busy}>Withdraw consent</button>
                 </template>

@@ -56,18 +56,18 @@ private class RepCaptureControllerTest {
         User rep = ConsentTestFactory.user('HCP_Consent_Rep');
         Id evId = ev().Id;
         System.runAs(rep) {
-            RepCaptureController.SaveResult existing = RepCaptureController.addKnownHcp(evId, contactId('Ferri'), null, null);
+            RepCaptureController.SaveResult existing = RepCaptureController.addKnownHcp(evId, contactId('Ferri'), null, null, 'Test browser');
             Assert.isTrue(existing.message.contains('on file'));
 
-            RepCaptureController.SaveResult signed = RepCaptureController.addKnownHcp(evId, contactId('Greco'), 'sign', ConsentTestFactory.signature());
+            RepCaptureController.SaveResult signed = RepCaptureController.addKnownHcp(evId, contactId('Greco'), 'sign', ConsentTestFactory.signature(), 'Test browser');
             Assert.isTrue(signed.message.startsWith('Signed'));
 
-            RepCaptureController.SaveResult mailed = RepCaptureController.addKnownHcp(evId, contactId('Conti'), 'declined', null);
+            RepCaptureController.SaveResult mailed = RepCaptureController.addKnownHcp(evId, contactId('Conti'), 'declined', null, 'Test browser');
             Assert.isTrue(mailed.message.contains('declined'));
 
             Boolean blocked = false;
             try {
-                RepCaptureController.addKnownHcp(evId, contactId('Conti'), 'email', null);
+                RepCaptureController.addKnownHcp(evId, contactId('Conti'), 'email', null, 'Test browser');
             } catch (AuraHandledException e) {
                 blocked = true;
             }
@@ -75,7 +75,7 @@ private class RepCaptureControllerTest {
 
             Boolean noSignature = false;
             try {
-                RepCaptureController.addKnownHcp(evId, contactId('Greco'), 'sign', null);
+                RepCaptureController.addKnownHcp(evId, contactId('Greco'), 'sign', null, 'Test browser');
             } catch (AuraHandledException e) {
                 noSignature = true;
             }
@@ -88,13 +88,15 @@ private class RepCaptureControllerTest {
             Assert.areEqual(3, mine.size());
         }
         Capture__c signedCap = [
-            SELECT Consent_Method__c, Opt_In_Status__c, Signature_Captured__c, HCP_Selected_By_Rep__c, Captured_By__c
+            SELECT Consent_Method__c, Opt_In_Status__c, Signature_Captured__c, HCP_Selected_By_Rep__c, Captured_By__c, Signature_Hash__c, Capture_Device__c
             FROM Capture__c
             WHERE Last_Name__c = 'Greco'
         ];
         Assert.areEqual(CaptureConstants.METHOD_SIGNATURE, signedCap.Consent_Method__c);
         Assert.areEqual(CaptureConstants.OPTIN_CONFIRMED, signedCap.Opt_In_Status__c);
         Assert.isTrue(signedCap.Signature_Captured__c);
+        Assert.areEqual(64, signedCap.Signature_Hash__c.length(), 'SHA-256 of the signature image');
+        Assert.areEqual('Test browser', signedCap.Capture_Device__c);
         Assert.isTrue(signedCap.HCP_Selected_By_Rep__c);
         Assert.areEqual(rep.Id, signedCap.Captured_By__c);
         Assert.areEqual(1, [SELECT COUNT() FROM ContentDocumentLink WHERE LinkedEntityId = :signedCap.Id], 'signature file linked to the capture');
@@ -105,7 +107,7 @@ private class RepCaptureControllerTest {
         User rep = ConsentTestFactory.user('HCP_Consent_Rep');
         Id evId = ev().Id;
         System.runAs(rep) {
-            RepCaptureController.SaveResult r = RepCaptureController.addKnownHcp(evId, contactId('Greco'), 'email', null);
+            RepCaptureController.SaveResult r = RepCaptureController.addKnownHcp(evId, contactId('Greco'), 'email', null, 'Test browser');
             Assert.isNotNull(r.captureName);
         }
         Capture__c c = [SELECT Opt_In_Status__c, Confirmation_Token_Hash__c, Confirmation_Email_Status__c FROM Capture__c];
@@ -134,17 +136,17 @@ private class RepCaptureControllerTest {
             w.createTask = true;
             w.taskTitle = x.taskTitle;
             w.taskDueDate = x.taskDueDate;
-            RepCaptureController.SaveResult r = RepCaptureController.saveWalkIn(evId, w, 'email', null);
+            RepCaptureController.SaveResult r = RepCaptureController.saveWalkIn(evId, w, 'email', null, 'Test browser');
             Assert.isNotNull(r.captureName);
 
             RepCaptureController.WalkIn w2 = new RepCaptureController.WalkIn();
             w2.firstName = 'Anon';
             w2.lastName = 'Walker';
-            RepCaptureController.saveWalkIn(evId, w2, 'declined', null);
+            RepCaptureController.saveWalkIn(evId, w2, 'declined', null, 'Test browser');
 
             Boolean failed = false;
             try {
-                RepCaptureController.saveWalkIn(evId, new RepCaptureController.WalkIn(), 'declined', null);
+                RepCaptureController.saveWalkIn(evId, new RepCaptureController.WalkIn(), 'declined', null, 'Test browser');
             } catch (AuraHandledException e) {
                 failed = true;
             }
@@ -152,7 +154,7 @@ private class RepCaptureControllerTest {
 
             failed = false;
             try {
-                RepCaptureController.saveWalkIn(evId, w2, 'email', null);
+                RepCaptureController.saveWalkIn(evId, w2, 'email', null, 'Test browser');
             } catch (AuraHandledException e) {
                 failed = true;
             }

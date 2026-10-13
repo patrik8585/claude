@@ -90,6 +90,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Capture__c.Capture_Device__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Capture__c.Captured_At__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -255,6 +260,16 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Capture__c.Signature_Copy_Sent__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Capture__c.Signature_Hash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Capture__c.Specialty__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -271,6 +286,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Capture__c.Token_Expires_At__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Consent__c.Capture_Device__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -325,6 +345,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Consent__c.Evidence_Hash__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Consent__c.Gigya_Message__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -351,6 +376,16 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Consent__c.Signature_Captured__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Consent__c.Signature_Copy_Sent__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Consent__c.Signature_Hash__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

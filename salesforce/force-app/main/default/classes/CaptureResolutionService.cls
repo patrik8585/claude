@@ -35,6 +35,9 @@ public without sharing class CaptureResolutionService {
                 Opt_In_Confirmed_At__c,
                 Consent_Text_Version__c,
                 Signature_Captured__c,
+                Signature_Hash__c,
+                Signature_Copy_Sent__c,
+                Capture_Device__c,
                 HCP_Selected_By_Rep__c,
                 Processing_Stage__c,
                 Matching_Status__c,
@@ -181,11 +184,15 @@ public without sharing class CaptureResolutionService {
                 Captured_By_Name__c = c.Captured_By_Name__c,
                 Opt_In_Method__c = signed ? CaptureConstants.METHOD_SIGNATURE : CaptureConstants.METHOD_EMAIL,
                 Signature_Captured__c = c.Signature_Captured__c,
+                Signature_Hash__c = c.Signature_Hash__c,
+                Signature_Copy_Sent__c = c.Signature_Copy_Sent__c,
+                Capture_Device__c = c.Capture_Device__c,
                 Matched_By__c = c.Matched_By__c,
                 Source_Capture__c = c.Id,
                 Event__c = c.Event__c,
                 Gigya_Status__c = confirmed ? CaptureConstants.GIGYA_QUEUED : CaptureConstants.GIGYA_WAITING
             );
+            k.Evidence_Hash__c = ConsentService.evidenceHash(k);
             newConsentByCapture.put(c.Id, k);
         }
         if (!newConsentByCapture.isEmpty()) {

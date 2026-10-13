@@ -144,10 +144,25 @@ private class CaptureMatchingServiceTest {
         c.Opt_In_Status__c = CaptureConstants.OPTIN_CONFIRMED;
         c.Signature_Captured__c = true;
         insert c;
-        ConsentService.saveSignature(c.Id, 'CAP-TEST', ConsentTestFactory.signature());
+        String sigHash = ConsentService.saveSignature(c.Id, 'CAP-TEST', ConsentTestFactory.signature());
+        update new Capture__c(Id = c.Id, Signature_Hash__c = sigHash, Capture_Device__c = 'Test browser');
         CaptureMatchingService.processCaptures(new Set<Id>{ c.Id });
         Capture__c r = reload(c.Id);
-        Consent__c k = [SELECT Opt_In_Method__c, Signature_Captured__c FROM Consent__c WHERE Id = :r.Consent__c];
+        Consent__c k = [SELECT Opt_In_Method__c, Signature_Captured__c, Signature_Hash__c, Evidence_Hash__c FROM Consent__c WHERE Id = :r.Consent__c];
+        Assert.areEqual(sigHash, k.Signature_Hash__c);
+        Assert.isNotNull(k.Evidence_Hash__c);
+
+        ConsentRecordController.EvidenceCheck check = ConsentRecordController.verifyEvidence(r.Consent__c);
+        Assert.isTrue(check.recordOk, check.message);
+        Assert.isTrue(check.signatureOk, check.message);
+
+        Boolean blocked = false;
+        try {
+            update new Consent__c(Id = r.Consent__c, Consent_Text_Version__c = 'v9.9');
+        } catch (DmlException e) {
+            blocked = true;
+        }
+        Assert.isTrue(blocked, 'evidence fields are immutable');
         Assert.areEqual(CaptureConstants.METHOD_SIGNATURE, k.Opt_In_Method__c);
         Assert.isTrue(k.Signature_Captured__c);
         Assert.areEqual(1, [SELECT COUNT() FROM ContentDocumentLink WHERE LinkedEntityId = :r.Consent__c]);

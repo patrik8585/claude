@@ -276,7 +276,7 @@ public with sharing class RepCaptureController {
      * method: 'sign' | 'email' | 'declined' (ignored when a valid opt-in is on file).
      */
     @AuraEnabled
-    public static SaveResult addKnownHcp(String eventId, String contactId, String method, String signatureDataUrl) {
+    public static SaveResult addKnownHcp(String eventId, String contactId, String method, String signatureDataUrl, String deviceInfo) {
         checkAccess();
         Event__c ev = loadEvent(eventId);
         User u = me();
@@ -303,13 +303,14 @@ public with sharing class RepCaptureController {
         cap.Registration_Number__c = c.Registration_Number__c;
         cap.HCP_Selected_By_Rep__c = true;
         cap.Matched_Contact__c = c.Id;
+        cap.Capture_Device__c = deviceInfo == null ? null : deviceInfo.left(255);
         return save(cap, m, signatureDataUrl, ev.Name, null);
     }
 
     // ------------------------------------------------------------ walk-in
 
     @AuraEnabled
-    public static SaveResult saveWalkIn(String eventId, WalkIn data, String method, String signatureDataUrl) {
+    public static SaveResult saveWalkIn(String eventId, WalkIn data, String method, String signatureDataUrl, String deviceInfo) {
         checkAccess();
         if (data == null || String.isBlank(data.firstName) || String.isBlank(data.lastName)) {
             throw new AuraHandledException('First and last name are required.');
@@ -341,6 +342,7 @@ public with sharing class RepCaptureController {
                 Description = data.notes == null ? null : data.notes.left(32000)
             );
         }
+        cap.Capture_Device__c = deviceInfo == null ? null : deviceInfo.left(255);
         return save(cap, method, signatureDataUrl, ev.Name, follow);
     }
 
@@ -466,8 +468,11 @@ public with sharing class RepCaptureController {
         String token = method == 'email' ? ConsentService.attachNewToken(cap) : null;
         insert cap;
         Capture__c saved = [SELECT Id, Name FROM Capture__c WHERE Id = :cap.Id];
+        Boolean copySent = false;
         if (method == 'sign') {
-            ConsentService.saveSignature(cap.Id, saved.Name, signatureDataUrl);
+            String sigHash = ConsentService.saveSignature(cap.Id, saved.Name, signatureDataUrl);
+            copySent = ConsentService.sendSignedCopyEmail(cap.Email__c, cap.Last_Name__c, eventName, cap.Captured_At__c, cap.Captured_By_Name__c);
+            update new Capture__c(Id = cap.Id, Signature_Hash__c = sigHash, Signature_Copy_Sent__c = copySent);
         }
         if (follow != null) {
             follow.WhatId = cap.Id;
@@ -486,7 +491,8 @@ public with sharing class RepCaptureController {
         if (method == 'existing') {
             r.message = 'Consent already on file - nothing to ask.';
         } else if (method == 'sign') {
-            r.message = 'Signed on screen - consent confirmed and recorded.';
+            r.message = 'Signed on screen - consent confirmed and recorded.' +
+                (copySent ? ' A copy was emailed to the HCP.' : '');
         } else if (method == 'email') {
             r.message = r.emailSent
                 ? 'Confirmation link sent by email - consent pending until the HCP confirms.'

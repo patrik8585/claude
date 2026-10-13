@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Signature_Copy_Sent__c</fullName>
+    <inlineHelpText>A copy of the signed consent was emailed to the HCP.</inlineHelpText>
+    <label>Signature Copy Sent to HCP</label>
+    <defaultValue>false</defaultValue>
+    <type>Checkbox</type>
+</CustomField>

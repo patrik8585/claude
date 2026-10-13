@@ -3,6 +3,7 @@ import { notifyRecordUpdateAvailable } from 'lightning/uiRecordApi';
 import getTimeline from '@salesforce/apex/ConsentRecordController.getTimeline';
 import simulateGigyaSync from '@salesforce/apex/ConsentRecordController.simulateGigyaSync';
 import withdrawConsent from '@salesforce/apex/ConsentRecordController.withdrawConsent';
+import verifyEvidence from '@salesforce/apex/ConsentRecordController.verifyEvidence';
 
 /** Consent record page: "Sent to Gigya" status and timeline (mockup step 6). */
 export default class ConsentTimeline extends LightningElement {
@@ -10,6 +11,7 @@ export default class ConsentTimeline extends LightningElement {
     data;
     error;
     busy = false;
+    evidence;
 
     connectedCallback() {
         this.load();
@@ -51,6 +53,22 @@ export default class ConsentTimeline extends LightningElement {
 
     get taskLabel() {
         return this.data.taskSubject || '—';
+    }
+
+    async verify() {
+        this.busy = true;
+        try {
+            this.evidence = await verifyEvidence({ consentId: this.recordId });
+        } catch (e) {
+            this.error = this.msg(e);
+        } finally {
+            this.busy = false;
+        }
+    }
+
+    get evidenceClass() {
+        const ok = this.evidence.recordOk && this.evidence.signatureOk !== false;
+        return ok ? 'alert ok' : 'alert err';
     }
 
     simulate() {
