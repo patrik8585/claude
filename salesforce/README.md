@@ -12,8 +12,8 @@ are **not deployed yet**. See [Known limitations / not verified](#6-known-limita
 |---|---|---|
 | **1** | Data model, async matching, review console, consent record and Gigya status, dashboard and reports, permission sets, sample data | **Code complete**, not yet deployed |
 | **2** | Experience Cloud: public QR page, kiosk mode, double opt-in confirmation page, rep page (search first, signature, dictation, rule-based extraction) | **LWCs and Apex complete**. You create the sites in the UI (section 4) |
-| **3** | AI with Prompt Builder: "Extract with AI" on notes, review recommendation | "Extract with AI" **code complete** (`force-app-ai`, section 8), needs the Prompt Builder setup; rules stay as fallback. Review recommendation: design only |
-| **4** | Hospitals & departments, matching v2 (parametric), volume test data with accuracy measurement, Matching & Duplicates workbench with HCP merge | **Code complete**, not yet deployed (sections 9–12) |
+| **3** | AI with Prompt Builder: "Extract with AI" on notes, review recommendation | "Extract with AI" **deployed and verified** with Prompt Builder (`force-app-ai`, section 8); rules stay as fallback. Review recommendation: design only |
+| **4** | Hospitals & departments, matching v2 (parametric), volume test data with accuracy measurement, Matching & Duplicates workbench with HCP merge | **Deployed**, all tests passing; accuracy measured on the DEV volume set (sections 9–12) |
 
 ### Defaults I chose (change them if you disagree)
 
@@ -313,7 +313,7 @@ How it works: `RepCaptureController.extractFromNotes` → `NotesExtractionServic
 5. Setup › Custom Settings › **Consent Capture Settings** › Manage › Edit: tick **Use Prompt Builder** (leave *Prompt Template* empty for `HCP_Notes_Extraction`).
 6. Rep page → walk-in → paste the demo note → **Extract with AI**: the result line shows *(Prompt Builder)*. If it shows *(Rules (Prompt Builder unavailable: …))*, the reason follows.
 
-Not verified: the `ConnectApi.EinsteinLLM.generateMessagesForPromptTemplate` call (input names `Input:notes` / `Input:today`, application name `PromptBuilderPreview`) and the model answer format were written from the documentation, not run. Einstein requests consume the org's generative AI allowance. The review recommendation with a Record template remains design only: rules stay authoritative, AI only suggests.
+Verified in the Developer Edition: the `ConnectApi.EinsteinLLM.generateMessagesForPromptTemplate` call (inputs `Input:notes` / `Input:today`) returns one JSON object for the demo note, the rep page shows *(Prompt Builder)* and fills all fields, including the task due on Mon 2 Nov 2026. A fast, inexpensive model is enough; the model is set on the template, so it can change without a deploy. Einstein requests consume the org's generative AI allowance. The review recommendation with a Record template remains design only: rules stay authoritative, AI only suggests.
 
 ## 9. Hospitals and departments (HCOs)
 
@@ -344,7 +344,7 @@ The cleanup empties the deleted test records from the Recycle Bin. `regenerateCa
 - 150 test captures (event "Matching accuracy test set (synthetic)", inactive) in 14 test cases with `Expected_Outcome__c` / `Expected_Contact__c` / `Test_Case__c`: exact email, registration number in another format, personal email + hospital, surname typo, accent variant, swapped names, namesake, really new HCP, new HCP with an existing surname, email of a duplicate record, email shared by duplicates, new address at the same institution, email/registration conflict, typo without hospital.
 - The mockup surnames are not used, so the mockup demo keeps its outcomes; mockup HCPs and events are never touched. Every generated record carries `Test_Data_Set__c` (`VOLUME`, `VOLUME-CAPTURES`) and is removed by the cleanup.
 
-**Accuracy** (Matching & Duplicates › Accuracy, and the report *Matching accuracy - test captures*): auto-match precision (auto-matched to the right HCP or to a known duplicate record of it), review rate, false new-HCP rate (a new Contact created for an HCP that exists), right HCP among the review candidates and as the recommendation, outcome as expected per test case, the captures to look at, and duplicate-scan recall / precision on the known duplicates. **Not run yet**: the figures will be known after your deploy.
+**Accuracy** (Matching & Duplicates › Accuracy, and the report *Matching accuracy - test captures*): auto-match precision (auto-matched to the right HCP or to a known duplicate record of it), review rate, false new-HCP rate (a new Contact created for an HCP that exists), right HCP among the review candidates and as the recommendation, outcome as expected per test case, the captures to look at, and duplicate-scan recall / precision on the known duplicates. **Measured** on the DEV set: 59/59 test captures as expected; auto-match precision 100% (16/16); no HCP created again; right HCP among the review candidates and recommended first 100%; review rate 56% (the test set is built mostly from ambiguous cases); duplicate scan 15/15 known duplicates found (12/15 before the identical-identifier rule), all proposed pairs real.
 
 ## 12. Matching & Duplicates workbench (data stewards)
 
