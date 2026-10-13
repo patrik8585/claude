@@ -8,6 +8,9 @@ import confirmToken from '@salesforce/apex/PublicCaptureController.confirm';
 const REQUIRED = ['firstName', 'lastName', 'email', 'specialty', 'city', 'consent'];
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 const KIOSK_RESET_SECONDS = 6;
+/** Kiosk: shared tablet, so the browser must not suggest what the previous visitor typed. */
+const AUTOCOMPLETE_FORM = { firstName: 'given-name', lastName: 'family-name', email: 'email', city: 'address-level2', other: 'off' };
+const AUTOCOMPLETE_KIOSK = { firstName: 'off', lastName: 'off', email: 'off', city: 'off', other: 'off' };
 
 /** Lightning app pages only keep c__-prefixed URL parameters: accept c__e / c__mode / c__t too. */
 function normalize(state) {
@@ -19,7 +22,18 @@ function normalize(state) {
 }
 
 function emptyForm() {
-    return { firstName: '', lastName: '', email: '', specialty: '', city: '', registrationNumber: '', consent: false, sendSlides: true, website: '' };
+    return {
+        firstName: '',
+        lastName: '',
+        email: '',
+        specialty: '',
+        city: '',
+        registrationNumber: '',
+        consent: false,
+        sendSlides: true,
+        website: '',
+        confirmMethod: 'email'
+    };
 }
 
 /**
@@ -42,6 +56,9 @@ export default class HcpPublicCapture extends LightningElement {
     formToken;
     thanksName;
     thanksEmail;
+    thanksSigned = false;
+    thanksCopySent = false;
+    hasSignature = false;
     countdown = 0;
     conf = {};
     params = {};
@@ -172,6 +189,66 @@ export default class HcpPublicCapture extends LightningElement {
         };
     }
 
+    get ac() {
+        return this.isKiosk ? AUTOCOMPLETE_KIOSK : AUTOCOMPLETE_FORM;
+    }
+
+    // ---------------------------------------------------------------- kiosk signature
+
+    handleMethod(evt) {
+        const method = evt.currentTarget.dataset.method;
+        if (method !== this.form.confirmMethod) {
+            this.form = { ...this.form, confirmMethod: method };
+            this.hasSignature = false;
+        }
+    }
+
+    handleSigned() {
+        this.hasSignature = true;
+    }
+
+    handleCleared() {
+        this.hasSignature = false;
+    }
+
+    get isSignMethod() {
+        return this.isKiosk && this.form.confirmMethod === 'sign';
+    }
+    get isEmailMethodLabel() {
+        return this.isSignMethod ? 'false' : 'true';
+    }
+    get isSignMethodLabel() {
+        return this.isSignMethod ? 'true' : 'false';
+    }
+    get emailOptClass() {
+        return this.isSignMethod ? 'mopt' : 'mopt on';
+    }
+    get signOptClass() {
+        return this.isSignMethod ? 'mopt on' : 'mopt';
+    }
+    get sigClass() {
+        return this.showErrors && !this.hasSignature ? 'sig err' : 'sig';
+    }
+    get consentNote() {
+        return this.isSignMethod ? 'signed on this screen' : 'no signature needed';
+    }
+    get thanksCopyText() {
+        return this.thanksCopySent ? 'A copy has been sent to your email.' : 'Ask a Danone representative if you need a copy.';
+    }
+
+    signatureDataUrl() {
+        const pad = this.template.querySelector('c-signature-pad');
+        return this.isSignMethod && pad ? pad.getDataUrl() : null;
+    }
+
+    deviceInfo() {
+        try {
+            return `${navigator.userAgent} | screen ${window.screen.width}x${window.screen.height}`;
+        } catch (e) {
+            return null;
+        }
+    }
+
     get consentClass() {
         return this.showErrors && !this.form.consent ? 'chk err' : 'chk';
     }
@@ -186,9 +263,11 @@ export default class HcpPublicCapture extends LightningElement {
     async handleSubmit() {
         const f = this.form;
         const invalid = REQUIRED.some((k) => !f[k]) || !EMAIL_RE.test(f.email || '');
-        if (invalid) {
+        const signatureUrl = this.signatureDataUrl();
+        const missingSignature = this.isSignMethod && !signatureUrl;
+        if (invalid || missingSignature) {
             this.showErrors = true;
-            this.formError = 'Please complete the highlighted fields.';
+            this.formError = invalid ? 'Please complete the highlighted fields.' : 'Please sign in the box, or choose "Confirm by email".';
             return;
         }
         this.submitting = true;
@@ -207,7 +286,9 @@ export default class HcpPublicCapture extends LightningElement {
                     registrationNumber: f.registrationNumber,
                     consent: f.consent,
                     sendSlides: f.sendSlides,
-                    website: f.website
+                    website: f.website,
+                    signatureDataUrl: signatureUrl,
+                    deviceInfo: this.isKiosk ? this.deviceInfo() : null
                 }
             });
             if (result.nextFormToken) {
@@ -219,7 +300,10 @@ export default class HcpPublicCapture extends LightningElement {
             }
             this.thanksName = result.firstName;
             this.thanksEmail = result.email;
+            this.thanksSigned = result.signed === true;
+            this.thanksCopySent = result.copySent === true;
             this.form = emptyForm();
+            this.hasSignature = false;
             this.showErrors = false;
             this.view = 'thanks';
             if (this.isKiosk) {
@@ -254,9 +338,19 @@ export default class HcpPublicCapture extends LightningElement {
     resetKiosk() {
         this.stopTimer();
         this.form = emptyForm();
+        this.hasSignature = false;
+        this.thanksSigned = false;
+        this.thanksCopySent = false;
+        this.thanksName = undefined;
+        this.thanksEmail = undefined;
         this.showErrors = false;
         this.formError = undefined;
         this.view = 'form';
+        // hide the on-screen keyboard and its suggestion bar from the previous visitor
+        const focused = this.template.activeElement;
+        if (focused && focused.blur) {
+            focused.blur();
+        }
         window.scrollTo(0, 0);
     }
 

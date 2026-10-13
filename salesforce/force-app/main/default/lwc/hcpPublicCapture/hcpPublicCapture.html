@@ -44,16 +44,16 @@
                         <div class="f2">
                             <div>
                                 <label class="l" for="firstName">First name <i>*</i></label>
-                                <input id="firstName" class={cls.firstName} data-field="firstName" value={form.firstName} oninput={handleInput} autocomplete="given-name" maxlength="80" />
+                                <input id="firstName" class={cls.firstName} data-field="firstName" value={form.firstName} oninput={handleInput} autocomplete={ac.firstName} spellcheck="false" maxlength="80" />
                             </div>
                             <div>
                                 <label class="l" for="lastName">Last name <i>*</i></label>
-                                <input id="lastName" class={cls.lastName} data-field="lastName" value={form.lastName} oninput={handleInput} autocomplete="family-name" maxlength="80" />
+                                <input id="lastName" class={cls.lastName} data-field="lastName" value={form.lastName} oninput={handleInput} autocomplete={ac.lastName} spellcheck="false" maxlength="80" />
                             </div>
                         </div>
                         <div>
                             <label class="l" for="email">Work email <i>*</i></label>
-                            <input id="email" type="email" class={cls.email} data-field="email" value={form.email} oninput={handleInput} placeholder="name@hospital.it" autocomplete="email" maxlength="80" />
+                            <input id="email" type="email" class={cls.email} data-field="email" value={form.email} oninput={handleInput} placeholder="name@hospital.it" autocomplete={ac.email} autocapitalize="off" spellcheck="false" maxlength="80" />
                         </div>
                         <div>
                             <label class="l" for="specialty">Specialty <i>*</i></label>
@@ -66,11 +66,11 @@
                         </div>
                         <div>
                             <label class="l" for="city">City of practice <i>*</i></label>
-                            <input id="city" class={cls.city} data-field="city" value={form.city} oninput={handleInput} maxlength="80" />
+                            <input id="city" class={cls.city} data-field="city" value={form.city} oninput={handleInput} autocomplete={ac.city} maxlength="80" />
                         </div>
                         <div>
                             <label class="l" for="reg">Registration number (optional)</label>
-                            <input id="reg" class="in" data-field="registrationNumber" value={form.registrationNumber} oninput={handleInput} placeholder="e.g. MI-20418" maxlength="30" />
+                            <input id="reg" class="in" data-field="registrationNumber" value={form.registrationNumber} oninput={handleInput} autocomplete={ac.other} placeholder="e.g. MI-20418" maxlength="30" />
                         </div>
                         <!-- honeypot: hidden from humans, bots fill it -->
                         <div class="hp" aria-hidden="true">
@@ -84,8 +84,28 @@
                             <input type="checkbox" data-field="consent" checked={form.consent} onchange={handleInput} />
                             <span>{ctx.consentText}</span>
                         </label>
-                        <small>Consent text {ctx.consentVersion} · no signature needed</small>
+                        <small>Consent text {ctx.consentVersion} · {consentNote}</small>
                     </div>
+                    <template lwc:if={isKiosk}>
+                        <div class="method" role="radiogroup" aria-label="How do you want to confirm your consent?">
+                            <p class="l">How do you want to confirm your consent?</p>
+                            <div class="mopts">
+                                <button type="button" role="radio" class={emailOptClass} aria-checked={isEmailMethodLabel} data-method="email" onclick={handleMethod}>
+                                    <b>Confirm by email</b>
+                                    <span>We send you a link – tap Confirm in the email</span>
+                                </button>
+                                <button type="button" role="radio" class={signOptClass} aria-checked={isSignMethodLabel} data-method="sign" onclick={handleMethod}>
+                                    <b>Sign here on the tablet</b>
+                                    <span>Consent recorded now – a copy is emailed to you</span>
+                                </button>
+                            </div>
+                            <template lwc:if={isSignMethod}>
+                                <div class={sigClass}>
+                                    <c-signature-pad onsigned={handleSigned} oncleared={handleCleared}></c-signature-pad>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                     <label class="chk">
                         <input type="checkbox" data-field="sendSlides" checked={form.sendSlides} onchange={handleInput} />
                         <span><b>Send me the slides by email</b></span>
@@ -106,7 +126,12 @@
                         <div class="big-check">✓</div>
                         <template lwc:if={isKiosk}>
                             <h3 class="kthanks">Thank you, {thanksName}!</h3>
-                            <p class="klead">Check your inbox: tap <b>Confirm</b> in our email to receive the slides.</p>
+                            <template lwc:if={thanksSigned}>
+                                <p class="klead">Your consent is recorded. {thanksCopyText}</p>
+                            </template>
+                            <template lwc:else>
+                                <p class="klead">Check your inbox: tap <b>Confirm</b> in our email to receive the slides.</p>
+                            </template>
                             <div class="cd">Next visitor in <b>{countdown}</b> s – the form resets automatically</div>
                             <button type="button" class="btn block narrow" onclick={resetKiosk}>Reset now</button>
                         </template>
