@@ -38,7 +38,9 @@
     <label>HCP Consent Hub</label>
     <navType>Standard</navType>
     <tabs>Capture__c</tabs>
+    <tabs>Matching_Workbench</tabs>
     <tabs>standard-Contact</tabs>
+    <tabs>standard-Account</tabs>
     <tabs>Consent__c</tabs>
     <tabs>Event__c</tabs>
     <tabs>Capture_Dashboard</tabs>

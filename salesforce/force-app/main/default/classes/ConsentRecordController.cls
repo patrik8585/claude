@@ -126,6 +126,9 @@ public without sharing class ConsentRecordController {
         public Boolean signatureOk;
         @AuraEnabled
         public String message;
+        /** Contact Id the evidence was recorded with, when it was later merged into this consent's HCP. */
+        @AuraEnabled
+        public String mergedFrom;
     }
 
     /**
@@ -157,7 +160,30 @@ public without sharing class ConsentRecordController {
             notes.add('No evidence hash on this record (created before evidence hashing).');
         } else {
             r.recordOk = ConsentService.evidenceHash(k) == k.Evidence_Hash__c;
-            notes.add(r.recordOk ? 'Record evidence intact.' : 'Record evidence does NOT match its hash (data changed, e.g. HCP merge).');
+            if (r.recordOk) {
+                notes.add('Record evidence intact.');
+            } else {
+                // after an HCP merge the consent belongs to the surviving HCP: retry with the Contact Ids it absorbed
+                Map<String, HCP_Merge__c> merged = HcpMergeService.verificationContactIds(k.Contact__c);
+                for (String originalId : merged.keySet()) {
+                    Consent__c probe = k.clone(false, true, false, false);
+                    probe.Contact__c = Id.valueOf(originalId);
+                    if (ConsentService.evidenceHash(probe) == k.Evidence_Hash__c) {
+                        HCP_Merge__c m = merged.get(originalId);
+                        r.recordOk = true;
+                        r.mergedFrom = originalId;
+                        notes.add(
+                            'Record evidence intact. It was recorded for HCP ' + (m.Merged_Contact_Name__c == null ? '' : m.Merged_Contact_Name__c + ' ') +
+                            '(' + originalId + '), merged into this HCP on ' + (m.Merged_At__c == null ? '?' : m.Merged_At__c.format('d MMM yyyy HH:mm')) +
+                            ' by ' + (m.Merged_By__r == null ? '?' : m.Merged_By__r.Name) + ' (' + m.Name + ').'
+                        );
+                        break;
+                    }
+                }
+                if (!r.recordOk) {
+                    notes.add('Record evidence does NOT match its hash, also not for any HCP merged into this one: the evidence data was changed.');
+                }
+            }
         }
         if (k.Signature_Captured__c) {
             r.signatureOk = false;

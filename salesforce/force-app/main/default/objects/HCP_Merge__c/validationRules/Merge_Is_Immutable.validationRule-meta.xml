@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Merge_Is_Immutable</fullName>
+    <active>true</active>
+    <description>The merge audit cannot be changed after creation. The Surviving HCP lookup is excluded (a later merge of that HCP moves it); the JSON long-text fields are read-only for every permission set and only written by Apex.</description>
+    <errorConditionFormula>AND(
+    NOT(ISNEW()),
+    OR(
+        ISCHANGED(Master_Contact_Id__c),
+        ISCHANGED(Merged_Contact_Id__c),
+        ISCHANGED(Merged_Contact_Name__c),
+        ISCHANGED(Related_Summary__c),
+        ISCHANGED(Merged_By__c),
+        ISCHANGED(Merged_At__c)
+    )
+)</errorConditionFormula>
+    <errorMessage>The merge audit record cannot be changed.</errorMessage>
+</ValidationRule>
