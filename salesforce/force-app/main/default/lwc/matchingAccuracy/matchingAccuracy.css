@@ -1,0 +1,121 @@
+:host {
+    display: block;
+    font-size: 13px;
+    --line: #dddbda;
+    --mute: #706e6b;
+}
+h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 16px 0 6px;
+}
+.bar {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+.grow {
+    flex: 1;
+}
+.muted {
+    color: var(--mute);
+}
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+}
+.kpi {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+    background: #fff;
+}
+.kpi span {
+    display: block;
+    font-size: 11px;
+    color: var(--mute);
+    text-transform: uppercase;
+}
+.kpi b {
+    display: block;
+    font-size: 24px;
+    margin: 2px 0;
+}
+.kpi small {
+    color: var(--mute);
+}
+.scroll {
+    overflow-x: auto;
+}
+.grid {
+    width: 100%;
+    border-collapse: collapse;
+}
+.grid th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--mute);
+    border-bottom: 1px solid var(--line);
+    padding: 6px;
+}
+.grid td {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 6px;
+}
+.grid tr.off td {
+    background: #fff7e6;
+}
+.num {
+    text-align: right;
+}
+.problems {
+    margin: 0 0 0 18px;
+    padding: 0;
+    list-style: disc;
+}
+.empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--mute);
+}
+.acts {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.warn-text {
+    color: #8c4b02;
+}
+.btn {
+    border: 1px solid #c9c9c9;
+    background: #fff;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.btn.brand {
+    background: #0176d3;
+    border-color: #0176d3;
+    color: #fff;
+}
+.btn.danger {
+    background: #ba0517;
+    border-color: #ba0517;
+    color: #fff;
+}
+.btn:disabled {
+    opacity: 0.5;
+}
+.alert.err {
+    background: #feded8;
+    color: #ba0517;
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
