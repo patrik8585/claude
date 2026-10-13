@@ -69,7 +69,7 @@ salesforce/
 | `HcpMatchEngine` | Deterministic comparison of two HCP profiles: name (identical / swapped / typo / surname), email and domain, registration number, hospital / department, specialty, city; flags and score explanation |
 | `HcoDirectory` | Hospitals and departments cache; resolves a hospital from free text (name, aliases) or email domain |
 | `AffiliationService` + `HcpAffiliationTrigger` | One primary affiliation per HCP; `Contact.AccountId` = primary HCO; unique affiliation key |
-| `VolumeTestData` | Test only. Batch: ~30 hospitals, ~1,000 HCPs with hard cases, 150 test captures with expected outcomes; cleanup |
+| `VolumeTestData` | Test only. Batch: hospitals, HCPs with hard cases and test captures with expected outcomes, in two sizes (DEV ~260 HCPs / FULL ~1,000 HCPs); cleanup |
 | `MatchingAccuracyController` | Accuracy KPIs on the test captures; starts the generator |
 | `DuplicateScanJob` | Batch: proposes duplicate HCP pairs with the matching engine |
 | `HcpMergeService` | HCP merge (`Database.merge`) with audit record; evidence lookup after merges |
@@ -144,7 +144,7 @@ To see test results with coverage: `sf apex run test --test-level RunLocalTests 
 Re-run `01-configure.apex` after creating the public site, with its real URL. Use `scripts/apex/event-ids.apex` to print the QR and kiosk URLs for each event.
 To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --target-org dev-consent`, then run `03` again.
 **Org already loaded before phase 4**: the mockup HCPs were created without hospitals and departments. Run `99-reset-sample-data.apex` and then `03-sample-data.apex` once after the phase 4 deploy (the reset never touches volume test data).
-Volume data: `07-regenerate-test-captures.apex` re-creates only the 150 test captures (after changing matching parameters); `98-cleanup-volume-data.apex` deletes all of it.
+Volume data: `07-regenerate-test-captures.apex` re-creates only the test captures (after changing matching parameters); `98-cleanup-volume-data.apex` deletes all of it.
 
 ## 4. Manual setup in the UI (cannot be deployed reliably as metadata)
 
@@ -226,7 +226,7 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 - [ ] Mockup capture of Maria Bianchi: Hospital = Gaslini Institute (resolved from "Gaslini"), confidence High; the comparison table has the rows *Hospital / department* and *Why this score*.
 - [ ] Rep page: search `Rinaldi` → the card shows hospital, department and "Also works in". Walk-in: type `gasl` in Hospital → pick *Gaslini Institute* → the Department list appears; save → the capture has Hospital and Department.
 - [ ] Tab **Matching & Duplicates** › *Review queue*: tick 2 captures → **Match to recommended** → Confirm → they leave the queue. Click a capture name → the side-by-side review opens below.
-- [ ] *Accuracy*: 150 test captures, auto-match precision, review rate, false new-HCP rate, table by test case, duplicate recall. Change a weight in Setup › Custom Metadata Types › Matching Setting › Default, click **Regenerate test captures only**, wait about a minute, **Refresh**: the figures change.
+- [ ] *Accuracy*: 59 test captures (DEV; 150 with FULL), auto-match precision, review rate, false new-HCP rate, table by test case, duplicate recall. Change a weight in Setup › Custom Metadata Types › Matching Setting › Default, click **Regenerate test captures only**, wait about a minute, **Refresh**: the figures change.
 - [ ] *Duplicate HCPs*: pairs with score ≥ 50, filters hospital / department. Open a pair → choose the survivor and per-field values → **Merge…** → **Confirm**. *Merge history* shows who, when and the moved records. Open a consent of the merged HCP → **Verify evidence** says "intact … merged into this HCP on …".
 - [ ] Mark another pair **Not a duplicate** → run the scan again → the pair stays under *Not a duplicate*.
 - [ ] Dictation on Chrome (desktop or Android): tap 🎤, speak, pause a few seconds: dictation continues and shows the interim text; the IT/EN chip switches language. Block the microphone in the site settings → a message explains how to allow it or use the keyboard microphone.
@@ -263,7 +263,7 @@ Functional and platform limits:
 - **Territory** is a plain text field used only to order the rep search (own territory first); it does not restrict visibility.
 - **Gigya**: only a status field and timeline. "Simulate sync" is a demo stand-in for the real integration.
 - **Dictation** uses the browser Web Speech API (Chrome / Edge / Android / Safari) with auto-restart after pauses, interim text, an IT/EN language switch and explicit microphone-permission messages. Firefox and some in-app browsers have no Web Speech API: the page then asks to use the keyboard microphone. Not verified inside the Salesforce mobile app (its WebView may not expose the API) nor in every LWR + Lightning Web Security combination; the keyboard fallback always works.
-- **Matching transactions**: the platform-event subscriber processes at most 50 captures per transaction (`PlatformEventSubscriberConfig`), to stay within limits at congress peaks and for the 150 test captures.
+- **Matching transactions**: the platform-event subscriber processes at most 50 captures per transaction (`PlatformEventSubscriberConfig`), to stay within limits at congress peaks and for the test captures.
 - The **slides** are a URL on the event (`Slides_Url__c`), shown after confirmation; no file is emailed.
 - **Kiosk**: the device must stay on the page. Use the browser or OS kiosk / guided-access mode. Browsers may ignore `autocomplete="off"` for saved address profiles: on the kiosk tablet also turn off autofill (Chrome: Settings › Autofill › Addresses and Payment methods off; iPad Safari: Settings › Safari › AutoFill off) or use a guest / private profile, so no visitor data stays on the device.
 - **Kiosk signature** is stored by the guest user: the file's owner is the site guest user and it is shared through the capture (and the consent after matching). Its owner cannot be changed afterwards.
@@ -328,7 +328,16 @@ Setup › Custom Metadata Types › **Matching Setting** › Manage Records › 
 
 ## 11. Volume test data and accuracy
 
-`VolumeTestData` (Batch Apex, one step per transaction, fixed random seed, so every run creates the same data):
+`VolumeTestData` (Batch Apex, one step per transaction, fixed random seed, so every run creates the same data).
+
+**Two sizes.** A Developer Edition has **5 MB of data storage** and Salesforce counts about 2 KB per record whatever its content, so the full set (~3,500 records with affiliations and capture candidates, about 7 MB) does not fit: it pushed the org to 145%, and an org over its limit refuses new records.
+
+| Size | How | Hospitals | Departments | HCPs | Duplicates | Namesakes | Test captures | Storage |
+|---|---|---|---|---|---|---|---|---|
+| **DEV** (default) | `05-volume-data.apex` = `VolumeTestData.generate()` | 10 (every third of the list) | ~55 | ~260 | 15 | 10 | 59 | ~2 MB |
+| **FULL** | `VolumeTestData.generate('FULL')` (sandbox) | 30 | ~170 | ~1,000 | 30 | 25 | 150 | ~7 MB |
+
+The cleanup empties the deleted test records from the Recycle Bin. `regenerateCaptures()` detects the size from the hospitals in the org. The numbers below are for FULL; DEV keeps every hard case and every test case with fewer records.
 - 30 Italian hospitals (fictitious `-example.it` domains; two share the name "Ospedale Santa Maria della Misericordia", in Udine and Perugia), each with 3–8 departments; ~1,000 HCPs with Italian names (some with accents or apostrophes), the specialty of their department, city, registration number (85%), OneKey ID, institutional (65%) / personal (20%) / no email, ~10% in 2 departments.
 - Hard cases: 25 namesakes in other cities and 30 **real duplicates** (same email with the accent dropped; personal email and registration number typed differently; swapped names; surname typo; moved to another hospital), marked with `Contact.Test_Duplicate_Of__c`.
 - 150 test captures (event "Matching accuracy test set (synthetic)", inactive) in 14 test cases with `Expected_Outcome__c` / `Expected_Contact__c` / `Test_Case__c`: exact email, registration number in another format, personal email + hospital, surname typo, accent variant, swapped names, namesake, really new HCP, new HCP with an existing surname, email of a duplicate record, email shared by duplicates, new address at the same institution, email/registration conflict, typo without hospital.

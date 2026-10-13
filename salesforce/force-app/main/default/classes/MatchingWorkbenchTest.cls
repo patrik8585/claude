@@ -5,6 +5,24 @@ private class MatchingWorkbenchTest {
     }
 
     @IsTest
+    static void devSizeFitsADeveloperEdition() {
+        VolumeTestData.small = false;
+        VolumeTestData.size = VolumeTestData.SIZE_DEV;
+        VolumeTestData.Plan plan = new VolumeTestData.Plan();
+        Assert.areEqual(10, plan.hospitals.size(), 'every third hospital');
+        Assert.areEqual(15, plan.duplicates.size(), 'DEV duplicates');
+        Assert.areEqual(59, plan.captures.size(), 'DEV test captures');
+        Assert.isTrue(plan.hcps.size() > 150 && plan.hcps.size() < 400, 'about 260 HCPs: ' + plan.hcps.size());
+        Integer departments = 0;
+        for (VolumeTestData.HospitalSpec h : plan.hospitals) {
+            departments += h.departments.size();
+        }
+        // HCP + ~1.1 affiliations each, accounts, captures with ~4 candidates each: well under 5 MB at 2 KB per record
+        Integer records = plan.hcps.size() * 2 + plan.duplicates.size() * 2 + plan.hospitals.size() + departments + plan.captures.size() * 6;
+        Assert.isTrue(records < 1300, 'about 2.5 MB at most: ' + records + ' records');
+    }
+
+    @IsTest
     static void volumeDataAndAccuracy() {
         ConsentTestFactory.settings();
         System.runAs(admin()) {

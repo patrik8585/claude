@@ -1,8 +1,10 @@
 /**
  * TEST ONLY - realistic volume data to measure matching accuracy and test the duplicate workbench.
  *
- *   VolumeTestData.generate();            // cleanup + ~30 hospitals, ~170 departments, ~1,000 HCPs, 150 test captures
- *   VolumeTestData.regenerateCaptures();  // only the 150 test captures (e.g. after changing Matching_Setting__mdt)
+ *   VolumeTestData.generate();            // DEV size (fits the 5 MB of a Developer Edition):
+ *                                         //   cleanup + 10 hospitals, ~55 departments, ~260 HCPs, 59 test captures
+ *   VolumeTestData.generate('FULL');      // sandbox size: 30 hospitals, ~170 departments, ~1,000 HCPs, 150 test captures (~7 MB)
+ *   VolumeTestData.regenerateCaptures();  // only the test captures (e.g. after changing Matching_Setting__mdt)
  *   VolumeTestData.cleanup();             // deletes everything the generator created
  *
  * Runs as Batch Apex, one step per execute() (fresh governor limits per step). The data set is
@@ -26,18 +28,37 @@ public without sharing class VolumeTestData implements Database.Batchable<String
     public static final String OUT_REVIEW = 'Review';
     public static final String OUT_NEW = 'New HCP';
 
+    /** Developer Edition size: about 2 MB of data storage (each record counts about 2 KB). */
+    public static final String SIZE_DEV = 'DEV';
+    /** Full size, about 7 MB: needs a sandbox or an org with more than 5 MB of data storage. */
+    public static final String SIZE_FULL = 'FULL';
+
     private List<String> steps;
+    /** Kept on the batch instance: static variables do not survive between execute() calls. */
+    private String runSize = SIZE_DEV;
 
     /** Test hook: a much smaller data set (6 hospitals, 1 capture per test case) so unit tests stay within limits. */
     public static Boolean small = false;
+    /** Data set size used by Plan: SIZE_DEV or SIZE_FULL (ignored when small = true). */
+    public static String size = SIZE_DEV;
 
     public VolumeTestData(List<String> steps) {
         this.steps = steps;
     }
 
+    public VolumeTestData(List<String> steps, String runSize) {
+        this.steps = steps;
+        this.runSize = runSize == SIZE_FULL ? SIZE_FULL : SIZE_DEV;
+    }
+
     // ------------------------------------------------------------ public API
 
     public static Id generate() {
+        return generate(SIZE_DEV);
+    }
+
+    public static Id generate(String requestedSize) {
+        size = requestedSize == SIZE_FULL ? SIZE_FULL : SIZE_DEV;
         Plan p = new Plan();
         List<String> s = new List<String>{ 'CLEAN_CAPTURES', 'CLEAN_CONTACTS', 'CLEAN_ACCOUNTS', 'HOSPITALS' };
         Integer chunks = (p.hcps.size() + HCP_CHUNK - 1) / HCP_CHUNK;
@@ -46,11 +67,14 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         }
         s.add('DUPLICATES');
         s.add('CAPTURES');
-        return Database.executeBatch(new VolumeTestData(s), 1);
+        return Database.executeBatch(new VolumeTestData(s, size), 1);
     }
 
+    /** Recreates the test captures for the data set in the org (its size is detected from the hospital count). */
     public static Id regenerateCaptures() {
-        return Database.executeBatch(new VolumeTestData(new List<String>{ 'CLEAN_CAPTURES', 'CAPTURES' }), 1);
+        Integer hospitalCount = [SELECT COUNT() FROM Account WHERE Test_Data_Set__c = :DATA_SET AND ParentId = NULL];
+        String detected = hospitalCount > 10 ? SIZE_FULL : SIZE_DEV;
+        return Database.executeBatch(new VolumeTestData(new List<String>{ 'CLEAN_CAPTURES', 'CAPTURES' }, detected), 1);
     }
 
     public static Id cleanup() {
@@ -64,6 +88,7 @@ public without sharing class VolumeTestData implements Database.Batchable<String
     }
 
     public void execute(Database.BatchableContext bc, List<String> scope) {
+        size = runSize;
         for (String step : scope) {
             runStep(step);
         }
@@ -105,10 +130,12 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         delete [SELECT Id FROM Consent__c WHERE Source_Capture__c IN :caps];
         delete [SELECT Id FROM Task WHERE WhatId IN :caps];
         delete caps;
+        purge(caps);
         // HCPs created from test captures
         List<Contact> created = [SELECT Id FROM Contact WHERE Test_Data_Set__c = :CAPTURE_SET LIMIT 5000];
         deletePairsAndMerges(new Map<Id, Contact>(created).keySet());
         delete created;
+        purge(created);
         delete [SELECT Id FROM Event__c WHERE Name = :TEST_EVENT_NAME];
         touched.removeAll(new Map<Id, Contact>(created).keySet());
         ConsentService.refreshContactSummary(touched);
@@ -120,6 +147,19 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         deletePairsAndMerges(ids);
         delete [SELECT Id FROM Consent__c WHERE Contact__c IN :ids];
         delete contacts;
+        purge(contacts);
+    }
+
+    /** Empties the deleted test records from the Recycle Bin so the storage is freed at once. Never throws. */
+    private static void purge(List<SObject> deleted) {
+        if (deleted.isEmpty()) {
+            return;
+        }
+        try {
+            Database.emptyRecycleBin(deleted);
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Recycle Bin not emptied: ' + e.getMessage());
+        }
     }
 
     private static void deletePairsAndMerges(Set<Id> contactIds) {
@@ -132,8 +172,23 @@ public without sharing class VolumeTestData implements Database.Batchable<String
     }
 
     private static void cleanAccounts() {
-        delete [SELECT Id FROM Account WHERE Test_Data_Set__c = :DATA_SET AND ParentId != NULL AND Id NOT IN (SELECT AccountId FROM Contact) LIMIT 5000];
-        Database.delete([SELECT Id FROM Account WHERE Test_Data_Set__c = :DATA_SET AND Id NOT IN (SELECT AccountId FROM Contact) LIMIT 5000], false);
+        List<Account> departments = [
+            SELECT Id
+            FROM Account
+            WHERE Test_Data_Set__c = :DATA_SET AND ParentId != NULL AND Id NOT IN (SELECT AccountId FROM Contact)
+            LIMIT 5000
+        ];
+        delete departments;
+        purge(departments);
+        List<Account> rest = [SELECT Id FROM Account WHERE Test_Data_Set__c = :DATA_SET AND Id NOT IN (SELECT AccountId FROM Contact) LIMIT 5000];
+        List<Account> deleted = new List<Account>();
+        List<Database.DeleteResult> results = Database.delete(rest, false);
+        for (Integer i = 0; i < results.size(); i++) {
+            if (results[i].isSuccess()) {
+                deleted.add(rest[i]);
+            }
+        }
+        purge(deleted);
         HcoDirectory.reset();
     }
 
@@ -386,6 +441,8 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         public List<CaptureSpec> captures = new List<CaptureSpec>();
         private Long state = VolumeTestData.SEED;
         private Boolean small = VolumeTestData.small;
+        /** Developer Edition size (see SIZE_DEV). */
+        private Boolean dev = !VolumeTestData.small && VolumeTestData.size != VolumeTestData.SIZE_FULL;
         private Set<String> usedEmails = new Set<String>();
         private Set<String> usedNames = new Set<String>();
         private Integer emailSeq = 0;
@@ -413,8 +470,14 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         }
 
         private void buildHospitals() {
-            Integer hospitalCount = small ? 6 : VolumeTestData.HOSPITALS.size();
-            for (Integer i = 0; i < hospitalCount; i++) {
+            List<Integer> picked = new List<Integer>();
+            for (Integer i = 0; i < VolumeTestData.HOSPITALS.size(); i++) {
+                // DEV: every third hospital (10, spread across Italy); small: the first 6
+                if ((small && i < 6) || (dev && Math.mod(i, 3) == 0) || (!small && !dev)) {
+                    picked.add(i);
+                }
+            }
+            for (Integer i : picked) {
                 List<String> row = VolumeTestData.HOSPITALS[i];
                 HospitalSpec h = new HospitalSpec();
                 h.name = row[0];
@@ -440,7 +503,7 @@ public without sharing class VolumeTestData implements Database.Batchable<String
             for (Integer hi = 0; hi < hospitals.size(); hi++) {
                 HospitalSpec h = hospitals[hi];
                 for (Integer di = 0; di < h.departments.size(); di++) {
-                    Integer n = small ? 2 : 4 + rnd(5);
+                    Integer n = small ? 2 : (dev ? 3 + rnd(4) : 4 + rnd(5));
                     for (Integer k = 0; k < n; k++) {
                         HcpSpec s = newHcp(hi, di);
                         String first;
@@ -490,7 +553,7 @@ public without sharing class VolumeTestData implements Database.Batchable<String
 
         private void buildNamesakes() {
             Integer originals = hcps.size();
-            for (Integer k = 0; k < (small ? 4 : 25); k++) {
+            for (Integer k = 0; k < (small ? 4 : (dev ? 10 : 25)); k++) {
                 HcpSpec src = hcps[rnd(originals)];
                 Integer hi = rnd(hospitals.size());
                 if (hospitals[hi].city == hospitals[src.hospital].city) {
@@ -524,14 +587,14 @@ public without sharing class VolumeTestData implements Database.Batchable<String
             }
         }
 
-        /** 30 real duplicates: the same person entered a second time, in 5 different ways. */
+        /** Real duplicates (30, DEV 15): the same person entered a second time, in 5 different ways. */
         private void buildDuplicates() {
             List<String> kinds = new List<String>();
-            addTimes(kinds, 'same-email', small ? 1 : 8);
-            addTimes(kinds, 'personal-email-same-reg', small ? 1 : 8);
-            addTimes(kinds, 'swapped-names', small ? 1 : 5);
-            addTimes(kinds, 'typo-surname', small ? 1 : 5);
-            addTimes(kinds, 'moved-hospital', small ? 1 : 4);
+            addTimes(kinds, 'same-email', small ? 1 : (dev ? 3 : 8));
+            addTimes(kinds, 'personal-email-same-reg', small ? 1 : (dev ? 3 : 8));
+            addTimes(kinds, 'swapped-names', small ? 1 : (dev ? 3 : 5));
+            addTimes(kinds, 'typo-surname', small ? 1 : (dev ? 3 : 5));
+            addTimes(kinds, 'moved-hospital', small ? 1 : (dev ? 3 : 4));
             Set<Integer> used = new Set<Integer>();
             for (String kind : kinds) {
                 HcpSpec src;
@@ -602,6 +665,9 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         private void addCases(String testCase, String outcome, Integer count, Set<Integer> usedSrc) {
             if (small) {
                 count = 1;
+            } else if (dev) {
+                // about 40% of the full set: 59 captures instead of 150
+                count = Math.max(2, (count * 2 + 2) / 5);
             }
             for (Integer k = 0; k < count; k++) {
                 CaptureSpec c = new CaptureSpec();
