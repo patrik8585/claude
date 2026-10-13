@@ -19,6 +19,8 @@ public without sharing class CaptureResolutionService {
                 Specialty__c,
                 City__c,
                 Organisation__c,
+                Hospital__c,
+                Department__c,
                 Registration_Number__c,
                 Registration_Key__c,
                 Channel__c,
@@ -44,7 +46,8 @@ public without sharing class CaptureResolutionService {
                 Match_Rule__c,
                 Matched_Contact__c,
                 Matched_By__c,
-                Consent__c
+                Consent__c,
+                Test_Data_Set__c
             FROM Capture__c
             WHERE Id IN :ids
         ];
@@ -63,58 +66,85 @@ public without sharing class CaptureResolutionService {
 
     // ------------------------------------------------------------ new HCPs
 
-    /** Creates an Account (by organisation name) and a Contact for each capture and sets Matched_Contact__c. */
+    /**
+     * Creates a Contact for each capture and sets Matched_Contact__c.
+     * The Contact's Account is the department (captured, or the hospital department fitting the specialty)
+     * or the hospital, resolved from the captured organisation text / email domain. A primary
+     * HCP_Affiliation__c is created for it. When no hospital is known, the Contact goes under
+     * "HCPs - organisation unknown" (no Hospital Account is created from free text).
+     */
     public static void createContactsFor(List<Capture__c> captures) {
-        Set<String> orgNames = new Set<String>{ CaptureConstants.UNKNOWN_ORGANISATION };
-        for (Capture__c c : captures) {
-            if (String.isNotBlank(c.Organisation__c)) {
-                orgNames.add(c.Organisation__c.trim());
-            }
-        }
-        Map<String, Id> accountByName = new Map<String, Id>();
-        for (Account a : [SELECT Id, Name FROM Account WHERE Name IN :orgNames ORDER BY CreatedDate ASC]) {
-            if (!accountByName.containsKey(a.Name.toLowerCase())) {
-                accountByName.put(a.Name.toLowerCase(), a.Id);
-            }
-        }
+        HcoDirectory dir = HcoDirectory.get();
         Database.DMLOptions dml = allowDuplicates();
-        Map<String, Account> newAccounts = new Map<String, Account>();
+        Id unknownId = null;
+        Map<Id, Id> hcoByCapture = new Map<Id, Id>();
         for (Capture__c c : captures) {
-            String org = String.isBlank(c.Organisation__c) ? CaptureConstants.UNKNOWN_ORGANISATION : c.Organisation__c.trim();
-            if (!accountByName.containsKey(org.toLowerCase()) && !newAccounts.containsKey(org.toLowerCase())) {
-                Account a = new Account(Name = org, OwnerId = c.OwnerId);
-                a.setOptions(dml);
-                newAccounts.put(org.toLowerCase(), a);
+            if (c.Hospital__c == null && c.Department__c != null) {
+                c.Hospital__c = dir.hospitalOf(c.Department__c);
+            }
+            if (c.Hospital__c == null) {
+                c.Hospital__c = dir.resolve(c.Organisation__c, c.Email__c).hospitalId;
+            }
+            if (c.Department__c == null && c.Hospital__c != null) {
+                c.Department__c = dir.departmentFor(c.Hospital__c, c.Specialty__c);
+            }
+            Id hco = c.Department__c != null ? c.Department__c : c.Hospital__c;
+            if (hco != null) {
+                hcoByCapture.put(c.Id, hco);
             }
         }
-        if (!newAccounts.isEmpty()) {
-            insert newAccounts.values();
-            for (String k : newAccounts.keySet()) {
-                accountByName.put(k, newAccounts.get(k).Id);
-            }
+        if (hcoByCapture.size() < captures.size()) {
+            unknownId = unknownOrganisationId(captures[0].OwnerId);
         }
         List<Contact> contacts = new List<Contact>();
         for (Capture__c c : captures) {
-            String org = String.isBlank(c.Organisation__c) ? CaptureConstants.UNKNOWN_ORGANISATION : c.Organisation__c.trim();
+            Id hco = hcoByCapture.get(c.Id);
+            Id hospitalId = dir.hospitalOf(hco);
+            String city = c.City__c;
+            if (String.isBlank(city) && hospitalId != null) {
+                city = dir.hospitals.get(hospitalId).BillingCity;
+            }
             Contact ct = new Contact(
                 FirstName = c.First_Name__c,
                 LastName = String.isBlank(c.Last_Name__c) ? 'Unknown' : c.Last_Name__c,
                 Email = c.Email__c,
                 Specialty__c = c.Specialty__c,
-                MailingCity = c.City__c,
+                MailingCity = city,
                 Registration_Number__c = c.Registration_Number__c,
-                AccountId = accountByName.get(org.toLowerCase()),
+                AccountId = hco == null ? unknownId : hco,
                 OwnerId = c.OwnerId,
                 Territory__c = c.Captured_By__c == null ? null : c.Captured_By__r.Territory__c,
-                Consent_Status__c = CaptureConstants.HCP_NONE
+                Consent_Status__c = CaptureConstants.HCP_NONE,
+                Test_Data_Set__c = c.Test_Data_Set__c
             );
             ct.setOptions(dml);
             contacts.add(ct);
         }
         insert contacts;
+        List<HCP_Affiliation__c> affiliations = new List<HCP_Affiliation__c>();
         for (Integer i = 0; i < captures.size(); i++) {
             captures[i].Matched_Contact__c = contacts[i].Id;
+            Id hco = hcoByCapture.get(captures[i].Id);
+            if (hco != null) {
+                affiliations.add(
+                    new HCP_Affiliation__c(Contact__c = contacts[i].Id, HCO__c = hco, Primary__c = true, Start_Date__c = Date.today())
+                );
+            }
         }
+        if (!affiliations.isEmpty()) {
+            insert affiliations;
+        }
+    }
+
+    private static Id unknownOrganisationId(Id ownerId) {
+        List<Account> rows = [SELECT Id FROM Account WHERE Name = :CaptureConstants.UNKNOWN_ORGANISATION ORDER BY CreatedDate ASC LIMIT 1];
+        if (!rows.isEmpty()) {
+            return rows[0].Id;
+        }
+        Account a = new Account(Name = CaptureConstants.UNKNOWN_ORGANISATION, OwnerId = ownerId);
+        a.setOptions(allowDuplicates());
+        insert a;
+        return a.Id;
     }
 
     public static Database.DMLOptions allowDuplicates() {
@@ -217,6 +247,8 @@ public without sharing class CaptureResolutionService {
                     Id = c.Id,
                     OwnerId = c.OwnerId,
                     Matched_Contact__c = c.Matched_Contact__c,
+                    Hospital__c = c.Hospital__c,
+                    Department__c = c.Department__c,
                     Matching_Status__c = c.Matching_Status__c,
                     Match_Rule__c = c.Match_Rule__c,
                     Matched_By__c = c.Matched_By__c,

@@ -60,6 +60,21 @@ public without sharing class CaptureReviewController {
         public String organisationMatch;
         @AuraEnabled
         public String regMatch;
+        /** Active affiliations, e.g. "Paediatrics - Gaslini Institute (primary)". */
+        @AuraEnabled
+        public String affiliations;
+        /** One line per scoring rule that fired. */
+        @AuraEnabled
+        public List<String> explanation;
+    }
+
+    public class BulkResult {
+        @AuraEnabled
+        public Integer processed;
+        @AuraEnabled
+        public Integer skipped;
+        @AuraEnabled
+        public String message;
     }
 
     private static Boolean isSteward() {
@@ -84,6 +99,10 @@ public without sharing class CaptureReviewController {
                 Specialty__c,
                 City__c,
                 Organisation__c,
+                Hospital__c,
+                Hospital__r.Name,
+                Department__c,
+                Department__r.Name,
                 Registration_Number__c,
                 Channel__c,
                 Event__c,
@@ -139,7 +158,8 @@ public without sharing class CaptureReviewController {
                 Specialty_Match__c,
                 City_Match__c,
                 Organisation_Match__c,
-                Reg_Number_Match__c
+                Reg_Number_Match__c,
+                Score_Explanation__c
             FROM Capture_Candidate__c
             WHERE Capture__c = :captureId AND Contact__c != NULL
             ORDER BY Rank__c ASC
@@ -161,7 +181,12 @@ public without sharing class CaptureReviewController {
             x.cityMatch = cc.City_Match__c;
             x.organisationMatch = cc.Organisation_Match__c;
             x.regMatch = cc.Reg_Number_Match__c;
+            x.explanation = String.isBlank(cc.Score_Explanation__c) ? new List<String>() : cc.Score_Explanation__c.split('\n');
             d.candidates.add(x);
+        }
+        Map<Id, String> aff = affiliationLabels(candidateContactIds(d.candidates));
+        for (Candidate x : d.candidates) {
+            x.affiliations = aff.get(x.contactId);
         }
         if (c.Matched_Contact__c != null) {
             Contact m = [SELECT Name FROM Contact WHERE Id = :c.Matched_Contact__c];
@@ -233,6 +258,126 @@ public without sharing class CaptureReviewController {
             Processing_Error__c = null
         );
         CaptureMatchingService.processCaptures(new Set<Id>{ c.Id });
+    }
+
+    private static Set<Id> candidateContactIds(List<Candidate> candidates) {
+        Set<Id> ids = new Set<Id>();
+        for (Candidate x : candidates) {
+            ids.add(x.contactId);
+        }
+        return ids;
+    }
+
+    /** "Paediatrics - Gaslini Institute (primary); Neonatology - Gaslini Institute" per Contact. */
+    public static Map<Id, String> affiliationLabels(Set<Id> contactIds) {
+        Map<Id, List<String>> parts = new Map<Id, List<String>>();
+        HcoDirectory dir = HcoDirectory.get();
+        for (HCP_Affiliation__c a : [
+            SELECT Contact__c, HCO__c, HCO__r.Name, Primary__c, Role__c
+            FROM HCP_Affiliation__c
+            WHERE Contact__c IN :contactIds AND Active__c = TRUE
+            ORDER BY Primary__c DESC, CreatedDate ASC
+        ]) {
+            if (!parts.containsKey(a.Contact__c)) {
+                parts.put(a.Contact__c, new List<String>());
+            }
+            String label = dir.label(a.HCO__c);
+            parts.get(a.Contact__c).add((label == null ? a.HCO__r.Name : label) + (a.Primary__c ? ' (primary)' : ''));
+        }
+        Map<Id, String> out = new Map<Id, String>();
+        for (Id cid : parts.keySet()) {
+            out.put(cid, String.join(parts.get(cid), '; '));
+        }
+        return out;
+    }
+
+    /**
+     * Bulk actions from the Matching & Duplicates workbench.
+     * action: 'recommended' (match each capture to its recommended candidate) | 'new' (create new HCPs) | 'discard'.
+     * Captures no longer waiting for review are skipped.
+     */
+    @AuraEnabled
+    public static BulkResult bulkResolve(List<Id> captureIds, String action) {
+        checkSteward();
+        if (captureIds == null || captureIds.isEmpty()) {
+            throw new AuraHandledException('Select at least one capture.');
+        }
+        if (captureIds.size() > 50) {
+            throw new AuraHandledException('Select at most 50 captures at a time.');
+        }
+        List<Capture__c> open = new List<Capture__c>();
+        for (Capture__c c : CaptureResolutionService.loadCaptures(new Set<Id>(captureIds))) {
+            if (c.Matching_Status__c == CaptureConstants.MATCH_REVIEW) {
+                open.add(c);
+            }
+        }
+        BulkResult r = new BulkResult();
+        r.skipped = captureIds.size() - open.size();
+        r.processed = 0;
+        if (open.isEmpty()) {
+            r.message = 'Nothing to do: the selected captures are no longer waiting for review.';
+            return r;
+        }
+        Datetime now = System.now();
+        List<Capture__c> stamps = new List<Capture__c>();
+        if (action == 'recommended') {
+            Map<Id, Id> recommended = new Map<Id, Id>();
+            for (Capture_Candidate__c cc : [
+                SELECT Capture__c, Contact__c
+                FROM Capture_Candidate__c
+                WHERE Capture__c IN :open AND Recommended__c = TRUE AND Contact__c != NULL
+            ]) {
+                recommended.put(cc.Capture__c, cc.Contact__c);
+            }
+            List<Capture__c> matched = new List<Capture__c>();
+            for (Capture__c c : open) {
+                Id contactId = recommended.get(c.Id);
+                if (contactId == null) {
+                    r.skipped++;
+                    continue;
+                }
+                c.Matched_Contact__c = contactId;
+                c.Matching_Status__c = CaptureConstants.MATCH_REVIEWED;
+                c.Match_Rule__c = 'Manual review (bulk - recommended candidate)';
+                c.Matched_By__c = 'Data steward - ' + UserInfo.getName() + ' (bulk review, recommended candidate)';
+                matched.add(c);
+                stamps.add(new Capture__c(Id = c.Id, Reviewed_By__c = UserInfo.getUserId(), Reviewed_At__c = now));
+            }
+            update stamps;
+            if (!matched.isEmpty()) {
+                CaptureResolutionService.complete(matched);
+            }
+            r.processed = matched.size();
+        } else if (action == 'new') {
+            for (Capture__c c : open) {
+                c.Matching_Status__c = CaptureConstants.MATCH_REVIEWED_NEW;
+                c.Match_Rule__c = 'Manual review - new HCP (bulk)';
+                c.Matched_By__c = 'Data steward - ' + UserInfo.getName() + ' (new HCP created, bulk)';
+                stamps.add(new Capture__c(Id = c.Id, Reviewed_By__c = UserInfo.getUserId(), Reviewed_At__c = now));
+            }
+            update stamps;
+            CaptureResolutionService.createContactsFor(open);
+            CaptureResolutionService.complete(open);
+            r.processed = open.size();
+        } else if (action == 'discard') {
+            for (Capture__c c : open) {
+                stamps.add(
+                    new Capture__c(
+                        Id = c.Id,
+                        Matching_Status__c = CaptureConstants.MATCH_DISCARDED,
+                        Processing_Stage__c = CaptureConstants.STAGE_DISCARDED,
+                        Reviewed_By__c = UserInfo.getUserId(),
+                        Reviewed_At__c = now
+                    )
+                );
+            }
+            update stamps;
+            r.processed = open.size();
+        } else {
+            throw new AuraHandledException('Unknown action.');
+        }
+        r.message = r.processed + (r.processed == 1 ? ' capture' : ' captures') + ' resolved' + (r.skipped > 0 ? ', ' + r.skipped + ' skipped' : '') + '.';
+        return r;
     }
 
     private static Capture__c lockForReview(Id captureId) {

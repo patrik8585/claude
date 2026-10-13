@@ -25,17 +25,41 @@ const FLAG_MARK = { Exact: ' ✓', Partial: ' ≈' };
  * side-by-side candidate comparison and Match / Create new HCP / Discard.
  */
 export default class CaptureReview extends LightningElement {
-    @api recordId;
+    _recordId;
+    connected = false;
     data;
     error;
     busy = false;
     selectedId;
 
+    /** Record page Id, or the capture chosen in the Matching & Duplicates workbench (reloads on change). */
+    @api
+    get recordId() {
+        return this._recordId;
+    }
+    set recordId(value) {
+        const changed = value !== this._recordId;
+        this._recordId = value;
+        if (changed && this.connected) {
+            this.selectedId = undefined;
+            this.data = undefined;
+            this.load();
+        }
+    }
+
     connectedCallback() {
+        this.connected = true;
         this.load();
     }
 
+    disconnectedCallback() {
+        this.connected = false;
+    }
+
     async load() {
+        if (!this._recordId) {
+            return;
+        }
         try {
             this.data = await getReviewData({ captureId: this.recordId });
             const rec = this.data.candidates.find((c) => c.recommended);
@@ -127,18 +151,43 @@ export default class CaptureReview extends LightningElement {
             ['Email', c.Email__c, 'email', 'emailMatch'],
             ['Specialty', c.Specialty__c, 'specialty', 'specialtyMatch'],
             ['City', c.City__c, 'city', 'cityMatch'],
-            ['Organisation', c.Organisation__c, 'organisation', 'organisationMatch'],
-            ['Reg. number', c.Registration_Number__c, 'registrationNumber', 'regMatch']
+            ['Hospital / department', this.capturedHco, 'affiliations', 'organisationMatch'],
+            ['Reg. number', c.Registration_Number__c, 'registrationNumber', 'regMatch'],
+            ['Why this score', '', 'explanationText', null]
         ];
         return defs.map(([label, captured, field, flagField]) => ({
             label,
             captured: captured || '—',
             cells: this.data.candidates.map((x) => ({
                 key: `${x.contactId}-${field}`,
-                value: (x[field] || '—') + (FLAG_MARK[x[flagField]] || ''),
-                cls: FLAG_CLASS[x[flagField]] || ''
+                value: (this.cellValue(x, field) || '—') + (flagField ? FLAG_MARK[x[flagField]] || '' : ''),
+                cls: (flagField ? FLAG_CLASS[x[flagField]] || '' : 'why')
             }))
         }));
+    }
+
+    cellValue(x, field) {
+        if (field === 'explanationText') {
+            return (x.explanation || []).join('\n');
+        }
+        if (field === 'affiliations') {
+            return x.affiliations || x.organisation;
+        }
+        return x[field];
+    }
+
+    get capturedHco() {
+        const c = this.capture;
+        const parts = [];
+        if (c.Department__r) {
+            parts.push(c.Department__r.Name);
+        } else if (c.Hospital__r) {
+            parts.push(c.Hospital__r.Name);
+        }
+        if (c.Organisation__c && !parts.some((p) => p.includes(c.Organisation__c))) {
+            parts.push(`"${c.Organisation__c}"`);
+        }
+        return parts.join(' · ');
     }
 
     get selectedCandidate() {
@@ -234,6 +283,7 @@ export default class CaptureReview extends LightningElement {
             await action();
             await this.load();
             await notifyRecordUpdateAvailable([{ recordId: this.recordId }]);
+            this.dispatchEvent(new CustomEvent('resolved', { detail: { captureId: this.recordId } }));
         } catch (e) {
             this.error = this.msg(e);
         } finally {

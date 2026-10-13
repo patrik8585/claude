@@ -62,14 +62,22 @@ private class CaptureMatchingServiceTest {
         Assert.areEqual(CaptureConstants.STAGE_TO_REVIEW, r3.Processing_Stage__c);
         Assert.areEqual(3, r3.Candidate_Count__c);
         Assert.isNull(r3.Consent__c);
-        Assert.isTrue(r3.Suggestion__c.startsWith('Recommended: Dr. Maria Bianchi - same surname, city and specialty'), r3.Suggestion__c);
-        Assert.areEqual('High', r3.Suggestion_Confidence__c);
+        Assert.isTrue(r3.Suggestion__c.startsWith('Recommended: Dr. Maria Bianchi - same full name, city and specialty'), r3.Suggestion__c);
+        Assert.areEqual('Medium', r3.Suggestion_Confidence__c, 'score 50 is below the high-confidence score 60');
         Capture_Candidate__c top = [
-            SELECT Score__c, Contact__r.MailingCity, Name_Match__c, Organisation_Match__c, Email_Match__c
+            SELECT Score__c, Contact__r.MailingCity, Name_Match__c, Organisation_Match__c, Email_Match__c, Score_Explanation__c
             FROM Capture_Candidate__c
             WHERE Capture__c = :namesake.Id AND Recommended__c = TRUE
         ];
-        Assert.areEqual(60, top.Score__c);
+        Assert.areEqual(50, top.Score__c, top.Score_Explanation__c);
+        Assert.isTrue(top.Score_Explanation__c.contains('+30 full name identical'), top.Score_Explanation__c);
+        Capture_Candidate__c marta = [
+            SELECT Score__c, Name_Match__c
+            FROM Capture_Candidate__c
+            WHERE Capture__c = :namesake.Id AND Contact__r.FirstName = 'Marta'
+        ];
+        Assert.areEqual(CaptureConstants.FLAG_PARTIAL, marta.Name_Match__c, 'Marta vs Maria: one letter apart');
+        Assert.areEqual(40, marta.Score__c);
         Assert.areEqual('Genoa', top.Contact__r.MailingCity);
         Assert.areEqual(CaptureConstants.FLAG_EXACT, top.Name_Match__c);
         Assert.areEqual(CaptureConstants.FLAG_NONE, top.Email_Match__c);

@@ -308,3 +308,10 @@
     background: var(--err-bg);
     color: var(--err);
 }
+
+td.why {
+    white-space: pre-line;
+    font-size: 11px;
+    color: #3e3e3c;
+    vertical-align: top;
+}

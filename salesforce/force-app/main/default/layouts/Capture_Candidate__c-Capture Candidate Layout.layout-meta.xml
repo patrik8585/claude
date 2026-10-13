@@ -56,6 +56,10 @@
                 <behavior>Edit</behavior>
                 <field>Reg_Number_Match__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Score_Explanation__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
