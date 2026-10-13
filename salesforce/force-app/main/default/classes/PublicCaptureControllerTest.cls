@@ -122,6 +122,69 @@ private class PublicCaptureControllerTest {
         Assert.areEqual(1, [SELECT COUNT() FROM Capture__c]);
     }
 
+    /** A real 1x1 PNG (the server checks the PNG signature bytes). */
+    private static final String PNG_DATA_URL =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+    @IsTest
+    static void kioskSignatureConfirmsConsentAtCapture() {
+        Event__c e = ev();
+        String token = PublicCaptureController.getFormContext(e.Id).formToken;
+        PublicCaptureController.Submission s = validSubmission();
+        s.signatureDataUrl = PNG_DATA_URL;
+        s.deviceInfo = 'Test tablet';
+        CaptureTriggerHandler.publishEnabled = false;
+        PublicCaptureController.SubmitResult r = PublicCaptureController.submitCapture(e.Id, 'kiosk', token, s);
+        Assert.isTrue(r.success, 'signed submit failed: ' + r.message);
+        Assert.isTrue(r.signed, 'result must say signed');
+
+        Capture__c c = [
+            SELECT Id, Channel__c, Consent_Method__c, Opt_In_Status__c, Opt_In_Confirmed_At__c, Signature_Captured__c, Signature_Hash__c,
+                Confirmation_Token_Hash__c, Confirmation_Email_Status__c, Capture_Device__c
+            FROM Capture__c
+        ];
+        Assert.areEqual(CaptureConstants.CHANNEL_KIOSK, c.Channel__c);
+        Assert.areEqual(CaptureConstants.METHOD_SIGNATURE, c.Consent_Method__c);
+        Assert.areEqual(CaptureConstants.OPTIN_CONFIRMED, c.Opt_In_Status__c);
+        Assert.isNotNull(c.Opt_In_Confirmed_At__c, 'confirmed at capture time');
+        Assert.isTrue(c.Signature_Captured__c, 'signature flag set');
+        Assert.areEqual(64, c.Signature_Hash__c.length(), 'SHA-256 hex of the PNG');
+        Assert.isNull(c.Confirmation_Token_Hash__c, 'no double opt-in token when signed');
+        Assert.areEqual(CaptureConstants.EMAIL_NOT_REQUIRED, c.Confirmation_Email_Status__c);
+        Assert.isTrue(c.Capture_Device__c.startsWith('Kiosk'), 'device recorded: ' + c.Capture_Device__c);
+        Assert.areEqual(1, [SELECT COUNT() FROM ContentDocumentLink WHERE LinkedEntityId = :c.Id], 'signature file on the capture');
+
+        CaptureMatchingService.processCaptures(new Set<Id>{ c.Id });
+        Capture__c after = [SELECT Consent__c FROM Capture__c WHERE Id = :c.Id];
+        Assert.isNotNull(after.Consent__c, 'consent created by matching');
+        Consent__c k = [SELECT Status__c, Opt_In_Method__c, Signature_Captured__c, Signature_Hash__c, Channel__c FROM Consent__c WHERE Id = :after.Consent__c];
+        Assert.areEqual(CaptureConstants.CONSENT_CONFIRMED, k.Status__c);
+        Assert.areEqual(CaptureConstants.METHOD_SIGNATURE, k.Opt_In_Method__c);
+        Assert.isTrue(k.Signature_Captured__c, 'consent keeps the signature flag');
+        Assert.areEqual(c.Signature_Hash__c, k.Signature_Hash__c);
+        Assert.areEqual(CaptureConstants.CHANNEL_KIOSK, k.Channel__c);
+    }
+
+    @IsTest
+    static void signatureOnlyAcceptedInKioskAndAsPng() {
+        Event__c e = ev();
+        String token = PublicCaptureController.getFormContext(e.Id).formToken;
+        PublicCaptureController.Submission s = validSubmission();
+        s.signatureDataUrl = PNG_DATA_URL;
+        PublicCaptureController.SubmitResult qr = PublicCaptureController.submitCapture(e.Id, 'qr', token, s);
+        Assert.isFalse(qr.success, 'no signature on the QR channel');
+        Assert.isTrue(qr.message.contains('signature'), 'message names the signature: ' + qr.message);
+
+        s.signatureDataUrl = ConsentTestFactory.signature();
+        Assert.isFalse(PublicCaptureController.submitCapture(e.Id, 'kiosk', token, s).success, 'not a PNG');
+        s.signatureDataUrl = 'data:text/html;base64,PGgxPmhpPC9oMT4=';
+        Assert.isFalse(PublicCaptureController.submitCapture(e.Id, 'kiosk', token, s).success, 'wrong type');
+        Assert.areEqual(0, [SELECT COUNT() FROM Capture__c]);
+
+        Assert.isTrue(PublicCaptureController.isPngDataUrl(PNG_DATA_URL), 'valid PNG accepted');
+        Assert.isFalse(PublicCaptureController.isPngDataUrl(null), 'blank rejected');
+    }
+
     @IsTest
     static void doubleOptInConfirmation() {
         Event__c e = ev();

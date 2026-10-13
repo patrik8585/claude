@@ -8,13 +8,18 @@
  *  - channel is derived from the mode, never trusted from the client;
  *  - bot protection: honeypot field + HMAC-signed form token with minimum fill time + rate limits;
  *  - no record Ids or other HCP data are ever returned to the browser;
- *  - captures are re-owned by the event owner during matching (no guest-owned records).
+ *  - captures are re-owned by the event owner during matching (no guest-owned records);
+ *  - on-screen signature is accepted in kiosk mode only (PNG, size-capped); no rep witnesses it (open question L2).
  */
 public without sharing class PublicCaptureController {
     private static final String GENERIC_ERROR = 'Sorry, we could not save your registration. Please ask a Danone representative.';
     private static final Pattern EMAIL_PATTERN = Pattern.compile('^[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}$');
     private static final Pattern REG_PATTERN = Pattern.compile('^[A-Za-z0-9 /\\-]{0,30}$');
     private static final Long MAX_FORM_AGE_MS = 4L * 60 * 60 * 1000;
+    private static final String PNG_DATA_URL_PREFIX = 'data:image/png;base64,';
+    /** Base64 of the 8-byte PNG file signature. */
+    private static final String PNG_B64_MAGIC = 'iVBORw0KGgo';
+    private static final Integer MAX_SIGNATURE_B64 = 2000000;
 
     public class FormContext {
         @AuraEnabled
@@ -57,6 +62,12 @@ public without sharing class PublicCaptureController {
         /** Honeypot: hidden field that humans never fill. */
         @AuraEnabled
         public String website { get; set; }
+        /** Kiosk only: PNG data URL of the on-screen signature. Blank = email double opt-in. */
+        @AuraEnabled
+        public String signatureDataUrl { get; set; }
+        /** Kiosk only: browser / screen description, stored as capture device. */
+        @AuraEnabled
+        public String deviceInfo { get; set; }
     }
 
     public class SubmitResult {
@@ -70,6 +81,12 @@ public without sharing class PublicCaptureController {
         public String email;
         @AuraEnabled
         public String nextFormToken;
+        /** True when consent was signed on screen (no confirmation email needed). */
+        @AuraEnabled
+        public Boolean signed;
+        /** Signed only: whether the copy of the signed consent was emailed. */
+        @AuraEnabled
+        public Boolean copySent;
     }
 
     public class ConfirmationView {
@@ -167,6 +184,11 @@ public without sharing class PublicCaptureController {
         if (submission.consent != true) {
             errors.add('consent');
         }
+        Boolean kiosk = 'kiosk'.equalsIgnoreCase(mode);
+        Boolean signed = String.isNotBlank(submission.signatureDataUrl);
+        if (signed && (!kiosk || !isPngDataUrl(submission.signatureDataUrl))) {
+            errors.add('signature');
+        }
         if (!errors.isEmpty()) {
             result.message = 'Please complete: ' + String.join(errors, ', ') + '.';
             result.nextFormToken = safeIssue(ev.Id);
@@ -181,7 +203,7 @@ public without sharing class PublicCaptureController {
         }
 
         ConsentCaptureConfig.ConsentText text = ConsentCaptureConfig.activeConsentText();
-        Boolean kiosk = 'kiosk'.equalsIgnoreCase(mode);
+        Datetime capturedAt = System.now();
         Capture__c capture = new Capture__c(
             First_Name__c = firstName,
             Last_Name__c = lastName,
@@ -191,15 +213,21 @@ public without sharing class PublicCaptureController {
             Registration_Number__c = reg,
             Channel__c = kiosk ? CaptureConstants.CHANNEL_KIOSK : CaptureConstants.CHANNEL_SELF,
             Event__c = ev.Id,
-            Captured_At__c = System.now(),
+            Captured_At__c = capturedAt,
             Consent_Given__c = true,
-            Consent_Method__c = CaptureConstants.METHOD_EMAIL,
-            Opt_In_Status__c = CaptureConstants.OPTIN_PENDING,
             Consent_Text_Version__c = text.version,
             Send_Slides__c = submission.sendSlides == true,
             Processing_Stage__c = CaptureConstants.STAGE_RECEIVED,
             Matching_Status__c = CaptureConstants.MATCH_QUEUED
         );
+        if (kiosk) {
+            capture.Capture_Device__c = clean('Kiosk | ' + (submission.deviceInfo == null ? '' : submission.deviceInfo), 255);
+        }
+        if (signed) {
+            return saveSigned(capture, ev, submission.signatureDataUrl, result);
+        }
+        capture.Consent_Method__c = CaptureConstants.METHOD_EMAIL;
+        capture.Opt_In_Status__c = CaptureConstants.OPTIN_PENDING;
         String token = ConsentService.attachNewToken(capture);
         try {
             insert capture;
@@ -215,8 +243,53 @@ public without sharing class PublicCaptureController {
         );
 
         result.success = true;
+        result.signed = false;
         result.firstName = firstName;
         result.email = email;
+        result.nextFormToken = safeIssue(ev.Id);
+        return result;
+    }
+
+    /**
+     * Kiosk + on-screen signature: consent is confirmed at capture time (same evidence as the rep flow:
+     * signature file on the capture, its SHA-256, a copy emailed to the HCP), without a rep as witness.
+     * If the signature file cannot be stored (e.g. guest file uploads not allowed), nothing is saved.
+     */
+    private static SubmitResult saveSigned(Capture__c capture, Event__c ev, String signatureDataUrl, SubmitResult result) {
+        capture.Consent_Method__c = CaptureConstants.METHOD_SIGNATURE;
+        capture.Opt_In_Status__c = CaptureConstants.OPTIN_CONFIRMED;
+        capture.Opt_In_Confirmed_At__c = capture.Captured_At__c;
+        capture.Signature_Captured__c = true;
+        capture.Confirmation_Email_Status__c = CaptureConstants.EMAIL_NOT_REQUIRED;
+        Savepoint sp = Database.setSavepoint();
+        String sigHash;
+        try {
+            insert capture;
+            String captureName = [SELECT Name FROM Capture__c WHERE Id = :capture.Id].Name;
+            sigHash = ConsentService.saveSignature(capture.Id, captureName, signatureDataUrl);
+        } catch (Exception e) {
+            Database.rollback(sp);
+            System.debug(LoggingLevel.ERROR, 'Kiosk signed capture failed: ' + e.getMessage());
+            result.message = 'Sorry, we could not save your signature. Please choose "Confirm by email" instead.';
+            result.nextFormToken = safeIssue(ev.Id);
+            return result;
+        }
+        String slidesUrl = capture.Send_Slides__c ? ev.Slides_Url__c : null;
+        Boolean copySent = ConsentService.sendSignedCopyEmail(
+            capture.Email__c,
+            capture.Last_Name__c,
+            ev.Name,
+            capture.Captured_At__c,
+            null,
+            slidesUrl
+        );
+        update new Capture__c(Id = capture.Id, Signature_Hash__c = sigHash, Signature_Copy_Sent__c = copySent);
+
+        result.success = true;
+        result.signed = true;
+        result.copySent = copySent;
+        result.firstName = capture.First_Name__c;
+        result.email = capture.Email__c;
         result.nextFormToken = safeIssue(ev.Id);
         return result;
     }
@@ -295,6 +368,15 @@ public without sharing class PublicCaptureController {
         }
         String v = value.replaceAll('[\\p{Cntrl}<>]', ' ').normalizeSpace();
         return v.left(maxLength);
+    }
+
+    @TestVisible
+    private static Boolean isPngDataUrl(String dataUrl) {
+        if (String.isBlank(dataUrl) || !dataUrl.startsWith(PNG_DATA_URL_PREFIX)) {
+            return false;
+        }
+        String b64 = dataUrl.substring(PNG_DATA_URL_PREFIX.length());
+        return b64.length() <= MAX_SIGNATURE_B64 && b64.startsWith(PNG_B64_MAGIC);
     }
 
     private static String checkRateLimits(Id eventId, String email) {

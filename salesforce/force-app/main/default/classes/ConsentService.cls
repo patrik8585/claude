@@ -284,6 +284,21 @@ public without sharing class ConsentService {
 
     /** Emails the HCP a copy of the consent just signed on the rep's device. Never throws. */
     public static Boolean sendSignedCopyEmail(String toAddress, String lastName, String eventName, Datetime signedAt, String repName) {
+        return sendSignedCopyEmail(toAddress, lastName, eventName, signedAt, repName, null);
+    }
+
+    /**
+     * Same, with an optional slides link (kiosk: the HCP asked for the slides and signed on screen,
+     * so there is no confirmation page to show them). repName null = signed at the kiosk. Never throws.
+     */
+    public static Boolean sendSignedCopyEmail(
+        String toAddress,
+        String lastName,
+        String eventName,
+        Datetime signedAt,
+        String repName,
+        String slidesUrl
+    ) {
         if (String.isBlank(toAddress)) {
             return false;
         }
@@ -295,9 +310,12 @@ public without sharing class ConsentService {
                 '<p>Dear Dr. ' + (lastName == null ? '' : lastName.escapeHtml4()) + ',</p>' +
                 '<p>This is your copy of the consent you signed on ' + signedOn.escapeHtml4() +
                 (String.isBlank(eventName) ? '' : ' at the <b>' + eventName.escapeHtml4() + '</b>') +
-                (String.isBlank(repName) ? '' : ', collected by ' + repName.escapeHtml4()) + ':</p>' +
+                (String.isBlank(repName) ? ' on our self-service kiosk' : ', collected by ' + repName.escapeHtml4()) + ':</p>' +
                 '<p style="background:#fafafa;border-left:4px solid #0176d3;padding:10px 14px">' + text.body.escapeHtml4() +
                 '<br/><small>Consent text ' + text.version.escapeHtml4() + '</small></p>' +
+                (String.isBlank(slidesUrl)
+                    ? ''
+                    : '<p>As requested, here are the slides: <a href="' + slidesUrl.escapeHtml4() + '">download the slides</a></p>') +
                 '<p>You can withdraw your consent at any time using the link in every email or by replying to this message.</p>';
             Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
             mail.setToAddresses(new List<String>{ toAddress });
