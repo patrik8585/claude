@@ -19,7 +19,7 @@ It is an SFDX project that **you deploy yourself** to the Agentforce Developer E
 - **Async matching**: a `Capture__c` insert publishes the platform event `Capture_Matching_Request__e`. Its subscriber runs as the *Automated Process* user. Guest and rep transactions therefore never create HCPs or consents themselves.
 - **Guest security**: the guest user gets **Apex class access only** (no object permissions). `PublicCaptureController` is `without sharing` with strict server-side validation, a honeypot field, an HMAC-signed form token (minimum fill time 3 s, maximum age 4 h) and rate limits (3 per email per event per day, 30 per event per minute). It never returns record Ids. Guest-created captures are re-owned by the **event owner** during matching.
 - **Double opt-in token**: 256-bit random token in the link. Only its SHA-256 hash is stored (`Confirmation_Token_Hash__c`), and it is valid for 30 days. The confirmation page asks the HCP to **press "Confirm"** rather than confirming on page load, because corporate email scanners pre-open links (see open question L4).
-- **Territory**: `User.Territory__c` and `Contact.Territory__c` (text). The rep search returns only HCPs whose territory matches the rep's. This is a simple stand-in for Enterprise Territory Management, which Platform licenses do not cover well.
+- **Territory**: `User.Territory__c` and `Contact.Territory__c` (text). The rep search returns **every HCP in Salesforce** the rep can see. HCPs of the rep's own territory are listed first; the others carry an "Other territory" badge. Visibility follows the org sharing model, so Contact/Account sharing must not be Private for reps (it is Public in a fresh Developer Edition).
 - **Path** on the capture page is drawn inside the `captureReview` LWC (Received → Auto-matching → To review → Matched → Consent created → Sent to Gigya). This avoids Path settings metadata.
 - **Dashboard**: an LWC dashboard with the mockup's event filter (tab *Capture Dashboard*). Standard reports and a standard dashboard are also provided in `force-app-extras`.
 - **Consent text** v3.2 lives in Custom Metadata (`Consent_Text__mdt`). The active record with the highest version is shown everywhere and its text is snapshotted on each consent record.
@@ -54,7 +54,7 @@ salesforce/
 | `ConsentService` | Tokens, confirmation email, confirm, Contact consent summary, signature file |
 | `CaptureMatchingService` | Matching rules, candidate scoring, deterministic suggestion text |
 | `CaptureResolutionService` | New HCP creation, consent record creation or reuse, attendee, task/signature linking |
-| `RepCaptureController` | Rep page: events, territory search, add known HCP, walk-in, my captures |
+| `RepCaptureController` | Rep page: events, HCP search (own territory first), add known HCP, walk-in, my captures |
 | `NotesExtractionService` | Phase 1 rule-based "Extract with AI" (phase 3 swaps in Prompt Builder) |
 | `CaptureReviewController` | Steward actions: Match / Create new HCP / Discard / re-run matching |
 | `ConsentRecordController` | Gigya timeline, simulate sync (demo), withdraw consent |
@@ -136,6 +136,11 @@ To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --targ
    - Kiosk tablet: `https://…/hcp?e=<EventId>&mode=kiosk`
    - Confirmation link in the email: `https://…/hcp?t=<token>` (generated automatically)
 
+### 4.2-bis Try the HCP page without a site (Lightning preview)
+The tab **HCP Public Page (preview)** in the *HCP Consent Hub* app shows the same public component inside Lightning, logged in as you. Open it with an event:
+`/lightning/n/HCP_Public_Preview?c__e=<EventId>` (add `&c__mode=kiosk` for kiosk). `scripts/apex/event-ids.apex` prints these URLs.
+To test the confirmation email before the site exists, run `01-configure.apex` with the preview URL (`https://<your-domain>.lightning.force.com/lightning/n/HCP_Public_Preview`): the link then uses `c__t=`. The preview is for demos only: the guest-user security is tested only on the real site.
+
 ### 4.3 Rep page (Experience Cloud for internal users)
 1. Create a second site, **Build Your Own (LWR)**, name `HCP Rep`, URL suffix **`rep`**.
 2. Experience Builder → Home → drag **Rep Capture Hub**. Settings → Security & Privacy → **turn off** public access (login required). Publish.
@@ -144,7 +149,7 @@ To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --targ
 5. Shortcut for testing: the same component is the **Rep Capture Hub** tab in the *HCP Consent Hub* app.
 
 ### 4.4 Users
-- **Rep**: license *Salesforce Platform*, profile *Standard Platform User*, permission set **HCP Consent - Rep**, field **Territory** = `IT-PED-01` for the demo (the sample HCPs in territory `IT-PED-01` are Ferri, Romano, Conti, Gallo, Rinaldi, Villa, Greco, Sala and Benedetti).
+- **Rep**: license *Salesforce Platform*, profile *Standard Platform User*, permission set **HCP Consent - Rep**, field **Territory** = `IT-PED-01` for the demo. It only orders search results: the sample HCPs in `IT-PED-01` (Ferri, Romano, Conti, Gallo, Rinaldi, Villa, Greco, Sala, Benedetti) come first, and the others are shown with an "Other territory" badge.
 - **Data steward**: license *Salesforce Platform*, profile *Standard Platform User*, permission set **HCP Consent - Data Steward**.
 - **Admin / demo**: you, with **HCP Consent - Admin**.
 - Reports and dashboard folders are private to you after deploy. Share *HCP Consent Reports* and *HCP Consent Dashboards* with stewards and marketing from the Reports tab (folder → Share).
@@ -163,7 +168,7 @@ To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --targ
 - [ ] Select the congress, then search `Ferri`: card shows "Consent on file", **Add to event** adds without question.
 - [ ] Search `Sala`: consent only *pending* (the congress capture was never confirmed), so the card shows the question → *signs on screen* → draw → **Confirm signature & add** → capture with signature file; after matching a consent *Opt-in confirmed* with Signature captured. (In the mockup this case was Greco; in the sample data Greco's congress capture is already confirmed, so Greco now shows "Consent on file".)
 - [ ] Search `Conti`: "Opted out" → only *signs on screen* and *declines* are offered.
-- [ ] Search `Bianchi` (not in your territory) → "No HCP found" → **Add as walk-in** → paste/dictate the demo note → **Extract with AI** fills 7 fields + task "Call back Dr. Maria Bianchi" due Mon 2 Nov 2026 → choose a consent option → **Save capture** → *My captures today* lists it with "Follow-up task".
+- [ ] Search `Bianchi` → the 3 Bianchi namesakes appear with an "Other territory" badge (found anyway). Search `Rossi` → "No HCP found" → **Add as walk-in**. Alternatively, with results on screen, use **Not in the list? + Add as walk-in** → paste/dictate the demo note → **Extract with AI** fills 7 fields + task "Call back Dr. Maria Bianchi" due Mon 2 Nov 2026 → choose a consent option → **Save capture** → *My captures today* lists it with "Follow-up task".
 - [ ] Microphone: on Chrome/Android it dictates. Where the browser has no Web Speech API, a hint asks you to use the keyboard microphone.
 
 **Step 3 – Kiosk**
@@ -204,7 +209,7 @@ Functional and platform limits:
 - **Bot protection** is honeypot + signed token + rate limits. There is **no CAPTCHA** (reCAPTCHA in LWR needs extra setup; open question T1).
 - **Accent-insensitive matching** is done in Apex after a surname query. The SOQL itself is accent-sensitive ("Nicolò" vs "Nicolo" may not be fetched as a candidate).
 - Two captures of the **same new HCP in the same batch** create two Contacts (rare; the steward can merge them).
-- **Territory** is a plain text field, not Enterprise Territory Management.
+- **Territory** is a plain text field used only to order the rep search (own territory first); it does not restrict visibility.
 - **Gigya**: only a status field and timeline. "Simulate sync" is a demo stand-in for the real integration.
 - **Dictation** uses the browser Web Speech API (Chrome/Android/Safari). Elsewhere it falls back to keyboard dictation. Extraction rules are English/Italian keyword based (phase 3 replaces them).
 - The **slides** are a URL on the event (`Slides_Url__c`), shown after confirmation; no file is emailed.

@@ -34,6 +34,7 @@
     <tabs>Event__c</tabs>
     <tabs>Capture_Dashboard</tabs>
     <tabs>Rep_Capture_Hub</tabs>
+    <tabs>HCP_Public_Preview</tabs>
     <tabs>standard-report</tabs>
     <tabs>standard-Dashboard</tabs>
     <uiType>Lightning</uiType>

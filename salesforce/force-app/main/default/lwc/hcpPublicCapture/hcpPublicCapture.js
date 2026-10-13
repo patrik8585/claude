@@ -9,6 +9,15 @@ const REQUIRED = ['firstName', 'lastName', 'email', 'specialty', 'city', 'consen
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 const KIOSK_RESET_SECONDS = 6;
 
+/** Lightning app pages only keep c__-prefixed URL parameters: accept c__e / c__mode / c__t too. */
+function normalize(state) {
+    const out = {};
+    Object.keys(state || {}).forEach((k) => {
+        out[k.startsWith('c__') ? k.substring(3) : k] = state[k];
+    });
+    return out;
+}
+
 function emptyForm() {
     return { firstName: '', lastName: '', email: '', specialty: '', city: '', registrationNumber: '', consent: false, sendSlides: true, website: '' };
 }
@@ -42,7 +51,7 @@ export default class HcpPublicCapture extends LightningElement {
     @wire(CurrentPageReference)
     wiredPage(ref) {
         if (ref && ref.state) {
-            this.params = { ...this.params, ...ref.state };
+            this.params = { ...this.params, ...normalize(ref.state) };
         }
         this.start();
     }
@@ -54,12 +63,18 @@ export default class HcpPublicCapture extends LightningElement {
             search.forEach((value, key) => {
                 fromUrl[key] = value;
             });
-            this.params = { ...fromUrl, ...this.params };
+            this.params = { ...normalize(fromUrl), ...this.params };
         } catch (e) {
             // window.location may be unavailable in some containers; rely on CurrentPageReference
         }
         // give the page reference wire a tick to arrive
-        Promise.resolve().then(() => this.start());
+        Promise.resolve().then(() => {
+            this.start();
+            if (!this.started) {
+                this.fatalError = 'No event selected: open this page with ?e=<Event Id> (QR) or ?e=<Event Id>&mode=kiosk.';
+                this.view = 'error';
+            }
+        });
     }
 
     disconnectedCallback() {
@@ -95,6 +110,7 @@ export default class HcpPublicCapture extends LightningElement {
 
     async loadForm() {
         this.view = 'loading';
+        this.fatalError = undefined;
         try {
             this.ctx = await getFormContext({ eventId: this.resolvedEventId });
             this.formToken = this.ctx.formToken;
@@ -107,6 +123,7 @@ export default class HcpPublicCapture extends LightningElement {
 
     async loadConfirmation() {
         this.view = 'loading';
+        this.fatalError = undefined;
         try {
             this.conf = await getConfirmation({ token: this.params.t });
             this.view = 'confirm';

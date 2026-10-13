@@ -58,6 +58,10 @@ public with sharing class RepCaptureController {
         public String consentVersion;
         @AuraEnabled
         public Boolean alreadyAdded;
+        @AuraEnabled
+        public String territory;
+        @AuraEnabled
+        public Boolean inMyTerritory;
     }
 
     public class WalkIn {
@@ -172,13 +176,10 @@ public with sharing class RepCaptureController {
         if (t.length() < 2) {
             return results;
         }
+        // All HCPs the rep can see in Salesforce are searchable; the rep's own territory is listed first.
         User u = me();
-        if (String.isBlank(u.Territory__c)) {
-            throw new AuraHandledException('No territory is set on your user (User.Territory__c). Ask your admin.');
-        }
         String likeTerm = '%' + t + '%';
         String regLikeTerm = '%' + t.toUpperCase().replaceAll('[^A-Z0-9]', '') + '%';
-        String territory = u.Territory__c;
         List<Contact> contacts = [
             SELECT
                 Id,
@@ -189,24 +190,35 @@ public with sharing class RepCaptureController {
                 MailingCity,
                 Registration_Number__c,
                 OneKey_Id__c,
+                Territory__c,
                 Consent_Status__c,
                 Consent_Status_Date__c,
                 Consent_Text_Version__c,
                 Account.Name
             FROM Contact
             WHERE
-                Territory__c = :territory
-                AND (Name LIKE :likeTerm
+                Name LIKE :likeTerm
                 OR Email LIKE :likeTerm
                 OR Registration_Number__c LIKE :likeTerm
-                OR (Registration_Key__c LIKE :regLikeTerm AND Registration_Key__c != NULL))
+                OR (Registration_Key__c LIKE :regLikeTerm AND Registration_Key__c != NULL)
             ORDER BY LastName, FirstName
-            LIMIT 20
+            LIMIT 50
         ];
         Set<Id> added = alreadyAdded(eventId, contacts);
+        List<HcpResult> mine = new List<HcpResult>();
+        List<HcpResult> others = new List<HcpResult>();
         for (Contact c : contacts) {
-            results.add(toResult(c, added.contains(c.Id)));
+            HcpResult r = toResult(c, added.contains(c.Id));
+            r.territory = c.Territory__c;
+            r.inMyTerritory = String.isNotBlank(u.Territory__c) && c.Territory__c == u.Territory__c;
+            if (r.inMyTerritory) {
+                mine.add(r);
+            } else {
+                others.add(r);
+            }
         }
+        results.addAll(mine);
+        results.addAll(others);
         return results;
     }
 
@@ -273,8 +285,8 @@ public with sharing class RepCaptureController {
             FROM Contact
             WHERE Id = :contactId
         ];
-        if (rows.isEmpty() || rows[0].Territory__c != u.Territory__c) {
-            throw new AuraHandledException('HCP not found in your territory.');
+        if (rows.isEmpty()) {
+            throw new AuraHandledException('HCP not found.');
         }
         Contact c = rows[0];
         String status = statusKey(c.Consent_Status__c);

@@ -560,6 +560,10 @@
         <visibility>Visible</visibility>
     </tabSettings>
     <tabSettings>
+        <tab>HCP_Public_Preview</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
         <tab>Rep_Capture_Hub</tab>
         <visibility>Visible</visibility>
     </tabSettings>

@@ -199,12 +199,22 @@ export default class RepCaptureHub extends LightningElement {
     get resultRows() {
         return this.results.map((h) => {
             const b = BADGE[h.consentStatus] || BADGE.none;
-            return { ...h, alreadyAdded: h.alreadyAdded || !!this.added[h.id], badgeClass: b.cls, badgeLabel: b.short };
+            return {
+                ...h,
+                alreadyAdded: h.alreadyAdded || !!this.added[h.id],
+                badgeClass: b.cls,
+                badgeLabel: b.short,
+                otherTerritory: h.inMyTerritory === false
+            };
         });
     }
 
     get showHint() {
         return !this.searched && !this.searching;
+    }
+
+    get showWalkInLink() {
+        return this.searched && !this.searching && this.results.length > 0;
     }
 
     get showNotFound() {

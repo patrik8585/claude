@@ -63,7 +63,9 @@ public without sharing class ConsentService {
         if (String.isBlank(base)) {
             return null;
         }
-        return base + (base.contains('?') ? '&' : '?') + 't=' + token;
+        // Lightning app pages (internal preview) only keep c__-prefixed parameters
+        String param = base.contains('/lightning/') ? 'c__t=' : 't=';
+        return base + (base.contains('?') ? '&' : '?') + param + token;
     }
 
     /**

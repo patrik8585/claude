@@ -10,6 +10,9 @@ private class RepCaptureControllerTest {
         Contact conti = ConsentTestFactory.contact('Paolo', 'Conti', 'paolo.conti@aosp-example.it', 'Paediatrics', 'Bologna', 'BO-09821');
         conti.Consent_Status__c = CaptureConstants.HCP_OPTOUT;
         update conti;
+        Contact bianchi = ConsentTestFactory.contact('Maria', 'Bianchi', 'm.bianchi@gaslini-example.it', 'Paediatrics', 'Genoa', 'GE-11873');
+        bianchi.Territory__c = 'IT-PED-02';
+        update bianchi;
     }
 
     private static Event__c ev() {
@@ -37,6 +40,14 @@ private class RepCaptureControllerTest {
             Assert.areEqual('none', RepCaptureController.searchHcps('MI22764', ev().Id)[0].consentStatus);
             Assert.areEqual(0, RepCaptureController.searchHcps('x', ev().Id).size());
             Assert.areEqual(0, RepCaptureController.searchHcps('Nobody', ev().Id).size());
+
+            // HCPs outside the rep's territory are found too, flagged and listed after the own territory
+            List<RepCaptureController.HcpResult> other = RepCaptureController.searchHcps('Bianchi', ev().Id);
+            Assert.areEqual(1, other.size(), 'out-of-territory HCPs must be searchable');
+            Assert.isFalse(other[0].inMyTerritory, 'flagged as other territory');
+            List<RepCaptureController.HcpResult> mixed = RepCaptureController.searchHcps('Ma', ev().Id);
+            Assert.isTrue(mixed[0].inMyTerritory, 'own territory first');
+            Assert.isFalse(mixed[mixed.size() - 1].inMyTerritory, 'other territory last');
         }
     }
 

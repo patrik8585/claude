@@ -5,6 +5,7 @@
     <masterLabel>HCP Public Capture</masterLabel>
     <description>Public QR / kiosk capture form and double opt-in confirmation page (guest user).</description>
     <targets>
+        <target>lightning__AppPage</target>
         <target>lightningCommunity__Page</target>
         <target>lightningCommunity__Default</target>
     </targets>

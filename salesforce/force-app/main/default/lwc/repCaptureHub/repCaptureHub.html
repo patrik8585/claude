@@ -95,13 +95,17 @@
                                 <b>Dr. {h.firstName} {h.lastName}</b>
                                 <small>{h.specialty} · {h.city}</small>
                                 <span class={h.badgeClass}>{h.badgeLabel}</span>
+                                <template lwc:if={h.otherTerritory}><span class="sm-badge grey">Other territory</span></template>
                             </div>
                             <template lwc:if={h.alreadyAdded}><span class="sm-badge ok">Added</span></template>
                             <template lwc:else><span class="arrow">›</span></template>
                         </div>
                     </template>
+                    <template lwc:if={showWalkInLink}>
+                        <button type="button" class="link walk" onclick={startWalkIn}>Not in the list? + Add as walk-in</button>
+                    </template>
                     <template lwc:if={showNotFound}>
-                        <div class="alert warn">No HCP found for “{query}” in your territory.</div>
+                        <div class="alert warn">No HCP found for “{query}” in Salesforce.</div>
                         <button type="button" class="btn brand lg block" onclick={startWalkIn}>+ Add as walk-in</button>
                     </template>
                 </template>
