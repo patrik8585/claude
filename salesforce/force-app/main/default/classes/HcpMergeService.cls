@@ -244,7 +244,7 @@ public without sharing class HcpMergeService {
         update aff;
         List<Event_Attendee__c> att = new List<Event_Attendee__c>();
         for (Event_Attendee__c a : [SELECT Id, Event__c, Attendee_Key__c FROM Event_Attendee__c WHERE Contact__c = :masterId]) {
-            String k = String.valueOf(a.Event__c).left(15) + '-' + String.valueOf(masterId).left(15);
+            String k = CaptureResolutionService.attendeeKey(a.Event__c, masterId);
             if (a.Attendee_Key__c != k) {
                 att.add(new Event_Attendee__c(Id = a.Id, Attendee_Key__c = k));
             }

@@ -25,6 +25,29 @@ private class CaptureMatchingServiceTest {
     }
 
     @IsTest
+    static void attendeeKeyIsCaseSafeAndLegacyKeysAreReused() {
+        CaptureTriggerHandler.publishEnabled = false;
+        Event__c e = ev();
+        Contact ferri = [SELECT Id FROM Contact WHERE LastName = 'Ferri'];
+        String key = CaptureResolutionService.attendeeKey(e.Id, ferri.Id);
+        Assert.areEqual(37, key.length(), '18-character Ids on both sides: ' + key);
+        // an attendee saved with the old 15-character key is found by event + HCP and re-keyed
+        insert new Event_Attendee__c(
+            Event__c = e.Id,
+            Contact__c = ferri.Id,
+            Attendee_Key__c = String.valueOf(e.Id).left(15) + '-' + String.valueOf(ferri.Id).left(15),
+            Communications_Allowed__c = false
+        );
+        Capture__c c = ConsentTestFactory.capture(e, 'Marco', 'Ferri', 'marco.ferri@policlinico-example.it', 'Paediatrics', 'Milan');
+        insert c;
+        CaptureMatchingService.processCaptures(new Set<Id>{ c.Id });
+        List<Event_Attendee__c> rows = [SELECT Attendee_Key__c, Source_Capture__c FROM Event_Attendee__c WHERE Contact__c = :ferri.Id];
+        Assert.areEqual(1, rows.size(), 'no second attendee for the same event and HCP');
+        Assert.areEqual(key, rows[0].Attendee_Key__c, 'legacy key rewritten');
+        Assert.areEqual(c.Id, rows[0].Source_Capture__c, 'attendee points to the latest capture');
+    }
+
+    @IsTest
     static void rulesEmailRegNamesakeNew() {
         CaptureTriggerHandler.publishEnabled = false;
         Event__c e = ev();

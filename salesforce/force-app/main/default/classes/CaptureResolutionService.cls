@@ -262,13 +262,21 @@ public without sharing class CaptureResolutionService {
         ConsentService.refreshContactSummary(contactIds);
     }
 
+    /**
+     * EventId-ContactId with 18-character Ids: Attendee_Key__c is unique case-insensitively,
+     * and two 15-character Ids can differ only by case.
+     */
+    public static String attendeeKey(Id eventId, Id contactId) {
+        return String.valueOf(eventId) + '-' + String.valueOf(contactId);
+    }
+
     private static void upsertAttendees(List<Capture__c> captures) {
         Map<String, Event_Attendee__c> byKey = new Map<String, Event_Attendee__c>();
         for (Capture__c c : captures) {
             if (c.Event__c == null || c.Matched_Contact__c == null) {
                 continue;
             }
-            String key = String.valueOf(c.Event__c).left(15) + '-' + String.valueOf(c.Matched_Contact__c).left(15);
+            String key = attendeeKey(c.Event__c, c.Matched_Contact__c);
             byKey.put(
                 key,
                 new Event_Attendee__c(
@@ -285,10 +293,21 @@ public without sharing class CaptureResolutionService {
         if (byKey.isEmpty()) {
             return;
         }
-        // Existing attendees are updated without touching the master-detail field.
+        // Existing attendees are found by event + HCP (older rows may carry a 15-character key)
+        // and updated without touching the master-detail field; their key is rewritten.
+        Set<Id> eventIds = new Set<Id>();
+        Set<Id> contactIds = new Set<Id>();
+        for (Event_Attendee__c a : byKey.values()) {
+            eventIds.add(a.Event__c);
+            contactIds.add(a.Contact__c);
+        }
         Map<String, Event_Attendee__c> existing = new Map<String, Event_Attendee__c>();
-        for (Event_Attendee__c a : [SELECT Id, Attendee_Key__c FROM Event_Attendee__c WHERE Attendee_Key__c IN :byKey.keySet()]) {
-            existing.put(a.Attendee_Key__c, a);
+        for (Event_Attendee__c a : [
+            SELECT Id, Event__c, Contact__c
+            FROM Event_Attendee__c
+            WHERE Event__c IN :eventIds AND Contact__c IN :contactIds
+        ]) {
+            existing.put(attendeeKey(a.Event__c, a.Contact__c), a);
         }
         List<Event_Attendee__c> inserts = new List<Event_Attendee__c>();
         List<Event_Attendee__c> updates = new List<Event_Attendee__c>();
@@ -298,6 +317,7 @@ public without sharing class CaptureResolutionService {
                 updates.add(
                     new Event_Attendee__c(
                         Id = existing.get(key).Id,
+                        Attendee_Key__c = key,
                         Source_Capture__c = a.Source_Capture__c,
                         Communications_Allowed__c = a.Communications_Allowed__c
                     )
