@@ -34,8 +34,7 @@ public class ConsentTestFactory {
 
     public static Contact contact(String first, String last, String email, String spec, String city, String reg) {
         Account a = new Account(Name = 'Hospital ' + last + ' ' + city);
-        a.setOptions(CaptureResolutionService.allowDuplicates());
-        insert a;
+        Database.insert(a, CaptureResolutionService.allowDuplicates());
         Contact c = new Contact(
             FirstName = first,
             LastName = last,
@@ -47,8 +46,7 @@ public class ConsentTestFactory {
             Territory__c = TERRITORY,
             Consent_Status__c = CaptureConstants.HCP_NONE
         );
-        c.setOptions(CaptureResolutionService.allowDuplicates());
-        insert c;
+        Database.insert(c, CaptureResolutionService.allowDuplicates());
         return c;
     }
 
@@ -60,8 +58,7 @@ public class ConsentTestFactory {
             Aliases__c = aliases,
             RecordTypeId = HcoDirectory.recordTypeId(HcoDirectory.RT_HOSPITAL)
         );
-        a.setOptions(CaptureResolutionService.allowDuplicates());
-        insert a;
+        Database.insert(a, CaptureResolutionService.allowDuplicates());
         HcoDirectory.reset();
         return a;
     }
@@ -74,8 +71,7 @@ public class ConsentTestFactory {
             Department_Type__c = departmentType,
             RecordTypeId = HcoDirectory.recordTypeId(HcoDirectory.RT_DEPARTMENT)
         );
-        d.setOptions(CaptureResolutionService.allowDuplicates());
-        insert d;
+        Database.insert(d, CaptureResolutionService.allowDuplicates());
         HcoDirectory.reset();
         return d;
     }
@@ -93,8 +89,7 @@ public class ConsentTestFactory {
             Territory__c = TERRITORY,
             Consent_Status__c = CaptureConstants.HCP_NONE
         );
-        c.setOptions(CaptureResolutionService.allowDuplicates());
-        insert c;
+        Database.insert(c, CaptureResolutionService.allowDuplicates());
         insert new HCP_Affiliation__c(Contact__c = c.Id, HCO__c = hcoId, Primary__c = true, Start_Date__c = Date.today().addYears(-2));
         return c;
     }

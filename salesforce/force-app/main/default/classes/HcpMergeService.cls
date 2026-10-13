@@ -93,7 +93,7 @@ public without sharing class HcpMergeService {
             foldPairs(masterId, duplicateId, pairId);
 
             upd.setOptions(CaptureResolutionService.allowDuplicates());
-            update upd;
+            Database.update(upd, CaptureResolutionService.allowDuplicates());
             Database.MergeResult res = Database.merge(new Contact(Id = masterId), duplicateId, false);
             if (!res.isSuccess()) {
                 List<String> errs = new List<String>();

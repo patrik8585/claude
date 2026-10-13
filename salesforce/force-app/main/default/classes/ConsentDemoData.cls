@@ -130,7 +130,7 @@ public with sharing class ConsentDemoData {
             a.setOptions(dml);
             hospitals.put(h[0], a);
         }
-        insert hospitals.values();
+        Database.insert(hospitals.values(), dml);
         Map<String, Account> departments = new Map<String, Account>();
         for (List<Object> h : hcps) {
             String org = (String) h[6];
@@ -149,7 +149,7 @@ public with sharing class ConsentDemoData {
                 }
             }
         }
-        insert departments.values();
+        Database.insert(departments.values(), dml);
         HcoDirectory.reset();
 
         Map<String, Contact> contacts = new Map<String, Contact>();
@@ -170,7 +170,7 @@ public with sharing class ConsentDemoData {
             c.setOptions(dml);
             contacts.put((String) h[0], c);
         }
-        insert contacts.values();
+        Database.insert(contacts.values(), dml);
         List<HCP_Affiliation__c> affiliations = new List<HCP_Affiliation__c>();
         for (List<Object> h : hcps) {
             Contact c = contacts.get((String) h[0]);

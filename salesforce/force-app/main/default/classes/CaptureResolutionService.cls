@@ -120,7 +120,7 @@ public without sharing class CaptureResolutionService {
             ct.setOptions(dml);
             contacts.add(ct);
         }
-        insert contacts;
+        Database.insert(contacts, dml);
         List<HCP_Affiliation__c> affiliations = new List<HCP_Affiliation__c>();
         for (Integer i = 0; i < captures.size(); i++) {
             captures[i].Matched_Contact__c = contacts[i].Id;
@@ -142,8 +142,7 @@ public without sharing class CaptureResolutionService {
             return rows[0].Id;
         }
         Account a = new Account(Name = CaptureConstants.UNKNOWN_ORGANISATION, OwnerId = ownerId);
-        a.setOptions(allowDuplicates());
-        insert a;
+        Database.insert(a, allowDuplicates());
         return a.Id;
     }
 
@@ -151,6 +150,7 @@ public without sharing class CaptureResolutionService {
         Database.DMLOptions dml = new Database.DMLOptions();
         dml.DuplicateRuleHeader.allowSave = true;
         dml.DuplicateRuleHeader.runAsCurrentUser = false;
+        dml.OptAllOrNone = true;
         return dml;
     }
 

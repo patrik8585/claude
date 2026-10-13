@@ -226,7 +226,8 @@ public without sharing class ConsentService {
             updates.add(upd);
         }
         if (!updates.isEmpty()) {
-            update updates;
+            // duplicate HCPs (same person entered twice) must still get their summary
+            Database.update(updates, CaptureResolutionService.allowDuplicates());
         }
     }
 

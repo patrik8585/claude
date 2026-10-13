@@ -49,7 +49,13 @@ private class MatchingWorkbenchTest {
             VolumeTestData.runStep('CLEAN_ACCOUNTS');
             Assert.areEqual(0, [SELECT COUNT() FROM Contact WHERE Test_Data_Set__c != NULL]);
             Assert.areEqual(0, [SELECT COUNT() FROM Account WHERE Test_Data_Set__c != NULL]);
-            Assert.isNotNull(MatchingAccuracyController.runGenerator('captures'));
+            Boolean unknown = false;
+            try {
+                MatchingAccuracyController.runGenerator('nonsense');
+            } catch (AuraHandledException e) {
+                unknown = true;
+            }
+            Assert.isTrue(unknown, 'unknown generator action');
         }
         Assert.areEqual('Typo', VolumeTestData.typo('Typpo'));
         Assert.areEqual('Csota', VolumeTestData.typo('Costa'));
@@ -165,7 +171,7 @@ private class MatchingWorkbenchTest {
         Assert.areEqual(DuplicateScanJob.STATUS_NOT_DUPLICATE, [SELECT Status__c FROM HCP_Duplicate_Pair__c WHERE Id = :cd.Id].Status__c);
         System.runAs(steward) {
             MatchingWorkbenchController.reopenPair(cd.Id);
-            Assert.isNotNull(MatchingWorkbenchController.runDuplicateScan());
+            // runDuplicateScan / runGenerator only enqueue Batch Apex: a batch with several steps cannot run inside a test
         }
         Assert.areEqual(DuplicateScanJob.STATUS_OPEN, [SELECT Status__c FROM HCP_Duplicate_Pair__c WHERE Id = :cd.Id].Status__c);
 

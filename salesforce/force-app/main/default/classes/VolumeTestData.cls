@@ -157,7 +157,7 @@ public without sharing class VolumeTestData implements Database.Batchable<String
             a.setOptions(dml);
             hospitals.add(a);
         }
-        insert hospitals;
+        Database.insert(hospitals, dml);
         List<Account> depts = new List<Account>();
         for (Integer i = 0; i < p.hospitals.size(); i++) {
             HospitalSpec h = p.hospitals[i];
@@ -175,7 +175,7 @@ public without sharing class VolumeTestData implements Database.Batchable<String
                 depts.add(d);
             }
         }
-        insert depts;
+        Database.insert(depts, dml);
         HcoDirectory.reset();
     }
 
@@ -236,7 +236,7 @@ public without sharing class VolumeTestData implements Database.Batchable<String
             c.setOptions(dml);
             contacts.add(c);
         }
-        insert contacts;
+        Database.insert(contacts, dml);
         List<HCP_Affiliation__c> aff = new List<HCP_Affiliation__c>();
         for (Integer i = 0; i < specs.size(); i++) {
             HcpSpec s = specs[i];

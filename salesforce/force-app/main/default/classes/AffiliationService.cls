@@ -124,7 +124,7 @@ public without sharing class AffiliationService {
                 update promote;
             }
             if (!updates.isEmpty()) {
-                update updates;
+                Database.update(updates, CaptureResolutionService.allowDuplicates());
             }
         } finally {
             running = false;
