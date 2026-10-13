@@ -25,22 +25,32 @@ private class MatchingWorkbenchTest {
             Assert.areEqual(plan.hcps.size() + plan.duplicates.size(), [SELECT COUNT() FROM Contact WHERE Test_Data_Set__c = :VolumeTestData.DATA_SET]);
             Assert.areEqual(5, [SELECT COUNT() FROM Contact WHERE Test_Duplicate_Of__c != NULL]);
             Assert.isTrue([SELECT COUNT() FROM HCP_Affiliation__c] >= plan.hcps.size());
-            Test.startTest();
+            // matching is called directly (the platform-event path is covered by CaptureMatchingServiceTest)
+            CaptureTriggerHandler.publishEnabled = false;
             job.execute(null, new List<String>{ 'CAPTURES' });
+            Set<Id> captureIds = new Map<Id, Capture__c>([SELECT Id FROM Capture__c WHERE Test_Data_Set__c = :VolumeTestData.CAPTURE_SET]).keySet();
+            Assert.areEqual(14, captureIds.size());
+            Test.startTest();
+            CaptureMatchingService.processCaptures(captureIds);
             Test.stopTest();
             job.finish(null);
 
+            List<String> states = new List<String>();
+            for (Capture__c c : [SELECT Test_Case__c, Matching_Status__c, Processing_Error__c FROM Capture__c WHERE Id IN :captureIds]) {
+                states.add(c.Test_Case__c + ' = ' + c.Matching_Status__c + (c.Processing_Error__c == null ? '' : ' / ' + c.Processing_Error__c.left(300)));
+            }
+            String diagnostics = String.join(states, ' | ');
             MatchingAccuracyController.Metrics m = MatchingAccuracyController.getMetrics();
-            Assert.areEqual(14, m.total);
-            Assert.areEqual(0, m.pending, 'all test captures were matched');
+            Assert.areEqual(14, m.total, diagnostics);
+            Assert.areEqual(0, m.pending, 'all test captures were matched: ' + diagnostics);
             Assert.areEqual(14, m.byCase.size());
             Assert.areEqual(6, m.hospitals);
             for (MatchingAccuracyController.CaseRow r : m.byCase) {
                 if (r.testCase == 'Exact institutional email' || r.testCase == 'Really new HCP' || r.testCase == 'Email shared by duplicates') {
-                    Assert.areEqual(1, r.asExpected, r.testCase);
+                    Assert.areEqual(1, r.asExpected, r.testCase + ' / ' + diagnostics);
                 }
             }
-            Assert.isTrue(m.autoCount > 0 && m.autoPrecision == 100, 'auto-matches are always right: ' + String.valueOf(m.problems));
+            Assert.isTrue(m.autoCount > 0 && m.autoPrecision == 100, 'auto-matches are always right: ' + String.valueOf(m.problems) + ' / ' + diagnostics);
 
             // re-run only the captures (as after changing Matching_Setting__mdt), then clean everything
             VolumeTestData.runStep('CLEAN_CAPTURES');
