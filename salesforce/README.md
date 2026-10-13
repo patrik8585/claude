@@ -144,6 +144,7 @@ To see test results with coverage: `sf apex run test --test-level RunLocalTests 
 Re-run `01-configure.apex` after creating the public site, with its real URL. Use `scripts/apex/event-ids.apex` to print the QR and kiosk URLs for each event.
 To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --target-org dev-consent`, then run `03` again.
 **Org already loaded before phase 4**: the mockup HCPs were created without hospitals and departments. Run `99-reset-sample-data.apex` and then `03-sample-data.apex` once after the phase 4 deploy (the reset never touches volume test data).
+Diagnostics: `08-missed-duplicates.apex` lists the known duplicates the scan did not propose, with the engine's score and explanation (read-only).
 Volume data: `07-regenerate-test-captures.apex` re-creates only the test captures (after changing matching parameters); `98-cleanup-volume-data.apex` deletes all of it.
 
 ## 4. Manual setup in the UI (cannot be deployed reliably as metadata)
