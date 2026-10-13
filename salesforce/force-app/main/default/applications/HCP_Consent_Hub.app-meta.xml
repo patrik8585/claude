@@ -18,6 +18,15 @@
         <type>Flexipage</type>
         <pageOrSobjectType>Consent__c</pageOrSobjectType>
     </actionOverrides>
+    <actionOverrides>
+        <actionName>View</actionName>
+        <comment>Event record page with downloadable QR codes</comment>
+        <content>Event_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <skipRecordTypeSelect>false</skipRecordTypeSelect>
+        <type>Flexipage</type>
+        <pageOrSobjectType>Event__c</pageOrSobjectType>
+    </actionOverrides>
     <brand>
         <headerColor>#032D60</headerColor>
         <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>

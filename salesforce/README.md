@@ -131,7 +131,8 @@ To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --targ
 4. Setup → Users → the site guest user (name like *HCP Consent Site Guest User*) → **Permission Set Assignments** → add **HCP Consent - Public Site Guest** (`HCP_Consent_Guest`). Do not give the guest profile any object permissions.
 5. Setup → Digital Experiences → All Sites → *HCP Consent* → **Workspaces → Administration → Preferences**: set the **default owner for records created by guest users** to an internal user (required by Salesforce; matching then moves the capture to the event owner).
 6. Copy the site URL (e.g. `https://<domain>.my.site.com/hcp`), put it in `scripts/apex/01-configure.apex` and run that script again.
-7. URLs:
+7. **QR codes for posters**: open any event (tab *HCP Events*). The record page shows the **booth QR** (self-scan) and the **kiosk QR**, with **Download PNG** (1200 px) / **Download SVG** (vector, best for print) / **Copy link**. Admins and data stewards only.
+   URLs behind the codes:
    - QR at the booth: `https://…/hcp?e=<EventId>&ch=qr`
    - Kiosk tablet: `https://…/hcp?e=<EventId>&mode=kiosk`
    - Confirmation link in the email: `https://…/hcp?t=<token>` (generated automatically)

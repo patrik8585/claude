@@ -16,6 +16,10 @@
         <apexClass>ConsentRecordController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>EventQrController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <customPermissions>
         <enabled>true</enabled>
         <name>HCP_Capture_Data_Steward</name>
