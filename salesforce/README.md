@@ -12,7 +12,7 @@ are **not deployed yet**. See [Known limitations / not verified](#6-known-limita
 |---|---|---|
 | **1** | Data model, async matching, review console, consent record and Gigya status, dashboard and reports, permission sets, sample data | **Code complete**, not yet deployed |
 | **2** | Experience Cloud: public QR page, kiosk mode, double opt-in confirmation page, rep page (search first, signature, dictation, rule-based extraction) | **LWCs and Apex complete**. You create the sites in the UI (section 4) |
-| **3** | AI with Prompt Builder: "Extract with AI" on notes, review recommendation | "Extract with AI" **deployed and verified** with Prompt Builder (`force-app-ai`, section 8); rules stay as fallback. Review recommendation: design only |
+| **3** | AI with Prompt Builder: "Extract with AI" on notes, review recommendation | "Extract with AI" was deployed and verified with Prompt Builder, then **removed from the rep page** on business feedback: the rep keeps typed / dictated notes only. The Apex (`extractFromNotes`, `force-app-ai`) stays for a later decision (section 8). Review recommendation: design only |
 | **4** | Hospitals & departments, matching v2 (parametric), volume test data with accuracy measurement, Matching & Duplicates workbench with HCP merge | **Deployed**, all tests passing; accuracy measured on the DEV volume set (sections 9–12) |
 
 ### Defaults I chose (change them if you disagree)
@@ -203,7 +203,7 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 - [ ] Select the congress, then search `Ferri`: card shows "Consent on file", **Add to event** adds without question.
 - [ ] Search `Sala`: consent only *pending* (the congress capture was never confirmed), so the card shows the question → *signs on screen* → draw → **Confirm signature & add** → capture with signature file; after matching a consent *Opt-in confirmed* with Signature captured. (In the mockup this case was Greco; in the sample data Greco's congress capture is already confirmed, so Greco now shows "Consent on file".)
 - [ ] Search `Conti`: "Opted out" → only *signs on screen* and *declines* are offered.
-- [ ] Search `Bianchi` → the 3 Bianchi namesakes appear with an "Other territory" badge (found anyway). Search `Rossi` → "No HCP found" → **Add as walk-in**. Alternatively, with results on screen, use **Not in the list? + Add as walk-in** → paste/dictate the demo note → **Extract with AI** fills 7 fields + task "Call back Dr. Maria Bianchi" due Mon 2 Nov 2026 → choose a consent option → **Save capture** → *My captures today* lists it with "Follow-up task".
+- [ ] Search `Bianchi` → the 3 Bianchi namesakes appear with an "Other territory" badge (found anyway). Search `Rossi` → "No HCP found" → **Add as walk-in**. Alternatively, with results on screen, use **Not in the list? + Add as walk-in** → fill in the fields, type or dictate a note → choose a consent option → **Save capture** → *My captures today* lists it with its note.
 - [ ] Microphone: on Chrome/Android it dictates. Where the browser has no Web Speech API, a hint asks you to use the keyboard microphone.
 
 **Step 3 – Kiosk**
@@ -215,7 +215,7 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 - [ ] *Captures* → list view **All captures**: 8 Auto-matched (email: Villa, Ferri, Conti, Gallo, Greco; registration number: Romano, Rinaldi, Sala), 2 To review (Maria Bianchi, Roberto Esposito) and 2 New HCP (Leone, Marchetti).
 
 **Step 5 – Review console**
-- [ ] List view **To review** shows 2 captures. Open Maria Bianchi: path at "To review"; suggestion "Recommended: Dr. Maria Bianchi - same surname, city and specialty", confidence High; 3 candidates side by side with green/amber cells.
+- [ ] List view **To review** shows 2 captures. Open Maria Bianchi: path at "To review"; box *Suggested match* (rule-based Apex score, no AI) "Recommended: Dr. Maria Bianchi - same surname, city and specialty", confidence High; 3 candidates side by side with green/amber cells.
 - [ ] **Match** → path moves to Consent created and a consent is linked. Esposito → **Create new HCP** or **Discard** both work, and buttons disappear once resolved.
 
 **Step 6 – Consent record**
@@ -286,6 +286,8 @@ For IT:
 - **T3** Does the existing Gigya connector read `Consent__c` as-is, or do the field names need mapping to the Pitcher object?
 
 ## 8. Phase 3 – "Extract with AI" with Prompt Builder
+
+**Status: not on the rep page.** After the demo review the button was removed: the walk-in keeps the notes field (typed or dictated), saved on the capture and shown in *My captures today* and on the capture record. The Apex method `RepCaptureController.extractFromNotes`, the services and `force-app-ai` are kept, tested and unused; putting the button back is a UI change only. The steps below describe how it was set up and verified.
 
 How it works: `RepCaptureController.extractFromNotes` → `NotesExtractionService.extractSmart`. When *Consent Capture Settings › Use Prompt Builder* is on, it loads the class `NotesExtractionAI` (package directory `force-app-ai`) with `Type.forName` and calls the flex template; the JSON answer is validated (picklist specialty, email format, future due date) into the same `Result`. On any problem (class not deployed, template missing, Einstein error, empty answer) the rule-based extraction answers, and `Result.source` says which one was used (shown in small print on the rep page). The core never depends on Einstein, so it deploys and its tests run without it.
 

@@ -3,7 +3,6 @@ import getContext from '@salesforce/apex/RepCaptureController.getContext';
 import searchHcps from '@salesforce/apex/RepCaptureController.searchHcps';
 import addKnownHcp from '@salesforce/apex/RepCaptureController.addKnownHcp';
 import saveWalkIn from '@salesforce/apex/RepCaptureController.saveWalkIn';
-import extractFromNotes from '@salesforce/apex/RepCaptureController.extractFromNotes';
 import getMyCapturesToday from '@salesforce/apex/RepCaptureController.getMyCapturesToday';
 import searchHospitals from '@salesforce/apex/RepCaptureController.searchHospitals';
 import getDepartments from '@salesforce/apex/RepCaptureController.getDepartments';
@@ -42,14 +41,11 @@ export default class RepCaptureHub extends LightningElement {
     signed = false;
     added = {};
     walk = {};
-    extraction;
-    extracting = false;
     listening = false;
     micHint;
     recognition;
     myCaps = [];
     saving = false;
-    flash = false;
     notice;
     error;
     searchTimer;
@@ -69,7 +65,7 @@ export default class RepCaptureHub extends LightningElement {
     }
 
     renderedCallback() {
-        // textarea has no value attribute in LWC templates: keep it in sync with dictation / extraction
+        // textarea has no value attribute in LWC templates: keep it in sync with dictation
         const ta = this.template.querySelector('textarea');
         const notes = this.walk.notes || '';
         if (ta && ta.value !== notes) {
@@ -376,7 +372,6 @@ export default class RepCaptureHub extends LightningElement {
         this.walk = looksLikeEmail ? { email: q } : { lastName: q.charAt(0).toUpperCase() + q.slice(1) };
         this.hospitalOptions = [];
         this.departments = [];
-        this.extraction = undefined;
         this.resetMethod();
         this.screen = 'walkin';
     }
@@ -445,10 +440,6 @@ export default class RepCaptureHub extends LightningElement {
     get walkSpecialties() {
         const list = this.ctx ? this.ctx.specialties : [];
         return list.map((s) => ({ value: s, selected: s === this.walk.specialty }));
-    }
-
-    get walkClass() {
-        return this.flash ? 'flash' : '';
     }
 
     get micClass() {
@@ -582,42 +573,6 @@ export default class RepCaptureHub extends LightningElement {
         this.interimText = '';
     }
 
-    get extractDisabled() {
-        return this.extracting || !this.walk.notes;
-    }
-
-    get extractLabel() {
-        return this.extracting ? 'Extracting…' : '✦ Extract with AI';
-    }
-
-    async extract() {
-        this.stopMic();
-        this.extracting = true;
-        try {
-            const r = await extractFromNotes({ notes: this.walk.notes });
-            const w = { ...this.walk };
-            ['firstName', 'lastName', 'email', 'specialty', 'city', 'organisation'].forEach((k) => {
-                if (r[k]) {
-                    w[k] = r[k];
-                }
-            });
-            if (r.interest) {
-                w.interest = r.interest;
-            }
-            this.walk = w;
-            this.extraction = r;
-            this.flash = true;
-            // eslint-disable-next-line @lwc/lwc/no-async-operation
-            setTimeout(() => {
-                this.flash = false;
-            }, 1600);
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.extracting = false;
-        }
-    }
-
     async saveWalkIn() {
         const w = this.walk;
         if (!w.firstName || !w.lastName) {
@@ -631,7 +586,6 @@ export default class RepCaptureHub extends LightningElement {
         this.saving = true;
         this.error = undefined;
         try {
-            const x = this.extraction;
             await saveWalkIn({
                 eventId: this.eventId,
                 data: {
@@ -643,19 +597,14 @@ export default class RepCaptureHub extends LightningElement {
                     organisation: w.organisation,
                     hospitalId: w.hospitalId,
                     departmentId: w.departmentId,
-                    notes: w.notes,
-                    interest: w.interest,
-                    createTask: !!x,
-                    taskTitle: x ? x.taskTitle : null,
-                    taskDueDate: x ? x.taskDueDate : null
+                    notes: w.notes
                 },
                 method: this.method,
                 signatureDataUrl: this.signatureDataUrl(),
                 deviceInfo: this.deviceInfo()
             });
-            this.toast(x ? 'Capture saved · follow-up task created' : 'Capture saved');
+            this.toast('Capture saved');
             this.walk = {};
-            this.extraction = undefined;
             this.resetMethod();
             this.resetSearch();
             this.screen = 'captures';

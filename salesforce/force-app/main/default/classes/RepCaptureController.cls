@@ -140,6 +140,9 @@ public with sharing class RepCaptureController {
         public String consentVariant;
         @AuraEnabled
         public Boolean hasTask;
+        /** The rep's notes (typed or dictated), shown under the capture. */
+        @AuraEnabled
+        public String notes;
     }
 
     // ------------------------------------------------------------ access
@@ -475,6 +478,7 @@ public with sharing class RepCaptureController {
                 Captured_At__c,
                 Consent_Method__c,
                 Opt_In_Status__c,
+                Notes__c,
                 (SELECT Id FROM Tasks LIMIT 1)
             FROM Capture__c
             WHERE Captured_By__c = :UserInfo.getUserId() AND CreatedDate = TODAY
@@ -501,6 +505,7 @@ public with sharing class RepCaptureController {
                 m.consentLabel = 'Consent pending';
             }
             m.hasTask = !c.Tasks.isEmpty();
+            m.notes = c.Notes__c;
             out.add(m);
         }
         return out;

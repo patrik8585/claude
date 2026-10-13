@@ -51,7 +51,7 @@
                 <div>
                     <template lwc:if={hasCandidates}>
                         <div class="aicard">
-                            <h4>✦ AI suggestion</h4>
+                            <h4>Suggested match</h4>
                             <div class="rec">{data.recommendation}</div>
                             <ul>
                                 <template for:each={data.suggestionDetails} for:item="d">
@@ -59,7 +59,7 @@
                                 </template>
                             </ul>
                             <div class="aifoot">
-                                <span>Confidence: <b>{data.confidence}</b> · AI only suggests – a person decides.</span>
+                                <span>Confidence: <b>{data.confidence}</b> · rule-based score – a person decides.</span>
                                 <template lwc:if={data.canReview}>
                                     <button type="button" class="btn sm" onclick={selectRecommended}>Select recommended</button>
                                 </template>
