@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Use_Prompt_Builder__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>When on, "Extract with AI" on the rep page calls the Prompt Builder template (class NotesExtractionAI, force-app-ai). Rules are used whenever it is unavailable.</description>
+    <label>Use Prompt Builder</label>
+    <type>Checkbox</type>
+</CustomField>

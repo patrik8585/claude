@@ -41,7 +41,11 @@
                         <h4>Dr. {selected.firstName} {selected.lastName}</h4>
                         <div class="muted small">{selected.specialty} · {selected.city}</div>
                         <div class="kv">
-                            <span>Organisation</span><span>{selected.organisation}</span>
+                            <span>Hospital</span><span>{selected.organisation}</span>
+                            <span>Department</span><span>{selected.department}</span>
+                            <template lwc:if={selectedOtherAffiliations}>
+                                <span>Also works in</span><span>{selectedOtherAffiliations}</span>
+                            </template>
                             <span>OneKey ID</span><span>{selected.oneKeyId}</span>
                             <span>Email</span><span>{selected.email}</span>
                             <span>Consent</span><span><span class={selectedBadgeClass}>{selectedBadgeLabel}</span></span>
@@ -94,6 +98,7 @@
                             <div>
                                 <b>Dr. {h.firstName} {h.lastName}</b>
                                 <small>{h.specialty} · {h.city}</small>
+                                <template lwc:if={h.hcoLine}><small class="hco">{h.hcoLine}</small></template>
                                 <span class={h.badgeClass}>{h.badgeLabel}</span>
                                 <template lwc:if={h.otherTerritory}><span class="sm-badge grey">Other territory</span></template>
                             </div>
@@ -143,22 +148,44 @@
                         </div>
                         <div>
                             <label class="l" for="wo">Hospital</label>
-                            <input id="wo" class="in" data-field="organisation" value={walk.organisation} oninput={handleWalkInput} />
+                            <input id="wo" class="in" value={walk.organisation} oninput={handleHospitalInput} placeholder="Search…" autocomplete="off" />
                         </div>
                     </div>
+                    <template lwc:if={showHospitalOptions}>
+                        <div class="hco-list" role="listbox">
+                            <template for:each={hospitalOptions} for:item="o">
+                                <div key={o.id} class="hco-opt" data-id={o.id} onclick={pickHospital} role="option" aria-selected="false" tabindex="0">
+                                    <b>{o.name}</b><small>{o.city}</small>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:if={hasDepartments}>
+                        <label class="l" for="wd">Department</label>
+                        <select id="wd" class="in" data-field="departmentId" onchange={handleWalkInput}>
+                            <option value="">Select…</option>
+                            <template for:each={departmentRows} for:item="d">
+                                <option key={d.id} value={d.id} selected={d.selected}>{d.name}</option>
+                            </template>
+                        </select>
+                    </template>
                     <label class="l" for="wn">Notes (type or dictate)</label>
                     <div class="notes-w">
                         <textarea id="wn" class="in notes" data-field="notes" oninput={handleWalkInput} placeholder="Tap the microphone and speak…"></textarea>
-                        <button type="button" class={micClass} onclick={toggleMic} aria-label="Dictate">🎤</button>
+                        <button type="button" class={micClass} onclick={toggleMic} aria-label="Dictate" aria-pressed={listeningLabel}>🎤</button>
+                        <button type="button" class="lang" onclick={toggleLang} title="Dictation language" disabled={listening}>{langLabel}</button>
                     </div>
                 </div>
+                <template lwc:if={interimText}>
+                    <div class="interim">… {interimText}</div>
+                </template>
                 <template lwc:if={micHint}>
                     <div class="muted small">{micHint}</div>
                 </template>
                 <button type="button" class="btn ai block" onclick={extract} disabled={extractDisabled}>{extractLabel}</button>
                 <template lwc:if={extraction}>
                     <div class="alert ai col">
-                        <div><b>✦ AI filled {extraction.fieldCount} fields</b> – please review</div>
+                        <div><b>✦ AI filled {extraction.fieldCount} fields</b> – please review <small class="src">({extraction.source})</small></div>
                         <div>
                             <template for:each={extraction.chips} for:item="c">
                                 <span key={c} class="tchip">{c}</span>

@@ -5,6 +5,17 @@ import addKnownHcp from '@salesforce/apex/RepCaptureController.addKnownHcp';
 import saveWalkIn from '@salesforce/apex/RepCaptureController.saveWalkIn';
 import extractFromNotes from '@salesforce/apex/RepCaptureController.extractFromNotes';
 import getMyCapturesToday from '@salesforce/apex/RepCaptureController.getMyCapturesToday';
+import searchHospitals from '@salesforce/apex/RepCaptureController.searchHospitals';
+import getDepartments from '@salesforce/apex/RepCaptureController.getDepartments';
+
+const MIC_ERRORS = {
+    'not-allowed': 'Microphone blocked: allow microphone access for this site (browser address bar › site settings), or use the microphone key of your keyboard.',
+    'service-not-allowed': 'The browser does not allow speech recognition here: use the microphone key of your keyboard.',
+    'audio-capture': 'No microphone found: check the device, or type the notes.',
+    network: 'Dictation needs a connection to the browser speech service: check the network, or use the keyboard microphone (works offline on most phones).',
+    'language-not-supported': 'This language is not supported by the browser dictation: switch IT/EN or use the keyboard microphone.'
+};
+const MAX_RESTARTS = 5;
 
 const BADGE = {
     valid: { cls: 'sm-badge ok', short: 'Consent on file' },
@@ -43,6 +54,15 @@ export default class RepCaptureHub extends LightningElement {
     error;
     searchTimer;
     noticeTimer;
+    hospitalTimer;
+    hospitalOptions = [];
+    departments = [];
+    interimText = '';
+    dictationLang = (navigator.language || '').toLowerCase().startsWith('it') ? 'it-IT' : 'en-GB';
+    userStopped = false;
+    restarts = 0;
+    dictationBase = '';
+    dictated = '';
 
     connectedCallback() {
         this.load();
@@ -61,6 +81,7 @@ export default class RepCaptureHub extends LightningElement {
         this.stopMic();
         clearTimeout(this.searchTimer);
         clearTimeout(this.noticeTimer);
+        clearTimeout(this.hospitalTimer);
     }
 
     async load() {
@@ -204,7 +225,8 @@ export default class RepCaptureHub extends LightningElement {
                 alreadyAdded: h.alreadyAdded || !!this.added[h.id],
                 badgeClass: b.cls,
                 badgeLabel: b.short,
-                otherTerritory: h.inMyTerritory === false
+                otherTerritory: h.inMyTerritory === false,
+                hcoLine: [h.department, h.organisation].filter((x) => !!x).join(' · ')
             };
         });
     }
@@ -251,6 +273,14 @@ export default class RepCaptureHub extends LightningElement {
             return 'Pending confirmation';
         }
         return 'None on file';
+    }
+    get selectedOtherAffiliations() {
+        const a = this.selected && this.selected.affiliations;
+        if (!a) {
+            return undefined;
+        }
+        const others = a.split('; ').filter((x) => !x.endsWith('(primary)'));
+        return others.length ? others.join('; ') : undefined;
     }
     get addedMessage() {
         return this.selected ? this.added[this.selected.id] : undefined;
@@ -344,6 +374,8 @@ export default class RepCaptureHub extends LightningElement {
         const q = (this.query || '').trim();
         const looksLikeEmail = q.includes('@');
         this.walk = looksLikeEmail ? { email: q } : { lastName: q.charAt(0).toUpperCase() + q.slice(1) };
+        this.hospitalOptions = [];
+        this.departments = [];
         this.extraction = undefined;
         this.resetMethod();
         this.screen = 'walkin';
@@ -352,6 +384,62 @@ export default class RepCaptureHub extends LightningElement {
     handleWalkInput(evt) {
         const field = evt.target.dataset.field;
         this.walk = { ...this.walk, [field]: evt.target.value };
+        if (field === 'notes' && this.listening) {
+            // the rep edited the text while dictating: continue from what is now in the box
+            this.dictationBase = evt.target.value ? evt.target.value + ' ' : '';
+            this.dictated = '';
+        }
+    }
+
+    // ---------------------------------------------------------------- hospital / department
+
+    handleHospitalInput(evt) {
+        const value = evt.target.value;
+        // free text stays possible; choosing from the list links the capture to the hospital
+        this.walk = { ...this.walk, organisation: value, hospitalId: undefined, departmentId: undefined };
+        this.departments = [];
+        clearTimeout(this.hospitalTimer);
+        if ((value || '').trim().length < 2) {
+            this.hospitalOptions = [];
+            return;
+        }
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        this.hospitalTimer = setTimeout(() => this.runHospitalSearch(value), 300);
+    }
+
+    async runHospitalSearch(value) {
+        try {
+            this.hospitalOptions = await searchHospitals({ term: value });
+        } catch (e) {
+            this.hospitalOptions = [];
+        }
+    }
+
+    async pickHospital(evt) {
+        const id = evt.currentTarget.dataset.id;
+        const h = this.hospitalOptions.find((o) => o.id === id);
+        if (!h) {
+            return;
+        }
+        this.walk = { ...this.walk, organisation: h.name, hospitalId: h.id, departmentId: undefined, city: this.walk.city || h.city };
+        this.hospitalOptions = [];
+        try {
+            this.departments = await getDepartments({ hospitalId: h.id });
+        } catch (e) {
+            this.departments = [];
+        }
+    }
+
+    get showHospitalOptions() {
+        return this.hospitalOptions.length > 0 && !this.walk.hospitalId;
+    }
+
+    get hasDepartments() {
+        return this.departments.length > 0;
+    }
+
+    get departmentRows() {
+        return this.departments.map((d) => ({ ...d, selected: d.id === this.walk.departmentId }));
     }
 
     get walkSpecialties() {
@@ -367,52 +455,121 @@ export default class RepCaptureHub extends LightningElement {
         return this.listening ? 'mic on' : 'mic';
     }
 
+    get listeningLabel() {
+        return this.listening ? 'true' : 'false';
+    }
+
+    get langLabel() {
+        return this.dictationLang === 'it-IT' ? 'IT' : 'EN';
+    }
+
+    toggleLang() {
+        this.dictationLang = this.dictationLang === 'it-IT' ? 'en-GB' : 'it-IT';
+    }
+
+    /** Web Speech API constructor, or null (not supported, insecure context, or blocked by Lightning Web Security). */
+    recognitionCtor() {
+        try {
+            if (window.isSecureContext === false) {
+                return null;
+            }
+            return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     toggleMic() {
         if (this.listening) {
             this.stopMic();
+            this.micHint = undefined;
             return;
         }
-        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const Recognition = this.recognitionCtor();
         if (!Recognition) {
             this.micHint = 'Voice input is not available in this browser: tap the textarea and use the microphone key of your phone keyboard.';
-            const ta = this.template.querySelector('textarea');
-            if (ta) {
-                ta.focus();
-            }
+            this.focusNotes();
             return;
         }
+        this.userStopped = false;
+        this.restarts = 0;
+        this.dictationBase = this.walk.notes ? this.walk.notes + ' ' : '';
+        this.dictated = '';
+        this.startRecognition(Recognition);
+    }
+
+    startRecognition(Recognition) {
+        let rec;
         try {
-            const rec = new Recognition();
-            rec.lang = navigator.language || 'en-GB';
+            rec = new Recognition();
+            rec.lang = this.dictationLang;
             rec.continuous = true;
-            rec.interimResults = false;
-            const startText = this.walk.notes ? this.walk.notes + ' ' : '';
-            let spoken = '';
-            rec.onresult = (event) => {
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    if (event.results[i].isFinal) {
-                        spoken += event.results[i][0].transcript + ' ';
-                    }
+            rec.interimResults = true;
+            rec.maxAlternatives = 1;
+        } catch (e) {
+            this.micHint = 'Voice input could not start: use the microphone key of your keyboard.';
+            this.focusNotes();
+            return;
+        }
+        rec.onresult = (event) => {
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const text = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    this.dictated += text.trim() + ' ';
+                } else {
+                    interim += text;
                 }
-                this.walk = { ...this.walk, notes: (startText + spoken).trim() };
-            };
-            rec.onerror = (event) => {
-                this.micHint = `Dictation stopped (${event.error}). You can also use the keyboard microphone.`;
-                this.listening = false;
-            };
-            rec.onend = () => {
-                this.listening = false;
-            };
+            }
+            this.walk = { ...this.walk, notes: (this.dictationBase + this.dictated).trim() };
+            this.interimText = interim.trim();
+        };
+        rec.onerror = (event) => {
+            const code = event && event.error;
+            if (code === 'no-speech' || code === 'aborted') {
+                return; // silence: onend restarts
+            }
+            this.userStopped = true;
+            this.micHint = MIC_ERRORS[code] || `Dictation stopped (${code}). You can also use the keyboard microphone.`;
+        };
+        rec.onend = () => {
+            this.interimText = '';
+            // browsers end a "continuous" session after a pause: restart until the rep stops it
+            if (!this.userStopped && this.restarts < MAX_RESTARTS) {
+                this.restarts++;
+                try {
+                    rec.start();
+                    return;
+                } catch (e) {
+                    // fall through: stop
+                }
+            }
+            this.listening = false;
+            this.recognition = undefined;
+            if (!this.userStopped && this.restarts >= MAX_RESTARTS) {
+                this.micHint = 'Dictation paused. Tap the microphone to continue.';
+            }
+        };
+        try {
             rec.start();
             this.recognition = rec;
             this.listening = true;
-            this.micHint = 'Listening… tap the microphone again to stop.';
+            this.micHint = `Listening (${this.langLabel})… tap the microphone again to stop.`;
         } catch (e) {
             this.micHint = 'Voice input could not start: use the microphone key of your keyboard.';
+            this.focusNotes();
+        }
+    }
+
+    focusNotes() {
+        const ta = this.template.querySelector('textarea');
+        if (ta) {
+            ta.focus();
         }
     }
 
     stopMic() {
+        this.userStopped = true;
         if (this.recognition) {
             try {
                 this.recognition.stop();
@@ -422,6 +579,7 @@ export default class RepCaptureHub extends LightningElement {
             this.recognition = undefined;
         }
         this.listening = false;
+        this.interimText = '';
     }
 
     get extractDisabled() {
@@ -483,6 +641,8 @@ export default class RepCaptureHub extends LightningElement {
                     specialty: w.specialty,
                     city: w.city,
                     organisation: w.organisation,
+                    hospitalId: w.hospitalId,
+                    departmentId: w.departmentId,
                     notes: w.notes,
                     interest: w.interest,
                     createTask: !!x,

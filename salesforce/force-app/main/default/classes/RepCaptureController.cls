@@ -62,6 +62,22 @@ public with sharing class RepCaptureController {
         public String territory;
         @AuraEnabled
         public Boolean inMyTerritory;
+        @AuraEnabled
+        public String hospital;
+        @AuraEnabled
+        public String department;
+        /** All active affiliations, primary first. */
+        @AuraEnabled
+        public String affiliations;
+    }
+
+    public class HcoOption {
+        @AuraEnabled
+        public String id;
+        @AuraEnabled
+        public String name;
+        @AuraEnabled
+        public String city;
     }
 
     public class WalkIn {
@@ -79,6 +95,10 @@ public with sharing class RepCaptureController {
         public String organisation { get; set; }
         @AuraEnabled
         public String registrationNumber { get; set; }
+        @AuraEnabled
+        public String hospitalId { get; set; }
+        @AuraEnabled
+        public String departmentId { get; set; }
         @AuraEnabled
         public String notes { get; set; }
         @AuraEnabled
@@ -194,6 +214,7 @@ public with sharing class RepCaptureController {
                 Consent_Status__c,
                 Consent_Status_Date__c,
                 Consent_Text_Version__c,
+                AccountId,
                 Account.Name
             FROM Contact
             WHERE
@@ -205,10 +226,12 @@ public with sharing class RepCaptureController {
             LIMIT 50
         ];
         Set<Id> added = alreadyAdded(eventId, contacts);
+        Map<Id, String> affiliations = CaptureReviewController.affiliationLabels(new Map<Id, Contact>(contacts).keySet());
         List<HcpResult> mine = new List<HcpResult>();
         List<HcpResult> others = new List<HcpResult>();
         for (Contact c : contacts) {
             HcpResult r = toResult(c, added.contains(c.Id));
+            r.affiliations = affiliations.get(c.Id);
             r.territory = c.Territory__c;
             r.inMyTerritory = String.isNotBlank(u.Territory__c) && c.Territory__c == u.Territory__c;
             if (r.inMyTerritory) {
@@ -246,6 +269,16 @@ public with sharing class RepCaptureController {
         r.specialty = c.Specialty__c;
         r.city = c.MailingCity;
         r.organisation = c.Account == null ? null : c.Account.Name;
+        HcoDirectory dir = HcoDirectory.get();
+        Id hospitalId = dir.hospitalOf(c.AccountId);
+        if (hospitalId != null) {
+            r.hospital = dir.hospitalName(hospitalId);
+            r.organisation = r.hospital;
+            if (dir.isDepartment(c.AccountId)) {
+                Account d = dir.departments.get(c.AccountId);
+                r.department = String.isBlank(d.Department_Type__c) ? d.Name : d.Department_Type__c;
+            }
+        }
         r.oneKeyId = c.OneKey_Id__c;
         r.email = c.Email;
         r.registrationNumber = c.Registration_Number__c;
@@ -281,7 +314,7 @@ public with sharing class RepCaptureController {
         Event__c ev = loadEvent(eventId);
         User u = me();
         List<Contact> rows = [
-            SELECT Id, FirstName, LastName, Email, Specialty__c, MailingCity, Registration_Number__c, Consent_Status__c, Territory__c, Account.Name
+            SELECT Id, FirstName, LastName, Email, Specialty__c, MailingCity, Registration_Number__c, Consent_Status__c, Territory__c, AccountId, Account.Name
             FROM Contact
             WHERE Id = :contactId
         ];
@@ -300,6 +333,12 @@ public with sharing class RepCaptureController {
         cap.Specialty__c = c.Specialty__c;
         cap.City__c = c.MailingCity;
         cap.Organisation__c = c.Account == null ? null : c.Account.Name;
+        HcoDirectory dir = HcoDirectory.get();
+        cap.Hospital__c = dir.hospitalOf(c.AccountId);
+        if (cap.Hospital__c != null) {
+            cap.Organisation__c = dir.hospitalName(cap.Hospital__c);
+            cap.Department__c = dir.isDepartment(c.AccountId) ? c.AccountId : null;
+        }
         cap.Registration_Number__c = c.Registration_Number__c;
         cap.HCP_Selected_By_Rep__c = true;
         cap.Matched_Contact__c = c.Id;
@@ -329,6 +368,7 @@ public with sharing class RepCaptureController {
         cap.City__c = String.isBlank(data.city) ? null : data.city.trim().left(80);
         cap.Organisation__c = String.isBlank(data.organisation) ? null : data.organisation.trim().left(255);
         cap.Registration_Number__c = String.isBlank(data.registrationNumber) ? null : data.registrationNumber.trim().left(30);
+        applyHco(cap, data.hospitalId, data.departmentId);
         cap.Notes__c = data.notes == null ? null : data.notes.left(32000);
         cap.Interest__c = String.isBlank(data.interest) ? null : data.interest.left(255);
         Task follow = null;
@@ -346,10 +386,76 @@ public with sharing class RepCaptureController {
         return save(cap, method, signatureDataUrl, ev.Name, follow);
     }
 
+    // ------------------------------------------------------------ hospitals and departments
+
+    /** Hospitals whose name, alias or city contains the term (walk-in form). */
+    @AuraEnabled
+    public static List<HcoOption> searchHospitals(String term) {
+        checkAccess();
+        List<HcoOption> out = new List<HcoOption>();
+        String t = HcpMatchEngine.normalize(term);
+        if (t.length() < 2) {
+            return out;
+        }
+        HcoDirectory dir = HcoDirectory.get();
+        for (Account h : dir.hospitals.values()) {
+            String hay = HcpMatchEngine.normalize(h.Name) + '|' + HcpMatchEngine.normalize(h.Aliases__c) + '|' + HcpMatchEngine.normalize(h.BillingCity);
+            if (hay.contains(t)) {
+                HcoOption o = new HcoOption();
+                o.id = h.Id;
+                o.name = h.Name;
+                o.city = h.BillingCity;
+                out.add(o);
+                if (out.size() >= 20) {
+                    break;
+                }
+            }
+        }
+        return out;
+    }
+
+    @AuraEnabled
+    public static List<HcoOption> getDepartments(String hospitalId) {
+        checkAccess();
+        List<HcoOption> out = new List<HcoOption>();
+        if (String.isBlank(hospitalId)) {
+            return out;
+        }
+        List<Account> depts = HcoDirectory.get().departmentsByHospital.get(Id.valueOf(hospitalId));
+        if (depts == null) {
+            return out;
+        }
+        for (Account d : depts) {
+            HcoOption o = new HcoOption();
+            o.id = d.Id;
+            o.name = String.isBlank(d.Department_Type__c) ? d.Name : d.Department_Type__c;
+            o.city = d.BillingCity;
+            out.add(o);
+        }
+        return out;
+    }
+
+    /** Sets hospital / department chosen by the rep (validated against the directory). */
+    private static void applyHco(Capture__c cap, String hospitalId, String departmentId) {
+        HcoDirectory dir = HcoDirectory.get();
+        Id dept = String.isBlank(departmentId) ? null : Id.valueOf(departmentId);
+        Id hosp = String.isBlank(hospitalId) ? null : Id.valueOf(hospitalId);
+        if (dept != null && dir.isDepartment(dept)) {
+            cap.Department__c = dept;
+            hosp = dir.hospitalOf(dept);
+        }
+        if (hosp != null && dir.hospitals.containsKey(hosp)) {
+            cap.Hospital__c = hosp;
+            if (String.isBlank(cap.Organisation__c)) {
+                cap.Organisation__c = dir.hospitalName(hosp);
+            }
+        }
+    }
+
     @AuraEnabled
     public static NotesExtractionService.Result extractFromNotes(String notes) {
         checkAccess();
-        return NotesExtractionService.extract(notes);
+        return NotesExtractionService.extractSmart(notes);
     }
 
     // ------------------------------------------------------------ my captures

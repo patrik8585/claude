@@ -37,4 +37,35 @@ private class NotesExtractionServiceTest {
         Assert.areEqual(Date.newInstance(2027, 1, 4), jan.taskDueDate);
         Assert.areEqual(Date.newInstance(2026, 10, 5), NotesExtractionService.firstMondayOf(10, Date.newInstance(2026, 10, 1)));
     }
+
+    @IsTest
+    static void promptBuilderAnswerAndFallback() {
+        Date today = Date.newInstance(2026, 10, 15);
+        NotesExtractionService.Result r = NotesExtractionService.fromJson(
+            'Here is the JSON: {"firstName":"Maria","lastName":"Bianchi","email":"Maria.Bianchi@gmail.com","specialty":"Paediatrics",' +
+            '"city":"Genoa","organisation":"Gaslini","interest":"Product X","taskTitle":"Call back Dr. Maria Bianchi","taskDueDate":"2026-11-02"}',
+            today
+        );
+        Assert.areEqual('maria.bianchi@gmail.com', r.email);
+        Assert.areEqual(Date.newInstance(2026, 11, 2), r.taskDueDate);
+        Assert.areEqual('Mon 2 Nov 2026', r.taskDueLabel);
+        Assert.areEqual(7, r.fieldCount);
+
+        NotesExtractionService.Result bad = NotesExtractionService.fromJson(
+            '{"lastName":"Rossi","email":"not-an-email","specialty":"Astrology","taskDueDate":"yesterday"}',
+            today
+        );
+        Assert.isNull(bad.email, 'malformed email dropped');
+        Assert.isNull(bad.specialty, 'only picklist specialties');
+        Assert.areEqual(today.addDays(14), bad.taskDueDate);
+        Assert.areEqual('Follow up with Dr. Rossi', bad.taskTitle);
+        Assert.areEqual(0, NotesExtractionService.fromJson('', today).fieldCount);
+
+        Assert.areEqual('Rules', NotesExtractionService.extractSmart('Dr. Luca Neri').source, 'Prompt Builder off by default');
+        insert new Consent_Capture_Settings__c(SetupOwnerId = UserInfo.getOrganizationId(), Use_Prompt_Builder__c = true);
+        ConsentCaptureConfig.resetCache();
+        NotesExtractionService.Result fb = NotesExtractionService.extractSmart('Dr. Luca Neri, call back in January');
+        Assert.areEqual('Neri', fb.lastName, 'rules (or the template) always answer');
+        Assert.isNotNull(fb.source);
+    }
 }

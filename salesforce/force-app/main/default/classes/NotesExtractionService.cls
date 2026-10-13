@@ -1,7 +1,10 @@
 /**
- * Phase 1 "Extract with AI": simple rule-based extraction from the rep's (dictated) notes,
- * mirroring the mockup. Phase 3 replaces extract() with a Prompt Builder template call
- * returning the same Result structure, so the LWC does not change.
+ * "Extract with AI" on the rep's (dictated) notes.
+ *
+ * extractSmart() calls the Prompt Builder template through the optional class NotesExtractionAI
+ * (package directory force-app-ai) when Consent Capture Settings > Use Prompt Builder is on, and
+ * falls back to the rule-based extract() when the class, the template or Einstein is not available,
+ * or the answer is unusable. Both return the same Result, so the LWC does not change.
  */
 public with sharing class NotesExtractionService {
     public class Result {
@@ -29,6 +32,109 @@ public with sharing class NotesExtractionService {
         public Integer fieldCount;
         @AuraEnabled
         public List<String> chips;
+        /** Rules | Prompt Builder | Rules (fallback: reason) */
+        @AuraEnabled
+        public String source;
+    }
+
+    public static final String AI_CLASS = 'NotesExtractionAI';
+    public static final String DEFAULT_TEMPLATE = 'HCP_Notes_Extraction';
+    public static final Set<String> SPECIALTIES = new Set<String>{
+        'Paediatrics', 'Neonatology', 'Paediatric Gastroenterology', 'Paediatric Allergy', 'Dietetics & Nutrition', 'General Practice', 'Gynaecology'
+    };
+
+    /** Prompt Builder when enabled and available, otherwise (or on any error) the rules. */
+    public static Result extractSmart(String notes) {
+        Date today = Date.today();
+        Consent_Capture_Settings__c s = ConsentCaptureConfig.settings();
+        if (s != null && s.Use_Prompt_Builder__c == true && String.isNotBlank(notes)) {
+            String reason;
+            try {
+                Type t = Type.forName(AI_CLASS);
+                if (t == null) {
+                    reason = 'class ' + AI_CLASS + ' not deployed';
+                } else {
+                    Result ai = ((NotesExtractor) t.newInstance()).extract(notes.left(5000), today);
+                    if (ai != null && ai.fieldCount > 0) {
+                        ai.source = 'Prompt Builder';
+                        return ai;
+                    }
+                    reason = 'empty answer';
+                }
+            } catch (Exception e) {
+                reason = e.getTypeName() + ': ' + e.getMessage();
+            }
+            Result fallback = extract(notes, today);
+            fallback.source = ('Rules (Prompt Builder unavailable: ' + reason + ')').left(255);
+            return fallback;
+        }
+        Result r = extract(notes, today);
+        r.source = 'Rules';
+        return r;
+    }
+
+    /**
+     * Turns the Prompt Builder answer (JSON with the Result keys, taskDueDate as yyyy-MM-dd) into a Result.
+     * Unknown specialties and malformed emails or dates are dropped, so the model cannot write invalid values.
+     */
+    public static Result fromJson(String answer, Date today) {
+        Result r = new Result();
+        r.chips = new List<String>();
+        r.fieldCount = 0;
+        if (String.isBlank(answer)) {
+            return r;
+        }
+        String body = answer.trim();
+        if (body.contains('{') && body.contains('}')) {
+            body = body.substring(body.indexOf('{'), body.lastIndexOf('}') + 1);
+        }
+        Map<String, Object> m = (Map<String, Object>) JSON.deserializeUntyped(body);
+        r.firstName = clean(m.get('firstName'), 80);
+        r.lastName = clean(m.get('lastName'), 80);
+        String email = clean(m.get('email'), 255);
+        if (email != null && Pattern.matches('[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+', email)) {
+            r.email = email.toLowerCase();
+        }
+        String spec = clean(m.get('specialty'), 80);
+        r.specialty = SPECIALTIES.contains(spec) ? spec : null;
+        r.city = clean(m.get('city'), 80);
+        r.organisation = clean(m.get('organisation'), 255);
+        r.interest = clean(m.get('interest'), 255);
+        r.taskTitle = clean(m.get('taskTitle'), 255);
+        String due = clean(m.get('taskDueDate'), 10);
+        if (due != null && Pattern.matches('\\d{4}-\\d{2}-\\d{2}', due)) {
+            try {
+                r.taskDueDate = Date.valueOf(due);
+            } catch (Exception e) {
+                r.taskDueDate = null;
+            }
+        }
+        if (r.taskDueDate == null || r.taskDueDate < today) {
+            r.taskDueDate = today.addDays(14);
+            r.taskDueLabel = 'Within 2 weeks';
+        } else {
+            r.taskDueLabel = label(r.taskDueDate);
+        }
+        if (String.isBlank(r.taskTitle)) {
+            String person = 'Dr. ' + ((r.firstName == null ? '' : r.firstName + ' ') + (r.lastName == null ? '' : r.lastName)).trim();
+            r.taskTitle = 'Follow up with ' + person;
+        }
+        addChip(r, 'First name', r.firstName);
+        addChip(r, 'Last name', r.lastName);
+        addChip(r, 'Email', r.email);
+        addChip(r, 'Specialty', r.specialty);
+        addChip(r, 'City', r.city);
+        addChip(r, 'Hospital', r.organisation);
+        addChip(r, 'Interest', r.interest);
+        return r;
+    }
+
+    private static String clean(Object v, Integer maxLen) {
+        if (v == null) {
+            return null;
+        }
+        String s = String.valueOf(v).trim();
+        return String.isBlank(s) || s.equalsIgnoreCase('null') ? null : s.left(maxLen);
     }
 
     private static final List<List<String>> SPECIALTY_KEYWORDS = new List<List<String>>{
