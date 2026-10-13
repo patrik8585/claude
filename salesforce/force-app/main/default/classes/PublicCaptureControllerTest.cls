@@ -60,7 +60,7 @@ private class PublicCaptureControllerTest {
         Test.startTest();
         PublicCaptureController.SubmitResult r = PublicCaptureController.submitCapture(e.Id, 'kiosk', token, validSubmission());
         Test.stopTest();
-        Assert.isTrue(r.success, r.message);
+        Assert.isTrue(r.success, 'submit failed: ' + r.message);
         Assert.areEqual('Laura', r.firstName);
         Assert.isNotNull(r.nextFormToken);
         Capture__c c = [

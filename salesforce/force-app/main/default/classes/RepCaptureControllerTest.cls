@@ -86,7 +86,7 @@ private class RepCaptureControllerTest {
         Assert.isTrue(signedCap.Signature_Captured__c);
         Assert.isTrue(signedCap.HCP_Selected_By_Rep__c);
         Assert.areEqual(rep.Id, signedCap.Captured_By__c);
-        Assert.areEqual(1, [SELECT COUNT() FROM ContentVersion WHERE FirstPublishLocationId = :signedCap.Id]);
+        Assert.areEqual(1, [SELECT COUNT() FROM ContentDocumentLink WHERE LinkedEntityId = :signedCap.Id], 'signature file linked to the capture');
     }
 
     @IsTest
