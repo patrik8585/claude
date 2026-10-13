@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Department_Type__c</fullName>
+    <description>Department records only. Used to pick the department of a new HCP from the captured specialty.</description>
+    <label>Department Type</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Paediatrics</fullName>
+                <default>false</default>
+                <label>Paediatrics</label>
+            </value>
+            <value>
+                <fullName>Neonatology</fullName>
+                <default>false</default>
+                <label>Neonatology</label>
+            </value>
+            <value>
+                <fullName>Neonatal Intensive Care</fullName>
+                <default>false</default>
+                <label>Neonatal Intensive Care</label>
+            </value>
+            <value>
+                <fullName>Paediatric Gastroenterology</fullName>
+                <default>false</default>
+                <label>Paediatric Gastroenterology</label>
+            </value>
+            <value>
+                <fullName>Paediatric Allergy</fullName>
+                <default>false</default>
+                <label>Paediatric Allergy</label>
+            </value>
+            <value>
+                <fullName>Paediatric Emergency</fullName>
+                <default>false</default>
+                <label>Paediatric Emergency</label>
+            </value>
+            <value>
+                <fullName>Obstetrics &amp; Gynaecology</fullName>
+                <default>false</default>
+                <label>Obstetrics &amp; Gynaecology</label>
+            </value>
+            <value>
+                <fullName>Clinical Nutrition</fullName>
+                <default>false</default>
+                <label>Clinical Nutrition</label>
+            </value>
+            <value>
+                <fullName>Paediatric Endocrinology</fullName>
+                <default>false</default>
+                <label>Paediatric Endocrinology</label>
+            </value>
+            <value>
+                <fullName>Paediatric Surgery</fullName>
+                <default>false</default>
+                <label>Paediatric Surgery</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

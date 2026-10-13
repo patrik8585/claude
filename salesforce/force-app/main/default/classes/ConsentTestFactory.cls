@@ -52,6 +52,53 @@ public class ConsentTestFactory {
         return c;
     }
 
+    public static Account hospital(String name, String city, String domain, String aliases) {
+        Account a = new Account(
+            Name = name,
+            BillingCity = city,
+            Email_Domain__c = domain,
+            Aliases__c = aliases,
+            RecordTypeId = HcoDirectory.recordTypeId(HcoDirectory.RT_HOSPITAL)
+        );
+        a.setOptions(CaptureResolutionService.allowDuplicates());
+        insert a;
+        HcoDirectory.reset();
+        return a;
+    }
+
+    public static Account department(Account hospital, String departmentType) {
+        Account d = new Account(
+            Name = departmentType + ' - ' + hospital.Name,
+            ParentId = hospital.Id,
+            BillingCity = hospital.BillingCity,
+            Department_Type__c = departmentType,
+            RecordTypeId = HcoDirectory.recordTypeId(HcoDirectory.RT_DEPARTMENT)
+        );
+        d.setOptions(CaptureResolutionService.allowDuplicates());
+        insert d;
+        HcoDirectory.reset();
+        return d;
+    }
+
+    /** HCP working in the given department or hospital (primary affiliation). */
+    public static Contact contactAt(String first, String last, String email, String spec, String city, String reg, Id hcoId) {
+        Contact c = new Contact(
+            FirstName = first,
+            LastName = last,
+            Email = email,
+            Specialty__c = spec,
+            MailingCity = city,
+            Registration_Number__c = reg,
+            AccountId = hcoId,
+            Territory__c = TERRITORY,
+            Consent_Status__c = CaptureConstants.HCP_NONE
+        );
+        c.setOptions(CaptureResolutionService.allowDuplicates());
+        insert c;
+        insert new HCP_Affiliation__c(Contact__c = c.Id, HCO__c = hcoId, Primary__c = true, Start_Date__c = Date.today().addYears(-2));
+        return c;
+    }
+
     public static Consent__c confirmedConsent(Id contactId) {
         Consent__c k = new Consent__c(
             Contact__c = contactId,

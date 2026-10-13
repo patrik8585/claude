@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Hospital_Name__c</fullName>
+    <label>Hospital</label>
+    <formula>IF(HCO__r.RecordType.DeveloperName = "Department", HCO__r.Parent.Name, HCO__r.Name)</formula>
+    <formulaTreatBlanksAs>BlankAsBlank</formulaTreatBlanksAs>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>HCO_Required</fullName>
+    <active>true</active>
+    <description>An affiliation needs a department or hospital.</description>
+    <errorConditionFormula>ISBLANK(HCO__c)</errorConditionFormula>
+    <errorDisplayField>HCO__c</errorDisplayField>
+    <errorMessage>Select the department or hospital.</errorMessage>
+</ValidationRule>

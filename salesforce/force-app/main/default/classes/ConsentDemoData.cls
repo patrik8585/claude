@@ -16,6 +16,38 @@ public with sharing class ConsentDemoData {
     public static final String TRAINING_NAME = 'Infant Nutrition Training - Bologna';
     private static final String DEMO_NOTE = 'Dr. Maria Bianchi, paediatrician at Gaslini Genoa, interested in product X, call back in November. Email maria.bianchi@gmail.com';
 
+    /** Mockup organisations as hospitals: name, city, institutional email domain, aliases. */
+    public static final List<List<String>> MOCKUP_HOSPITALS = new List<List<String>>{
+        new List<String>{ 'Policlinico di Milano', 'Milan', 'policlinico-example.it', 'Policlinico Milano; Ospedale Maggiore Policlinico' },
+        new List<String>{ 'Ospedale Bambino Gesù', 'Rome', null, 'Bambino Gesu; OPBG' },
+        new List<String>{ 'AOSP Sant’Orsola', 'Bologna', 'aosp-example.it', 'Sant Orsola; Policlinico Sant Orsola; S. Orsola' },
+        new List<String>{ 'Gaslini Institute', 'Genoa', 'gaslini-example.it', 'Gaslini; Istituto Gaslini; IRCCS Giannina Gaslini' },
+        new List<String>{ 'San Raffaele Hospital', 'Milan', 'sanraffaele-example.it', 'San Raffaele; Ospedale San Raffaele; HSR' },
+        new List<String>{ 'ASL 3 Genovese', 'Genoa', 'asl3-example.it', 'ASL3; ASL 3 Genova' },
+        new List<String>{ 'Regina Margherita', 'Turin', null, 'Ospedale Regina Margherita; OIRM' },
+        new List<String>{ 'Meyer Children’s', 'Florence', 'meyer-example.it', 'Meyer; AOU Meyer; Ospedale Meyer' },
+        new List<String>{ 'Santobono Pausilipon', 'Naples', 'santobono-example.it', 'Santobono; AORN Santobono' },
+        new List<String>{ 'ASL Roma 1', 'Rome', 'aslroma-example.it', 'ASL Roma1' },
+        new List<String>{ 'AOUI Verona', 'Verona', 'aovr-example.it', 'Borgo Trento; AOUI VR; Ospedale Borgo Trento' },
+        new List<String>{ 'ASST Fatebenefratelli', 'Milan', 'asst-example.it', 'Fatebenefratelli; Fatebenefratelli Sacco' },
+        new List<String>{ 'ASST Papa Giovanni XXIII', 'Bergamo', 'asst-bg-example.it', 'Papa Giovanni; Ospedale Papa Giovanni XXIII' },
+        new List<String>{ 'Azienda Ospedale Padova', 'Padua', null, 'Ospedale di Padova; AOPD' }
+    };
+
+    /** Department type for an HCP specialty. */
+    public static String departmentTypeFor(String specialty) {
+        if (specialty == 'Gynaecology') {
+            return 'Obstetrics & Gynaecology';
+        }
+        if (specialty == 'Dietetics & Nutrition') {
+            return 'Clinical Nutrition';
+        }
+        if (specialty == 'Neonatology' || specialty == 'Paediatric Gastroenterology' || specialty == 'Paediatric Allergy') {
+            return specialty;
+        }
+        return 'Paediatrics';
+    }
+
     public class DemoException extends Exception {
     }
 
@@ -85,26 +117,51 @@ public with sharing class ConsentDemoData {
             new List<Object>{ 'H14', 'Laura', 'Benedetti', 'laura.benedetti@ospedale-example.it', 'Paediatrics', 'Padua', 'Azienda Ospedale Padova', 'PD-13350', 'WITA00133509', true }
         };
 
-        Map<String, Account> accounts = new Map<String, Account>();
+        // Hospitals (record type Hospital) with their departments; each HCP works in the department of its specialty.
+        Map<String, Account> hospitals = new Map<String, Account>();
+        for (List<String> h : MOCKUP_HOSPITALS) {
+            Account a = new Account(
+                Name = h[0],
+                BillingCity = h[1],
+                Email_Domain__c = h[2],
+                Aliases__c = h[3],
+                RecordTypeId = HcoDirectory.recordTypeId(HcoDirectory.RT_HOSPITAL)
+            );
+            a.setOptions(dml);
+            hospitals.put(h[0], a);
+        }
+        insert hospitals.values();
+        Map<String, Account> departments = new Map<String, Account>();
         for (List<Object> h : hcps) {
             String org = (String) h[6];
-            if (!accounts.containsKey(org)) {
-                Account a = new Account(Name = org);
-                a.setOptions(dml);
-                accounts.put(org, a);
+            for (String deptType : new List<String>{ 'Paediatrics', 'Neonatology', departmentTypeFor((String) h[4]) }) {
+                String k = org + '|' + deptType;
+                if (!departments.containsKey(k)) {
+                    Account d = new Account(
+                        Name = deptType + ' - ' + org,
+                        ParentId = hospitals.get(org).Id,
+                        BillingCity = hospitals.get(org).BillingCity,
+                        Department_Type__c = deptType,
+                        RecordTypeId = HcoDirectory.recordTypeId(HcoDirectory.RT_DEPARTMENT)
+                    );
+                    d.setOptions(dml);
+                    departments.put(k, d);
+                }
             }
         }
-        insert accounts.values();
+        insert departments.values();
+        HcoDirectory.reset();
 
         Map<String, Contact> contacts = new Map<String, Contact>();
         for (List<Object> h : hcps) {
+            String org = (String) h[6];
             Contact c = new Contact(
                 FirstName = (String) h[1],
                 LastName = (String) h[2],
                 Email = (String) h[3],
                 Specialty__c = (String) h[4],
                 MailingCity = (String) h[5],
-                AccountId = accounts.get((String) h[6]).Id,
+                AccountId = departments.get(org + '|' + departmentTypeFor((String) h[4])).Id,
                 Registration_Number__c = (String) h[7],
                 OneKey_Id__c = (String) h[8],
                 Territory__c = ((Boolean) h[9]) ? TERRITORY_REP : TERRITORY_OTHER,
@@ -114,6 +171,22 @@ public with sharing class ConsentDemoData {
             contacts.put((String) h[0], c);
         }
         insert contacts.values();
+        List<HCP_Affiliation__c> affiliations = new List<HCP_Affiliation__c>();
+        for (List<Object> h : hcps) {
+            Contact c = contacts.get((String) h[0]);
+            affiliations.add(new HCP_Affiliation__c(Contact__c = c.Id, HCO__c = c.AccountId, Primary__c = true, Role__c = 'Consultant', Start_Date__c = Date.newInstance(2020, 1, 1)));
+        }
+        // Chiara Rinaldi also works in the general paediatrics department (an HCP in 2 departments).
+        affiliations.add(
+            new HCP_Affiliation__c(
+                Contact__c = contacts.get('H8').Id,
+                HCO__c = departments.get('Meyer Children’s|Paediatrics').Id,
+                Primary__c = false,
+                Role__c = 'Consultant',
+                Start_Date__c = Date.newInstance(2023, 9, 1)
+            )
+        );
+        insert affiliations;
 
         // Existing consents (as created by Pitcher today) and one opt-out.
         List<Consent__c> legacy = new List<Consent__c>{
@@ -271,19 +344,29 @@ public with sharing class ConsentDemoData {
         Set<Id> eventIds = new Map<Id, Event__c>(events).keySet();
         List<Capture__c> caps = [SELECT Id FROM Capture__c WHERE Event__c IN :eventIds];
         delete [SELECT Id FROM Task WHERE WhatId IN :caps];
-        delete [SELECT Id FROM Consent__c WHERE Event__c IN :eventIds OR Channel__c = :CaptureConstants.CHANNEL_PITCHER];
+        delete [SELECT Id FROM Consent__c WHERE Event__c IN :eventIds OR (Channel__c = :CaptureConstants.CHANNEL_PITCHER AND Contact__r.Test_Data_Set__c = NULL)];
         delete caps;
         delete events;
         List<Contact> demoContacts = [
             SELECT Id, AccountId
             FROM Contact
-            WHERE Email LIKE '%-example.it' OR Email LIKE '%@gmail.com'
+            WHERE (Email LIKE '%-example.it' OR Email LIKE '%@gmail.com') AND Test_Data_Set__c = NULL
         ];
         Set<Id> accountIds = new Set<Id>();
         for (Contact c : demoContacts) {
             accountIds.add(c.AccountId);
         }
         delete demoContacts;
-        delete [SELECT Id FROM Account WHERE Id IN :accountIds AND Id NOT IN (SELECT AccountId FROM Contact)];
+        Set<String> hospitalNames = new Set<String>();
+        for (List<String> h : MOCKUP_HOSPITALS) {
+            hospitalNames.add(h[0]);
+        }
+        delete [
+            SELECT Id
+            FROM Account
+            WHERE (Id IN :accountIds OR Parent.Name IN :hospitalNames) AND Test_Data_Set__c = NULL AND Id NOT IN (SELECT AccountId FROM Contact)
+        ];
+        // Hospitals last; one that still has departments with other HCPs is kept.
+        Database.delete([SELECT Id FROM Account WHERE Name IN :hospitalNames AND Id NOT IN (SELECT AccountId FROM Contact)], false);
     }
 }
