@@ -39,6 +39,9 @@
                     <div class="hcpcard">
                         <button type="button" class="link" onclick={backToResults}>‹ Back to results</button>
                         <h4>Dr. {selected.firstName} {selected.lastName}</h4>
+                        <template lwc:if={selectedRegistered}>
+                            <div class="alert info"><span><b>Registered for this event.</b> Check in below.</span></div>
+                        </template>
                         <div class="muted small">{selected.specialty} · {selected.city}</div>
                         <div class="kv">
                             <span>Hospital</span><span>{selected.organisation}</span>
@@ -52,12 +55,12 @@
                         </div>
 
                         <template lwc:if={addedMessage}>
-                            <div class="alert ok"><b>Added to event.</b> {addedMessage}</div>
+                            <div class="alert ok"><b>{addedTitle}</b> {addedMessage}</div>
                         </template>
                         <template lwc:else>
                             <template lwc:if={selectedHasConsent}>
                                 <div class="alert ok">Consent is on file – <b>no question needed</b>.</div>
-                                <button type="button" class="btn brand lg block" onclick={addKnown} disabled={saving}>+ Add to event</button>
+                                <button type="button" class="btn brand lg block" onclick={addKnown} disabled={saving}>{addKnownLabel}</button>
                             </template>
                             <template lwc:else>
                                 <template lwc:if={selectedOptedOut}>
@@ -85,6 +88,12 @@
                 </template>
 
                 <template lwc:else>
+                    <template lwc:if={hasRegistered}>
+                        <div class="regbar">
+                            <span class="grow">{registeredSummary}</span>
+                            <button type="button" class="link" onclick={toggleRegistered}>{registeredToggleLabel}</button>
+                        </div>
+                    </template>
                     <label class="l" for="q">Search HCP first</label>
                     <input id="q" class="in" value={query} oninput={handleSearch} placeholder="Name, email or registration no." autocomplete="off" />
                     <template lwc:if={searching}>
@@ -100,6 +109,7 @@
                                 <small>{h.specialty} · {h.city}</small>
                                 <template lwc:if={h.hcoLine}><small class="hco">{h.hcoLine}</small></template>
                                 <span class={h.badgeClass}>{h.badgeLabel}</span>
+                                <template lwc:if={h.attendanceLabel}><span class={h.attendanceClass}>{h.attendanceLabel}</span></template>
                                 <template lwc:if={h.otherTerritory}><span class="sm-badge grey">Other territory</span></template>
                             </div>
                             <template lwc:if={h.alreadyAdded}><span class="sm-badge ok">Added</span></template>

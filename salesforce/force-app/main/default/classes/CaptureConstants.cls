@@ -8,12 +8,18 @@ public with sharing class CaptureConstants {
     public static final String CHANNEL_REP = 'Rep';
     public static final String CHANNEL_KIOSK = 'Kiosk';
     public static final String CHANNEL_PITCHER = 'Pitcher';
+    /** Imported pre-event registration (not an event-day capture). */
+    public static final String CHANNEL_REGISTRATION = 'Event registration';
 
     // Capture__c.Consent_Method__c
     public static final String METHOD_EMAIL = 'Email double opt-in';
     public static final String METHOD_SIGNATURE = 'Explicit question + signature';
     public static final String METHOD_EXISTING = 'Existing consent reused';
     public static final String METHOD_DECLINED = 'Declined';
+    public static final String METHOD_REGISTRATION = 'Given at event registration';
+    // Event_Attendee__c.Attendance_Status__c
+    public static final String ATTENDANCE_REGISTERED = 'Registered';
+    public static final String ATTENDANCE_ATTENDED = 'Attended';
     // Consent__c.Opt_In_Method__c (legacy records)
     public static final String METHOD_PITCHER = 'Pitcher (legacy)';
 

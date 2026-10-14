@@ -23,6 +23,12 @@
     <flexiPageRegions>
         <itemInstances>
             <componentInstance>
+                <componentName>eventRegistrations</componentName>
+                <identifier>c_eventRegistrations</identifier>
+            </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <componentInstance>
                 <componentName>eventQrCodes</componentName>
                 <identifier>c_eventQrCodes</identifier>
             </componentInstance>

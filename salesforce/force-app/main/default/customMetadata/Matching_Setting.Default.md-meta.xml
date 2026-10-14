@@ -55,6 +55,10 @@
         <value xsi:type="xsd:double">10</value>
     </values>
     <values>
+        <field>Weight_Registered_Attendee__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
         <field>Max_Edit_Distance_Short__c</field>
         <value xsi:type="xsd:double">1</value>
     </values>

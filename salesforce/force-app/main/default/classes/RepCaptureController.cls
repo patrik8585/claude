@@ -69,6 +69,19 @@ public with sharing class RepCaptureController {
         /** All active affiliations, primary first. */
         @AuraEnabled
         public String affiliations;
+        /** For the selected event: registered | attended | null (not registered, not seen yet). */
+        @AuraEnabled
+        public String attendance;
+    }
+
+    public class RegisteredList {
+        @AuraEnabled
+        public Integer registered = 0;
+        @AuraEnabled
+        public Integer checkedIn = 0;
+        /** Not checked in first, then by name. */
+        @AuraEnabled
+        public List<HcpResult> attendees = new List<HcpResult>();
     }
 
     public class HcoOption {
@@ -229,12 +242,14 @@ public with sharing class RepCaptureController {
             LIMIT 50
         ];
         Set<Id> added = alreadyAdded(eventId, contacts);
+        Map<Id, String> attendance = attendanceByContact(eventId, new Map<Id, Contact>(contacts).keySet());
         Map<Id, String> affiliations = CaptureReviewController.affiliationLabels(new Map<Id, Contact>(contacts).keySet());
         List<HcpResult> mine = new List<HcpResult>();
         List<HcpResult> others = new List<HcpResult>();
         for (Contact c : contacts) {
             HcpResult r = toResult(c, added.contains(c.Id));
             r.affiliations = affiliations.get(c.Id);
+            r.attendance = attendance.get(c.Id);
             r.territory = c.Territory__c;
             r.inMyTerritory = String.isNotBlank(u.Territory__c) && c.Territory__c == u.Territory__c;
             if (r.inMyTerritory) {
@@ -246,6 +261,95 @@ public with sharing class RepCaptureController {
         results.addAll(mine);
         results.addAll(others);
         return results;
+    }
+
+    /** registered | attended per HCP for the event (registered = imported registration, not checked in yet). */
+    private static Map<Id, String> attendanceByContact(String eventId, Set<Id> contactIds) {
+        Map<Id, String> out = new Map<Id, String>();
+        if (String.isBlank(eventId) || contactIds.isEmpty()) {
+            return out;
+        }
+        for (Event_Attendee__c a : [
+            SELECT Contact__c, Attendance_Status__c, Registered__c
+            FROM Event_Attendee__c
+            WHERE Event__c = :eventId AND Contact__c IN :contactIds
+        ]) {
+            if (a.Attendance_Status__c == CaptureConstants.ATTENDANCE_ATTENDED) {
+                out.put(a.Contact__c, 'attended');
+            } else if (a.Registered__c) {
+                out.put(a.Contact__c, 'registered');
+            }
+        }
+        return out;
+    }
+
+    /** HCPs registered for the event before it started, for the rep's check-in list. */
+    @AuraEnabled
+    public static RegisteredList getRegisteredAttendees(String eventId) {
+        checkAccess();
+        RegisteredList out = new RegisteredList();
+        if (String.isBlank(eventId)) {
+            return out;
+        }
+        Map<Id, String> attendance = new Map<Id, String>();
+        for (Event_Attendee__c a : [
+            SELECT Contact__c, Attendance_Status__c
+            FROM Event_Attendee__c
+            WHERE Event__c = :eventId AND Registered__c = TRUE
+            LIMIT 2000
+        ]) {
+            Boolean attended = a.Attendance_Status__c == CaptureConstants.ATTENDANCE_ATTENDED;
+            attendance.put(a.Contact__c, attended ? 'attended' : 'registered');
+            out.registered++;
+            if (attended) {
+                out.checkedIn++;
+            }
+        }
+        if (attendance.isEmpty()) {
+            return out;
+        }
+        Set<Id> contactIds = attendance.keySet();
+        List<Contact> contacts = [
+            SELECT
+                Id,
+                FirstName,
+                LastName,
+                Email,
+                Specialty__c,
+                MailingCity,
+                Registration_Number__c,
+                OneKey_Id__c,
+                Territory__c,
+                Consent_Status__c,
+                Consent_Status_Date__c,
+                Consent_Text_Version__c,
+                AccountId,
+                Account.Name
+            FROM Contact
+            WHERE Id IN :contactIds
+            ORDER BY LastName, FirstName
+            LIMIT 2000
+        ];
+        Set<Id> added = alreadyAdded(eventId, contacts);
+        Map<Id, String> affiliations = CaptureReviewController.affiliationLabels(contactIds);
+        User u = me();
+        List<HcpResult> waiting = new List<HcpResult>();
+        List<HcpResult> done = new List<HcpResult>();
+        for (Contact c : contacts) {
+            HcpResult r = toResult(c, added.contains(c.Id));
+            r.affiliations = affiliations.get(c.Id);
+            r.attendance = attendance.get(c.Id);
+            r.territory = c.Territory__c;
+            r.inMyTerritory = String.isNotBlank(u.Territory__c) && c.Territory__c == u.Territory__c;
+            if (r.attendance == 'attended') {
+                done.add(r);
+            } else {
+                waiting.add(r);
+            }
+        }
+        out.attendees.addAll(waiting);
+        out.attendees.addAll(done);
+        return out;
     }
 
     private static Set<Id> alreadyAdded(String eventId, List<Contact> contacts) {

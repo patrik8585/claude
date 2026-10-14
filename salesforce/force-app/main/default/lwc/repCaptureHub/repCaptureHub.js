@@ -6,6 +6,7 @@ import saveWalkIn from '@salesforce/apex/RepCaptureController.saveWalkIn';
 import getMyCapturesToday from '@salesforce/apex/RepCaptureController.getMyCapturesToday';
 import searchHospitals from '@salesforce/apex/RepCaptureController.searchHospitals';
 import getDepartments from '@salesforce/apex/RepCaptureController.getDepartments';
+import getRegisteredAttendees from '@salesforce/apex/RepCaptureController.getRegisteredAttendees';
 
 const MIC_ERRORS = {
     'not-allowed': 'Microphone blocked: allow microphone access for this site (browser address bar › site settings), or use the microphone key of your keyboard.',
@@ -15,6 +16,10 @@ const MIC_ERRORS = {
     'language-not-supported': 'This language is not supported by the browser dictation: switch IT/EN or use the keyboard microphone.'
 };
 const MAX_RESTARTS = 5;
+const ATTENDANCE = {
+    registered: { cls: 'sm-badge reg', short: 'Registered' },
+    attended: { cls: 'sm-badge ok', short: 'Checked in' }
+};
 
 const BADGE = {
     valid: { cls: 'sm-badge ok', short: 'Consent on file' },
@@ -34,6 +39,8 @@ export default class RepCaptureHub extends LightningElement {
     eventName;
     query = '';
     results = [];
+    registeredList = { registered: 0, checkedIn: 0, attendees: [] };
+    showRegistered = false;
     searched = false;
     searching = false;
     selected;
@@ -146,6 +153,39 @@ export default class RepCaptureHub extends LightningElement {
         this.eventName = ev ? ev.name : '';
         this.screen = 'capture';
         this.resetSearch();
+        this.showRegistered = false;
+        this.loadRegistered();
+    }
+
+    async loadRegistered() {
+        try {
+            this.registeredList = await getRegisteredAttendees({ eventId: this.eventId });
+        } catch (e) {
+            this.registeredList = { registered: 0, checkedIn: 0, attendees: [] };
+        }
+    }
+
+    toggleRegistered() {
+        this.showRegistered = !this.showRegistered;
+        this.selected = undefined;
+        this.resetMethod();
+        if (this.showRegistered) {
+            this.query = '';
+            this.searched = false;
+            this.results = [];
+            this.loadRegistered();
+        }
+    }
+
+    get hasRegistered() {
+        return this.registeredList && this.registeredList.registered > 0;
+    }
+    get registeredSummary() {
+        const r = this.registeredList;
+        return `${r.registered} registered · ${r.checkedIn} checked in`;
+    }
+    get registeredToggleLabel() {
+        return this.showRegistered ? 'Back to search' : 'Show registered list';
     }
 
     changeEvent() {
@@ -190,6 +230,7 @@ export default class RepCaptureHub extends LightningElement {
     handleSearch(evt) {
         this.query = evt.target.value;
         this.selected = undefined;
+        this.showRegistered = false;
         clearTimeout(this.searchTimer);
         if ((this.query || '').trim().length < 2) {
             this.results = [];
@@ -213,14 +254,22 @@ export default class RepCaptureHub extends LightningElement {
         }
     }
 
+    get visibleResults() {
+        return this.showRegistered ? this.registeredList.attendees || [] : this.results;
+    }
+
     get resultRows() {
-        return this.results.map((h) => {
+        return this.visibleResults.map((h) => {
             const b = BADGE[h.consentStatus] || BADGE.none;
+            const attendance = this.added[h.id] && h.attendance === 'registered' ? 'attended' : h.attendance;
+            const a = ATTENDANCE[attendance];
             return {
                 ...h,
                 alreadyAdded: h.alreadyAdded || !!this.added[h.id],
                 badgeClass: b.cls,
                 badgeLabel: b.short,
+                attendanceClass: a ? a.cls : undefined,
+                attendanceLabel: a ? a.short : undefined,
                 otherTerritory: h.inMyTerritory === false,
                 hcoLine: [h.department, h.organisation].filter((x) => !!x).join(' · ')
             };
@@ -228,7 +277,7 @@ export default class RepCaptureHub extends LightningElement {
     }
 
     get showHint() {
-        return !this.searched && !this.searching;
+        return !this.searched && !this.searching && !this.showRegistered;
     }
 
     get showWalkInLink() {
@@ -241,7 +290,7 @@ export default class RepCaptureHub extends LightningElement {
 
     selectHcp(evt) {
         const id = evt.currentTarget.dataset.id;
-        this.selected = this.results.find((h) => h.id === id);
+        this.selected = this.visibleResults.find((h) => h.id === id);
         this.resetMethod();
     }
 
@@ -277,6 +326,15 @@ export default class RepCaptureHub extends LightningElement {
         }
         const others = a.split('; ').filter((x) => !x.endsWith('(primary)'));
         return others.length ? others.join('; ') : undefined;
+    }
+    get selectedRegistered() {
+        return this.selected && this.selected.attendance === 'registered';
+    }
+    get addKnownLabel() {
+        return this.selectedRegistered ? '✓ Check in' : '+ Add to event';
+    }
+    get addedTitle() {
+        return this.selectedRegistered ? 'Checked in.' : 'Added to event.';
     }
     get addedMessage() {
         return this.selected ? this.added[this.selected.id] : undefined;
@@ -314,13 +372,14 @@ export default class RepCaptureHub extends LightningElement {
         return this.saving || !this.method || (this.method === 'sign' && !this.signed);
     }
     get goLabel() {
+        const verb = this.selectedRegistered ? 'check in' : 'add';
         switch (this.method) {
             case 'sign':
-                return 'Confirm signature & add';
+                return `Confirm signature & ${verb}`;
             case 'email':
-                return 'Add & send confirmation link';
+                return this.selectedRegistered ? 'Check in & send confirmation link' : 'Add & send confirmation link';
             case 'declined':
-                return 'Add without communications';
+                return this.selectedRegistered ? 'Check in without new consent' : 'Add without communications';
             default:
                 return 'Choose an option above';
         }
@@ -355,7 +414,10 @@ export default class RepCaptureHub extends LightningElement {
                 deviceInfo: this.deviceInfo()
             });
             this.added = { ...this.added, [hcp.id]: r.message };
-            this.toast('Added to event');
+            this.toast(hcp.attendance === 'registered' ? 'Checked in' : 'Added to event');
+            if (hcp.attendance === 'registered') {
+                this.registeredList = { ...this.registeredList, checkedIn: this.registeredList.checkedIn + 1 };
+            }
             this.refreshMyCaptures();
         } catch (e) {
             this.error = this.msg(e);

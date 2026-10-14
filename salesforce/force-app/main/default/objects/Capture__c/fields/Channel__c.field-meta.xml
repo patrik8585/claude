@@ -23,6 +23,11 @@
                 <default>false</default>
                 <label>Kiosk</label>
             </value>
+            <value>
+                <fullName>Event registration</fullName>
+                <default>false</default>
+                <label>Event registration</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

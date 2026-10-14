@@ -73,7 +73,8 @@ export default class CaptureDashboard extends LightningElement {
             { label: 'Auto-matched', value: `${this.pct(auto)}%`, cls: 'kpi g' },
             { label: 'Manually reviewed', value: `${this.pct(reviewed)}%`, cls: 'kpi b' },
             { label: 'Consent confirmed', value: `${this.pct(confirmed)}%`, cls: 'kpi g' },
-            { label: 'Consent pending', value: `${this.pct(pending)}%`, cls: 'kpi a' }
+            { label: 'Consent pending', value: `${this.pct(pending)}%`, cls: 'kpi a' },
+            { label: 'Registered → checked in', value: `${s.checkedIn || 0} / ${s.registered || 0}`, cls: 'kpi b' }
         ];
     }
 

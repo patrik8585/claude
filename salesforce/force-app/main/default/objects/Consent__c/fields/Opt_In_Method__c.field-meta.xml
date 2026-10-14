@@ -23,6 +23,11 @@
                 <default>false</default>
                 <label>Pitcher (legacy)</label>
             </value>
+            <value>
+                <fullName>Given at event registration</fullName>
+                <default>false</default>
+                <label>Given at event registration</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

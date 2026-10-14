@@ -128,6 +128,8 @@ sf org assign permset --name HCP_Consent_Admin --target-org dev-consent
 sf apex run --file scripts/apex/01-configure.apex   --target-org dev-consent
 sf apex run --file scripts/apex/02-my-territory.apex --target-org dev-consent
 sf apex run --file scripts/apex/03-sample-data.apex  --target-org dev-consent
+#    pre-event registrations for the congress (section 13):
+sf apex run --file scripts/apex/09-sample-registrations.apex --target-org dev-consent
 #    wait ~10 seconds for async matching, then optionally:
 sf apex run --file scripts/apex/04-simulate-gigya.apex --target-org dev-consent
 #    volume test data (~2 minutes, Batch Apex), then the duplicate scan:
@@ -142,7 +144,7 @@ If step 1 fails, paste me the full error output (component name and message) and
 To see test results with coverage: `sf apex run test --test-level RunLocalTests --code-coverage --result-format human --target-org dev-consent --wait 20`.
 
 Re-run `01-configure.apex` after creating the public site, with its real URL. Use `scripts/apex/event-ids.apex` to print the QR and kiosk URLs for each event.
-To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --target-org dev-consent`, then run `03` again.
+To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --target-org dev-consent`, then run `03` and `09` again.
 **Org already loaded before phase 4**: the mockup HCPs were created without hospitals and departments. Run `99-reset-sample-data.apex` and then `03-sample-data.apex` once after the phase 4 deploy (the reset never touches volume test data).
 Diagnostics: `08-missed-duplicates.apex` lists the known duplicates the scan did not propose, with the engine's score and explanation (read-only).
 Volume data: `07-regenerate-test-captures.apex` re-creates only the test captures (after changing matching parameters); `98-cleanup-volume-data.apex` deletes all of it.
@@ -210,6 +212,11 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 - [ ] `…/hcp?e=<TrainingId>&mode=kiosk` shows the large two-column layout. After submit the page counts down 6 s and resets. The capture's Channel is Kiosk.
 - [ ] Type a name and email, submit, then start typing the same name for the next visitor: the browser offers no suggestion (if it still does, see the kiosk note in section 6).
 - [ ] Choose **Sign here on the tablet** → submitting without drawing highlights the box → draw → **Register** → "Your consent is recorded. A copy has been sent to your email." The capture has Consent method *Explicit question + signature*, Opt-in Confirmed, a signature file and `Capture_Device__c` = `Kiosk | …`; after matching its consent is *Opt-in confirmed* with Signature captured and the file is linked to it.
+
+**Step 3-bis – Registered attendees** (after `09-sample-registrations.apex`, section 13)
+- [ ] Event *National Paediatrics Congress 2026 - Milan* › card **Registrations**: 6 registered, 1 checked in (Ferri, already captured), 5 not arrived.
+- [ ] Rep page › congress › **Show registered list**: Benedetti, Esposito, Galli, Marchi, Villa with the *Registered* badge, Ferri *Checked in* at the bottom. Benedetti → *Consent on file* → **✓ Check in** (no question). Galli → no consent → the consent options, buttons say *check in*. The card now shows 2 checked in.
+- [ ] Event › **Registrations** › import `data/sample-registrations.csv` → 4 imported; after Refresh 10 registered. Rinaldi is matched by registration number despite a new email.
 
 **Step 4 – Automatic matching** (after `03-sample-data.apex`)
 - [ ] *Captures* → list view **All captures**: 8 Auto-matched (email: Villa, Ferri, Conti, Gallo, Greco; registration number: Romano, Rinaldi, Sala), 2 To review (Maria Bianchi, Roberto Esposito) and 2 New HCP (Leone, Marchetti).
@@ -355,3 +362,21 @@ Tab **Matching & Duplicates** (app page with the `matchingWorkbench` LWC):
 - **Duplicate HCPs**: pairs proposed by `DuplicateScanJob` (button *Run duplicate scan* or script `06`); filters status / hospital / department / minimum score. Pair detail: field-by-field comparison with radio buttons, survivor choice (suggested: the record with more history, else the older one), affiliations, consent status, related records, score explanation. **Merge** (two clicks) or **Not a duplicate** (optional note; the pair is never proposed again; *Re-open pair* undoes it).
 - **Merge** (`HcpMergeService`): writes the chosen values on the survivor, folds records that would clash (the duplicate's affiliation to a department the survivor already has; a second attendance at the same event, keeping "no communications" if either declined; duplicate pairs), then `Database.merge` moves consents, captures, candidates, attendances and affiliations. An immutable **`HCP_Merge__c`** keeps who, when, both records' values (JSON), the field choices and the moved-record counts (*Merge history* tab).
 - **Consent evidence after a merge**: the evidence hash is never recomputed or rewritten. *Verify evidence* first checks the hash with the consent's current HCP; if it differs, it retries with each Contact Id merged into that HCP (following earlier merges too, from `HCP_Merge__c`) and reports "intact – recorded for HCP X, merged into this HCP on … by …". Consents created before a merge therefore stay verifiable, and the audit chain explains why `Contact__c` changed.
+
+## 13. Registered attendees (pre-event registrations)
+
+Three cases at every event, on every channel (rep page, kiosk, QR self-scan):
+
+| Case | Before the event | At the event |
+| --- | --- | --- |
+| (a) Walk-in, not in Salesforce | nothing | capture → matching finds no candidate → new HCP, attendee *Attended* |
+| (b) HCP in Salesforce, not registered | nothing | capture → matched to the HCP, attendee *Attended* (not registered) |
+| (c) HCP registered for the event | registration imported → attendee *Registered* | rep **Check in**, kiosk or QR → attendee *Attended*, still flagged *Registered* |
+
+- **Import**: Event record page › card **Registrations** (admins and data stewards) › CSV with columns `firstName, lastName, email, specialty, city, registrationNumber, organisation, consent (yes/no), consentDate (yyyy-mm-dd), consentVersion` (comma or semicolon; Italian headers such as *nome, cognome, consenso* also work; max 2,000 rows). Example: `data/sample-registrations.csv`. Re-importing the same file skips rows already imported (same email, or same name when there is no email).
+- **How it works**: each row becomes a `Capture__c` with Channel **Event registration** and goes through the normal matching (auto-match, review, or new HCP; registrations still to review appear in the steward review queue). Matching creates the `Event_Attendee__c` with *Attendance Status = Registered* and **`Registered__c` = true**. Any later capture of that HCP at the event (rep check-in, kiosk, QR) sets *Attended*; `Registered__c` stays true, so the card and the dashboard show *registered → checked in* and *walk-ins* (attended, not registered). A registration imported after the HCP attended never turns *Attended* back into *Registered*.
+- **Consent rule**: consent ticked on the registration website is imported as a confirmed `Consent__c` (Channel *Event registration*, method *Given at event registration*, consent text version from the file or the active one). **A registration or an event capture without consent never removes a consent the HCP already has**: only an explicit opt-out (withdrawal) does. The attendee's *Communications Allowed* is true when the HCP gives consent or already has a confirmed one.
+- **Rep page**: after choosing the event, a bar shows *N registered · M checked in* and **Show registered list** (not yet checked in first). Search results carry a *Registered* / *Checked in* badge; for a registered HCP the button says **✓ Check in**.
+- **Matching**: a candidate registered for the capture's event gets **+10** (*registered for this event*, Custom Metadata field *Weight: registered for the event*). It only helps the review suggestion: auto-match still needs an identical email or registration number.
+- **Dashboard**: registration captures are not counted as event captures; a KPI shows *Registered → checked in*. The standard report *Captures by channel* (force-app-extras) does list the *Event registration* channel.
+- Not built: removing a registration, a "no-show" status, and an automatic feed from the registration website (the CSV export is the interface for now).

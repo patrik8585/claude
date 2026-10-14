@@ -264,6 +264,39 @@ public with sharing class ConsentDemoData {
         );
     }
 
+    /**
+     * Pre-event registrations for the congress (run after run()): two new HCPs, one existing HCP who gives
+     * consent at registration, two who already have consent and do not tick it again (their consent stays),
+     * and Ferri, who also registered and was already captured at the congress (shows as checked in).
+     */
+    public static EventRegistrationService.ImportResult registrations() {
+        List<Event__c> events = [SELECT Id FROM Event__c WHERE Name = :CONGRESS_NAME LIMIT 1];
+        if (events.isEmpty()) {
+            throw new DemoException('Run ConsentDemoData.run() first.');
+        }
+        List<EventRegistrationService.Registrant> rows = new List<EventRegistrationService.Registrant>{
+            registrant('Laura', 'Benedetti', 'laura.benedetti@ospedale-example.it', 'Paediatrics', 'Padua', false),
+            registrant('Roberto', 'Esposito', 'roberto.esposito@aslroma-example.it', 'Paediatrics', 'Rome', true),
+            registrant('Andrea', 'Villa', 'andrea.villa@aovr-example.it', 'Paediatrics', 'Verona', false),
+            registrant('Federica', 'Marchi', 'federica.marchi@meyer-example.it', 'Paediatrics', 'Florence', true),
+            registrant('Tommaso', 'Galli', 'tommaso.galli@gmail.com', 'Neonatology', 'Milan', false),
+            registrant('Marco', 'Ferri', 'marco.ferri@policlinico-example.it', 'Paediatrics', 'Milan', false)
+        };
+        return EventRegistrationService.register(events[0].Id, rows);
+    }
+
+    private static EventRegistrationService.Registrant registrant(String first, String last, String email, String spec, String city, Boolean consent) {
+        EventRegistrationService.Registrant r = new EventRegistrationService.Registrant();
+        r.firstName = first;
+        r.lastName = last;
+        r.email = email;
+        r.specialty = spec;
+        r.city = city;
+        r.consent = consent;
+        r.consentDate = '2026-09-20';
+        return r;
+    }
+
     private static Consent__c legacyConsent(Id contactId, Date d, String version, Boolean withdrawn) {
         Datetime at = Datetime.newInstance(d, Time.newInstance(10, 0, 0, 0));
         return new Consent__c(

@@ -470,3 +470,22 @@
     border-left: 3px solid #c9c9c9;
     padding: 4px 8px;
 }
+.sm-badge.reg {
+    background: var(--info-bg);
+    color: var(--brand-d);
+    margin-left: 4px;
+}
+.regbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    margin: 8px 0 4px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+.regbar .grow {
+    flex: 1;
+    font-weight: 600;
+}

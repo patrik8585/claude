@@ -25,6 +25,7 @@ public with sharing class MatchingConfig {
     public Integer wOrgText;
     public Integer wSpecialty;
     public Integer wCity;
+    public Integer wRegistered;
     public Integer maxDistShort;
     public Integer maxDistLong;
     public Integer longNameLength;
@@ -68,6 +69,7 @@ public with sharing class MatchingConfig {
         wOrgText = num(r, 'Weight_Organisation_Text__c', 5);
         wSpecialty = num(r, 'Weight_Specialty__c', 10);
         wCity = num(r, 'Weight_City__c', 10);
+        wRegistered = num(r, 'Weight_Registered_Attendee__c', 10);
         maxDistShort = num(r, 'Max_Edit_Distance_Short__c', 1);
         maxDistLong = num(r, 'Max_Edit_Distance_Long__c', 2);
         longNameLength = num(r, 'Long_Name_Length__c', 7);

@@ -25,6 +25,11 @@ public with sharing class CaptureDashboardController {
         public List<Bucket> matching;
         @AuraEnabled
         public List<Bucket> consent;
+        /** Pre-event registrations and how many of them attended. */
+        @AuraEnabled
+        public Integer registered;
+        @AuraEnabled
+        public Integer checkedIn;
     }
 
     @AuraEnabled
@@ -52,12 +57,13 @@ public with sharing class CaptureDashboardController {
             ? [
                   SELECT Channel__c ch, Matching_Status__c ms, Opt_In_Status__c os, Captured_By_Name__c rep, COUNT(Id) n
                   FROM Capture__c
+                  WHERE Channel__c != :CaptureConstants.CHANNEL_REGISTRATION
                   GROUP BY Channel__c, Matching_Status__c, Opt_In_Status__c, Captured_By_Name__c
               ]
             : [
                   SELECT Channel__c ch, Matching_Status__c ms, Opt_In_Status__c os, Captured_By_Name__c rep, COUNT(Id) n
                   FROM Capture__c
-                  WHERE Event__c = :evId
+                  WHERE Event__c = :evId AND Channel__c != :CaptureConstants.CHANNEL_REGISTRATION
                   GROUP BY Channel__c, Matching_Status__c, Opt_In_Status__c, Captured_By_Name__c
               ];
         for (AggregateResult ar : rows) {
@@ -82,6 +88,24 @@ public with sharing class CaptureDashboardController {
         s.matching = toBuckets(matching);
         s.consent = toBuckets(consent);
         s.byRep = toBuckets(reps);
+        // Registrations are imported before the event: counted apart, not as captures.
+        s.registered = 0;
+        s.checkedIn = 0;
+        List<AggregateResult> att = evId == null
+            ? [SELECT Attendance_Status__c st, COUNT(Id) n FROM Event_Attendee__c WHERE Registered__c = TRUE GROUP BY Attendance_Status__c]
+            : [
+                  SELECT Attendance_Status__c st, COUNT(Id) n
+                  FROM Event_Attendee__c
+                  WHERE Registered__c = TRUE AND Event__c = :evId
+                  GROUP BY Attendance_Status__c
+              ];
+        for (AggregateResult ar : att) {
+            Integer n = (Integer) ar.get('n');
+            s.registered += n;
+            if ((String) ar.get('st') == CaptureConstants.ATTENDANCE_ATTENDED) {
+                s.checkedIn += n;
+            }
+        }
         return s;
     }
 

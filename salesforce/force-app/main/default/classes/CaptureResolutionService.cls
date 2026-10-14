@@ -212,7 +212,9 @@ public without sharing class CaptureResolutionService {
                 Consent_Text__c = (c.Consent_Text_Version__c == null || c.Consent_Text_Version__c == text.version) ? text.body : null,
                 Captured_By__c = c.Captured_By__c,
                 Captured_By_Name__c = c.Captured_By_Name__c,
-                Opt_In_Method__c = signed ? CaptureConstants.METHOD_SIGNATURE : CaptureConstants.METHOD_EMAIL,
+                Opt_In_Method__c = signed
+                    ? CaptureConstants.METHOD_SIGNATURE
+                    : (c.Consent_Method__c == CaptureConstants.METHOD_REGISTRATION ? CaptureConstants.METHOD_REGISTRATION : CaptureConstants.METHOD_EMAIL),
                 Signature_Captured__c = c.Signature_Captured__c,
                 Signature_Hash__c = c.Signature_Hash__c,
                 Signature_Copy_Sent__c = c.Signature_Copy_Sent__c,
@@ -270,42 +272,74 @@ public without sharing class CaptureResolutionService {
         return String.valueOf(eventId) + '-' + String.valueOf(contactId);
     }
 
+    /**
+     * One attendee per event + HCP. An imported registration creates it as Registered (Registered__c = true);
+     * any event-day capture (rep, kiosk, self-scan) makes it Attended, and a later registration import never
+     * turns an Attended back into Registered. Communications are allowed when this capture gives consent or the
+     * HCP already has a confirmed consent: an event where the HCP does not answer never removes a valid opt-in.
+     */
     private static void upsertAttendees(List<Capture__c> captures) {
+        Set<Id> matchedContacts = new Set<Id>();
+        for (Capture__c c : captures) {
+            if (c.Event__c != null && c.Matched_Contact__c != null) {
+                matchedContacts.add(c.Matched_Contact__c);
+            }
+        }
+        if (matchedContacts.isEmpty()) {
+            return;
+        }
+        Set<Id> withConsent = new Set<Id>();
+        for (Consent__c k : [
+            SELECT Contact__c
+            FROM Consent__c
+            WHERE Contact__c IN :matchedContacts AND Status__c = :CaptureConstants.CONSENT_CONFIRMED
+        ]) {
+            withConsent.add(k.Contact__c);
+        }
         Map<String, Event_Attendee__c> byKey = new Map<String, Event_Attendee__c>();
         for (Capture__c c : captures) {
             if (c.Event__c == null || c.Matched_Contact__c == null) {
                 continue;
             }
             String key = attendeeKey(c.Event__c, c.Matched_Contact__c);
-            byKey.put(
-                key,
-                new Event_Attendee__c(
+            Boolean registration = c.Channel__c == CaptureConstants.CHANNEL_REGISTRATION;
+            Boolean gives = c.Consent_Given__c == true &&
+                c.Consent_Method__c != CaptureConstants.METHOD_DECLINED &&
+                c.Opt_In_Status__c != CaptureConstants.OPTIN_DECLINED;
+            Event_Attendee__c a = byKey.get(key);
+            if (a == null) {
+                a = new Event_Attendee__c(
                     Event__c = c.Event__c,
                     Contact__c = c.Matched_Contact__c,
-                    Source_Capture__c = c.Id,
                     Attendee_Key__c = key,
-                    Attendance_Status__c = 'Attended',
-                    Communications_Allowed__c = c.Consent_Method__c != CaptureConstants.METHOD_DECLINED &&
-                        c.Opt_In_Status__c != CaptureConstants.OPTIN_DECLINED
-                )
-            );
-        }
-        if (byKey.isEmpty()) {
-            return;
+                    Attendance_Status__c = CaptureConstants.ATTENDANCE_REGISTERED,
+                    Registered__c = false,
+                    Communications_Allowed__c = withConsent.contains(c.Matched_Contact__c)
+                );
+                byKey.put(key, a);
+            }
+            if (registration) {
+                a.Registered__c = true;
+                if (a.Source_Capture__c == null) {
+                    a.Source_Capture__c = c.Id;
+                }
+            } else {
+                a.Attendance_Status__c = CaptureConstants.ATTENDANCE_ATTENDED;
+                a.Source_Capture__c = c.Id;
+            }
+            a.Communications_Allowed__c = a.Communications_Allowed__c || gives;
         }
         // Existing attendees are found by event + HCP (older rows may carry a 15-character key)
         // and updated without touching the master-detail field; their key is rewritten.
         Set<Id> eventIds = new Set<Id>();
-        Set<Id> contactIds = new Set<Id>();
         for (Event_Attendee__c a : byKey.values()) {
             eventIds.add(a.Event__c);
-            contactIds.add(a.Contact__c);
         }
         Map<String, Event_Attendee__c> existing = new Map<String, Event_Attendee__c>();
         for (Event_Attendee__c a : [
-            SELECT Id, Event__c, Contact__c
+            SELECT Id, Event__c, Contact__c, Attendance_Status__c, Registered__c, Communications_Allowed__c, Source_Capture__c
             FROM Event_Attendee__c
-            WHERE Event__c IN :eventIds AND Contact__c IN :contactIds
+            WHERE Event__c IN :eventIds AND Contact__c IN :matchedContacts
         ]) {
             existing.put(attendeeKey(a.Event__c, a.Contact__c), a);
         }
@@ -313,18 +347,25 @@ public without sharing class CaptureResolutionService {
         List<Event_Attendee__c> updates = new List<Event_Attendee__c>();
         for (String key : byKey.keySet()) {
             Event_Attendee__c a = byKey.get(key);
-            if (existing.containsKey(key)) {
-                updates.add(
-                    new Event_Attendee__c(
-                        Id = existing.get(key).Id,
-                        Attendee_Key__c = key,
-                        Source_Capture__c = a.Source_Capture__c,
-                        Communications_Allowed__c = a.Communications_Allowed__c
-                    )
-                );
-            } else {
+            Event_Attendee__c old = existing.get(key);
+            if (old == null) {
                 inserts.add(a);
+                continue;
             }
+            Boolean attended = old.Attendance_Status__c == CaptureConstants.ATTENDANCE_ATTENDED ||
+                a.Attendance_Status__c == CaptureConstants.ATTENDANCE_ATTENDED;
+            updates.add(
+                new Event_Attendee__c(
+                    Id = old.Id,
+                    Attendee_Key__c = key,
+                    Attendance_Status__c = attended ? CaptureConstants.ATTENDANCE_ATTENDED : CaptureConstants.ATTENDANCE_REGISTERED,
+                    Registered__c = old.Registered__c || a.Registered__c,
+                    Source_Capture__c = a.Attendance_Status__c == CaptureConstants.ATTENDANCE_ATTENDED || old.Source_Capture__c == null
+                        ? a.Source_Capture__c
+                        : old.Source_Capture__c,
+                    Communications_Allowed__c = old.Communications_Allowed__c || a.Communications_Allowed__c
+                )
+            );
         }
         insert inserts;
         update updates;

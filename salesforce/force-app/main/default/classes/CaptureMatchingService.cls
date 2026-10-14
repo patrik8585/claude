@@ -42,6 +42,8 @@ public without sharing class CaptureMatchingService {
         public Map<String, Set<Id>> byRegDigits = new Map<String, Set<Id>>();
         public Map<String, Set<Id>> byNamePrefix = new Map<String, Set<Id>>();
         public Map<Id, Set<Id>> byHospital = new Map<Id, Set<Id>>();
+        /** Event Id -> HCPs registered for that event (imported registrations). */
+        public Map<Id, Set<Id>> registeredByEvent = new Map<Id, Set<Id>>();
     }
 
     // ------------------------------------------------------------ entry point
@@ -121,8 +123,13 @@ public without sharing class CaptureMatchingService {
             }
             HcpMatchEngine.Profile me = HcpMatchEngine.fromCapture(c);
             List<HcpMatchEngine.Comparison> comps = new List<HcpMatchEngine.Comparison>();
+            Set<Id> registered = c.Channel__c == CaptureConstants.CHANNEL_REGISTRATION ? null : pool.registeredByEvent.get(c.Event__c);
             for (Id contactId : candidateIds(me, c, pool)) {
                 HcpMatchEngine.Comparison cmp = HcpMatchEngine.compare(me, pool.profiles.get(contactId));
+                if (registered != null && registered.contains(contactId) && cfg.wRegistered != 0) {
+                    cmp.add(cfg.wRegistered, 'registered for this event');
+                    cmp.score = Math.max(0, Math.min(100, cmp.score));
+                }
                 if (cmp.isCandidate()) {
                     comps.add(cmp);
                 }
@@ -333,6 +340,25 @@ public without sharing class CaptureMatchingService {
         }
 
         Pool pool = new Pool();
+        Set<Id> eventIds = new Set<Id>();
+        for (Capture__c c : captures) {
+            if (c.Event__c != null) {
+                eventIds.add(c.Event__c);
+            }
+        }
+        if (!eventIds.isEmpty() && !contacts.isEmpty()) {
+            Set<Id> contactIds = contacts.keySet();
+            for (Event_Attendee__c a : [
+                SELECT Event__c, Contact__c
+                FROM Event_Attendee__c
+                WHERE Event__c IN :eventIds AND Contact__c IN :contactIds AND Registered__c = TRUE
+            ]) {
+                if (!pool.registeredByEvent.containsKey(a.Event__c)) {
+                    pool.registeredByEvent.put(a.Event__c, new Set<Id>());
+                }
+                pool.registeredByEvent.get(a.Event__c).add(a.Contact__c);
+            }
+        }
         pool.profiles = HcpMatchEngine.fromContacts(contacts.values());
         for (HcpMatchEngine.Profile p : pool.profiles.values()) {
             p.prepare();
