@@ -3,7 +3,9 @@
  * (export of the registration website), imported from the Event record page.
  *
  * Each row becomes a Capture__c with Channel "Event registration", so it goes through the same
- * matching as every other capture (existing HCP, steward review, or new HCP). Matching then creates
+ * matching as every other capture (existing HCP or steward review). Registrations come before the
+ * event, so only HCPs already in Salesforce can be registered: a row that matches nobody is discarded
+ * (never a new HCP) and counted as "not in Salesforce". Matching then creates
  * the Event_Attendee__c as Registered (Registered__c = true). A rep check-in, a kiosk or a QR capture
  * later turns it into Attended.
  *
@@ -69,6 +71,9 @@ public with sharing class EventRegistrationService {
         /** Registrations still being matched or waiting for a data steward. */
         @AuraEnabled
         public Integer inProgress = 0;
+        /** Registrations discarded because the HCP is not in Salesforce. */
+        @AuraEnabled
+        public Integer notFound = 0;
         @AuraEnabled
         public Boolean canImport = false;
     }
@@ -108,6 +113,14 @@ public with sharing class EventRegistrationService {
                 Event__c = :ev.Id
                 AND Channel__c = :CaptureConstants.CHANNEL_REGISTRATION
                 AND Matching_Status__c IN (:CaptureConstants.MATCH_QUEUED, :CaptureConstants.MATCH_REVIEW)
+        ];
+        s.notFound = [
+            SELECT COUNT()
+            FROM Capture__c
+            WHERE
+                Event__c = :ev.Id
+                AND Channel__c = :CaptureConstants.CHANNEL_REGISTRATION
+                AND Match_Rule__c = :CaptureConstants.RULE_REGISTRATION_NOT_FOUND
         ];
         return s;
     }

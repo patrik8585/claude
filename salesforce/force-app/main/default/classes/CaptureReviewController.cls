@@ -221,6 +221,9 @@ public without sharing class CaptureReviewController {
     public static void createNewHcp(Id captureId) {
         checkSteward();
         Capture__c c = lockForReview(captureId);
+        if (c.Channel__c == CaptureConstants.CHANNEL_REGISTRATION) {
+            throw new AuraHandledException('A registration can only be matched to an HCP already in Salesforce: match it or discard it.');
+        }
         c.Matching_Status__c = CaptureConstants.MATCH_REVIEWED_NEW;
         c.Match_Rule__c = 'Manual review - new HCP';
         c.Matched_By__c = 'Data steward - ' + UserInfo.getName() + ' (new HCP created)';
@@ -349,6 +352,16 @@ public without sharing class CaptureReviewController {
             }
             r.processed = matched.size();
         } else if (action == 'new') {
+            // registrations are never turned into new HCPs
+            List<Capture__c> walkIns = new List<Capture__c>();
+            for (Capture__c c : open) {
+                if (c.Channel__c == CaptureConstants.CHANNEL_REGISTRATION) {
+                    r.skipped++;
+                } else {
+                    walkIns.add(c);
+                }
+            }
+            open = walkIns;
             for (Capture__c c : open) {
                 c.Matching_Status__c = CaptureConstants.MATCH_REVIEWED_NEW;
                 c.Match_Rule__c = 'Manual review - new HCP (bulk)';
@@ -356,8 +369,10 @@ public without sharing class CaptureReviewController {
                 stamps.add(new Capture__c(Id = c.Id, Reviewed_By__c = UserInfo.getUserId(), Reviewed_At__c = now));
             }
             update stamps;
-            CaptureResolutionService.createContactsFor(open);
-            CaptureResolutionService.complete(open);
+            if (!open.isEmpty()) {
+                CaptureResolutionService.createContactsFor(open);
+                CaptureResolutionService.complete(open);
+            }
             r.processed = open.size();
         } else if (action == 'discard') {
             for (Capture__c c : open) {

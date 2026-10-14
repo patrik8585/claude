@@ -112,6 +112,7 @@ public without sharing class CaptureMatchingService {
 
         List<Capture__c> resolved = new List<Capture__c>();
         List<Capture__c> needNewContact = new List<Capture__c>();
+        List<Capture__c> notFound = new List<Capture__c>();
         List<Capture__c> toReview = new List<Capture__c>();
         Map<Id, List<CandidateScore>> candidatesByCapture = new Map<Id, List<CandidateScore>>();
 
@@ -203,10 +204,38 @@ public without sharing class CaptureMatchingService {
                 toReview.add(c);
                 continue;
             }
+            if (c.Channel__c == CaptureConstants.CHANNEL_REGISTRATION) {
+                // Registrations come before the event: only HCPs already in Salesforce can be registered.
+                c.Matching_Status__c = CaptureConstants.MATCH_DISCARDED;
+                c.Processing_Stage__c = CaptureConstants.STAGE_DISCARDED;
+                c.Match_Rule__c = CaptureConstants.RULE_REGISTRATION_NOT_FOUND;
+                c.Matched_By__c = 'Matching engine (no HCP in Salesforce - registration not imported)';
+                notFound.add(c);
+                continue;
+            }
             c.Matching_Status__c = CaptureConstants.MATCH_NEW;
             c.Match_Rule__c = 'No candidate found';
             c.Matched_By__c = 'Matching engine (No candidate found - new HCP created)';
             needNewContact.add(c);
+        }
+
+        if (!notFound.isEmpty()) {
+            List<Capture__c> discards = new List<Capture__c>();
+            for (Capture__c c : notFound) {
+                discards.add(
+                    new Capture__c(
+                        Id = c.Id,
+                        OwnerId = c.OwnerId,
+                        Hospital__c = c.Hospital__c,
+                        Matching_Status__c = c.Matching_Status__c,
+                        Processing_Stage__c = c.Processing_Stage__c,
+                        Match_Rule__c = c.Match_Rule__c,
+                        Matched_By__c = c.Matched_By__c,
+                        Processing_Error__c = null
+                    )
+                );
+            }
+            update discards;
         }
 
         if (!needNewContact.isEmpty()) {

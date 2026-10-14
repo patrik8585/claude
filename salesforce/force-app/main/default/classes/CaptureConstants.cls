@@ -17,6 +17,8 @@ public with sharing class CaptureConstants {
     public static final String METHOD_EXISTING = 'Existing consent reused';
     public static final String METHOD_DECLINED = 'Declined';
     public static final String METHOD_REGISTRATION = 'Given at event registration';
+    /** Match rule of a registration that matches no HCP: only HCPs already in Salesforce can be registered. */
+    public static final String RULE_REGISTRATION_NOT_FOUND = 'Registration - HCP not in Salesforce';
     // Event_Attendee__c.Attendance_Status__c
     public static final String ATTENDANCE_REGISTERED = 'Registered';
     public static final String ATTENDANCE_ATTENDED = 'Attended';

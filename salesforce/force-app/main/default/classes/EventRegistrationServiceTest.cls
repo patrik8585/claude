@@ -60,6 +60,10 @@ private class EventRegistrationServiceTest {
             summary = EventRegistrationService.getSummary(e.Id);
         }
         Assert.areEqual(3, first.imported, 'three valid, distinct rows: ' + first.messages);
+        Assert.areEqual(0, [SELECT COUNT() FROM Contact WHERE LastName = 'Marchi'], 'a registration never creates a new HCP');
+        Capture__c marchiReg = [SELECT Matching_Status__c, Match_Rule__c FROM Capture__c WHERE Last_Name__c = 'Marchi'];
+        Assert.areEqual(CaptureConstants.MATCH_DISCARDED, marchiReg.Matching_Status__c, 'not in Salesforce -> discarded');
+        Assert.areEqual(CaptureConstants.RULE_REGISTRATION_NOT_FOUND, marchiReg.Match_Rule__c);
         Assert.areEqual(2, first.skipped, 'missing last name + same email twice');
         Assert.areEqual(0, again.imported, 're-importing the same file adds nothing');
 
@@ -79,14 +83,10 @@ private class EventRegistrationServiceTest {
         Assert.areEqual(CaptureConstants.METHOD_REGISTRATION, k.Opt_In_Method__c);
         Assert.areEqual(CaptureConstants.HCP_OPTIN, [SELECT Consent_Status__c FROM Contact WHERE Id = :romano.Id].Consent_Status__c);
 
-        // Marchi: new HCP, registered
-        Contact marchi = [SELECT Id, Consent_Status__c FROM Contact WHERE LastName = 'Marchi'];
-        Assert.areEqual(CaptureConstants.HCP_OPTIN, marchi.Consent_Status__c);
-        Assert.isTrue(attendee(marchi.Id).Registered__c, 'new HCP is registered');
-
-        Assert.areEqual(3, summary.registered);
+        Assert.areEqual(2, summary.registered, 'Ferri and Romano; Marchi is not in Salesforce');
         Assert.areEqual(0, summary.checkedIn);
-        Assert.areEqual(3, summary.notArrived);
+        Assert.areEqual(2, summary.notArrived);
+        Assert.areEqual(1, summary.notFound, 'Marchi reported as not in Salesforce');
         Assert.isTrue(summary.canImport, 'admin can import');
     }
 
@@ -193,7 +193,8 @@ private class EventRegistrationServiceTest {
             delete [SELECT Id FROM Event__c];
             ConsentDemoData.run();
             EventRegistrationService.ImportResult r = ConsentDemoData.registrations();
-            Assert.areEqual(70, r.imported, '50 for the congress + 20 for the training meeting: ' + r.messages);
+            Assert.isTrue(r.imported >= 5, 'named congress registrants plus mockup HCPs: ' + r.messages);
+            Assert.areEqual(0, [SELECT COUNT() FROM Capture__c WHERE Channel__c = :CaptureConstants.CHANNEL_REGISTRATION AND Last_Name__c = 'Conti'], 'opted-out HCPs are not used');
             EventRegistrationService.ImportResult again = ConsentDemoData.registrations();
             Assert.areEqual(0, again.imported, 're-running adds nothing');
         }

@@ -99,3 +99,6 @@
     background: #feded8;
     color: #ba0517;
 }
+.muted.warn {
+    color: #8c4b02;
+}
