@@ -190,9 +190,12 @@ private class EventRegistrationServiceTest {
         System.runAs(ConsentTestFactory.user('HCP_Consent_Admin')) {
             CaptureTriggerHandler.publishEnabled = false;
             delete [SELECT Id FROM Contact];
+            delete [SELECT Id FROM Event__c];
             ConsentDemoData.run();
             EventRegistrationService.ImportResult r = ConsentDemoData.registrations();
-            Assert.areEqual(6, r.imported, 'six demo registrations: ' + r.messages);
+            Assert.areEqual(70, r.imported, '50 for the congress + 20 for the training meeting: ' + r.messages);
+            EventRegistrationService.ImportResult again = ConsentDemoData.registrations();
+            Assert.areEqual(0, again.imported, 're-running adds nothing');
         }
     }
 }

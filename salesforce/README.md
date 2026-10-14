@@ -128,7 +128,7 @@ sf org assign permset --name HCP_Consent_Admin --target-org dev-consent
 sf apex run --file scripts/apex/01-configure.apex   --target-org dev-consent
 sf apex run --file scripts/apex/02-my-territory.apex --target-org dev-consent
 sf apex run --file scripts/apex/03-sample-data.apex  --target-org dev-consent
-#    pre-event registrations for the congress (section 13):
+#    pre-event registrations, 50 per congress and 20 per training meeting (section 13; best after 05):
 sf apex run --file scripts/apex/09-sample-registrations.apex --target-org dev-consent
 #    wait ~10 seconds for async matching, then optionally:
 sf apex run --file scripts/apex/04-simulate-gigya.apex --target-org dev-consent
@@ -214,9 +214,9 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 - [ ] Choose **Sign here on the tablet** → submitting without drawing highlights the box → draw → **Register** → "Your consent is recorded. A copy has been sent to your email." The capture has Consent method *Explicit question + signature*, Opt-in Confirmed, a signature file and `Capture_Device__c` = `Kiosk | …`; after matching its consent is *Opt-in confirmed* with Signature captured and the file is linked to it.
 
 **Step 3-bis – Registered attendees** (after `09-sample-registrations.apex`, section 13)
-- [ ] Event *National Paediatrics Congress 2026 - Milan* › card **Registrations**: 6 registered, 1 checked in (Ferri, already captured), 5 not arrived.
-- [ ] Rep page › congress › **Show registered list**: Benedetti, Esposito, Galli, Marchi, Villa with the *Registered* badge, Ferri *Checked in* at the bottom. Benedetti → *Consent on file* → **✓ Check in** (no question). Galli → no consent → the consent options, buttons say *check in*. The card now shows 2 checked in.
-- [ ] Event › **Registrations** › import `data/sample-registrations.csv` → 4 imported; after Refresh 10 registered. Rinaldi is matched by registration number despite a new email.
+- [ ] Event *National Paediatrics Congress 2026 - Milan* › card **Registrations**: 50 registered, a few checked in (Ferri and any registrant already captured at the congress), the rest not arrived. *Infant Nutrition Training - Bologna*: 20 registered.
+- [ ] Rep page › congress › **Show registered list**: not-arrived registrants first (alphabetical: Benedetti, Esposito, Galli, Marchi, Villa among them) with the *Registered* badge, checked-in ones at the bottom. Benedetti → *Consent on file* → **✓ Check in** (no question). Galli → no consent → the consent options, buttons say *check in*.
+- [ ] Event › **Registrations** › import `data/sample-registrations.csv` → 4 imported. Rinaldi is matched by registration number despite a new email.
 
 **Step 4 – Automatic matching** (after `03-sample-data.apex`)
 - [ ] *Captures* → list view **All captures**: 8 Auto-matched (email: Villa, Ferri, Conti, Gallo, Greco; registration number: Romano, Rinaldi, Sala), 2 To review (Maria Bianchi, Roberto Esposito) and 2 New HCP (Leone, Marchetti).
@@ -379,4 +379,5 @@ Three cases at every event, on every channel (rep page, kiosk, QR self-scan):
 - **Rep page**: after choosing the event, a bar shows *N registered · M checked in* and **Show registered list** (not yet checked in first). Search results carry a *Registered* / *Checked in* badge; for a registered HCP the button says **✓ Check in**.
 - **Matching**: a candidate registered for the capture's event gets **+10** (*registered for this event*, Custom Metadata field *Weight: registered for the event*). It only helps the review suggestion: auto-match still needs an identical email or registration number.
 - **Dashboard**: registration captures are not counted as event captures; a KPI shows *Registered → checked in*. The standard report *Captures by channel* (force-app-extras) does list the *Event registration* channel.
+- **Sample registrations** (`09-sample-registrations.apex`): every event except the volume test event gets 50 registrants (20 for a *Training meeting*): about 55% existing volume HCPs with their own email, 10% existing HCPs with a personal email and their registration number, 35% people not in Salesforce (they become new HCPs, surnames chosen far from every existing one); about 40% tick the consent. About 140 records (≈0.3 MB) for the two sample events.
 - Not built: removing a registration, a "no-show" status, and an automatic feed from the registration website (the CSV export is the interface for now).

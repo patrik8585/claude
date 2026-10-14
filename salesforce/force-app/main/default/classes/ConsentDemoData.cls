@@ -264,25 +264,158 @@ public with sharing class ConsentDemoData {
         );
     }
 
+    /** Registrations per event: training meetings get fewer. */
+    public static final Integer REGISTRATIONS_PER_EVENT = 50;
+    public static final Integer REGISTRATIONS_PER_TRAINING = 20;
+    public static final String TRAINING_TYPE = 'Training meeting';
+
+    /** Surnames for registrants who are not in Salesforce: far from every mockup and volume surname, so they become new HCPs. */
+    private static final List<String> NEW_REGISTRANT_SURNAMES = new List<String>{
+        'Albertazzi', 'Cavallaro', 'Ercolani', 'Guerrieri', 'Lanfranchi', 'Nardecchia', 'Orlandini', 'Pacifici', 'Quadrelli', 'Ravaglia',
+        'Santarelli', 'Tagliaferri', 'Ugolini', 'Valentinetti', 'Zampieri', 'Battistoni', 'Carbonetti', 'Donadoni', 'Gentilini', 'Mazzarella',
+        'Pellicciari', 'Vescovini', 'Zanchetta', 'Brambati', 'Cerutti', 'Dalmasso', 'Ferraguti', 'Grasselli', 'Malaguti', 'Abbondanza',
+        'Bergonzi', 'Calcagno', 'Dalpozzo', 'Fantozzi', 'Gherardini', 'Lodigiani', 'Mezzadri', 'Notarangelo', 'Pistoletto', 'Randazzo',
+        'Scognamiglio', 'Tedeschini', 'Urbinati', 'Vianello', 'Zuccarini', 'Ambrosetti', 'Baldacci', 'Ciampolini', 'Desiderio', 'Facchinetti',
+        'Innocenti', 'Loiacono', 'Nicoletti', 'Occhipinti', 'Raimondi', 'Sbarbaro', 'Toscanelli', 'Verzotti', 'Zoppetti', 'Arcangeli',
+        'Bortolotti', 'Cocchiara', 'Durante', 'Evangelisti', 'Frigerio', 'Lattanzi', 'Pasquali', 'Righetti', 'Spadoni', 'Trevisan',
+        'Zappalorto', 'Agostinelli', 'Bonvicini', 'Castellucci', 'Fumarola', 'Guidotti', 'Marangoni', 'Nobili', 'Petrucci', 'Rocchetti',
+        'Tiraboschi', 'Varriale'
+    };
+    private static final List<String> NEW_REGISTRANT_FIRST_NAMES = new List<String>{
+        'Alessia', 'Bruno', 'Carla', 'Daniele', 'Erica', 'Fabio', 'Gaia', 'Ivan', 'Lorena', 'Mirko', 'Noemi', 'Oscar', 'Paola', 'Renato'
+    };
+    private static final List<String> REGISTRANT_CITIES = new List<String>{
+        'Milan', 'Rome', 'Turin', 'Bologna', 'Florence', 'Naples', 'Genoa', 'Verona', 'Padua', 'Bergamo', 'Bari', 'Palermo'
+    };
+
     /**
-     * Pre-event registrations for the congress (run after run()): two new HCPs, one existing HCP who gives
-     * consent at registration, two who already have consent and do not tick it again (their consent stays),
-     * and Ferri, who also registered and was already captured at the congress (shows as checked in).
+     * Pre-event registrations for every event except the volume test event: 50 per congress, 20 per training meeting.
+     * About 55% are existing HCPs registering with their own email (auto-matched), 10% existing HCPs with a personal
+     * email and their registration number (matched by registration number), 35% people not in Salesforce (new HCPs);
+     * about 40% tick the consent. Volume test HCPs are used as the existing ones (without volume data every registrant
+     * is a new person). The congress also gets six named registrants for the demo script: Benedetti, Villa and Ferri
+     * (consent on file, not ticked again: it stays), Esposito (consent at registration), Marchi and Galli (new).
+     * Re-runnable: rows already imported are skipped.
      */
     public static EventRegistrationService.ImportResult registrations() {
-        List<Event__c> events = [SELECT Id FROM Event__c WHERE Name = :CONGRESS_NAME LIMIT 1];
+        List<Event__c> events = [
+            SELECT Id, Name, Event_Type__c
+            FROM Event__c
+            WHERE Name != :VolumeTestData.TEST_EVENT_NAME
+            ORDER BY Start_Date__c ASC NULLS LAST, Name
+            LIMIT 20
+        ];
         if (events.isEmpty()) {
-            throw new DemoException('Run ConsentDemoData.run() first.');
+            throw new DemoException('No events: run ConsentDemoData.run() first.');
         }
-        List<EventRegistrationService.Registrant> rows = new List<EventRegistrationService.Registrant>{
-            registrant('Laura', 'Benedetti', 'laura.benedetti@ospedale-example.it', 'Paediatrics', 'Padua', false),
-            registrant('Roberto', 'Esposito', 'roberto.esposito@aslroma-example.it', 'Paediatrics', 'Rome', true),
-            registrant('Andrea', 'Villa', 'andrea.villa@aovr-example.it', 'Paediatrics', 'Verona', false),
-            registrant('Federica', 'Marchi', 'federica.marchi@meyer-example.it', 'Paediatrics', 'Florence', true),
-            registrant('Tommaso', 'Galli', 'tommaso.galli@gmail.com', 'Neonatology', 'Milan', false),
-            registrant('Marco', 'Ferri', 'marco.ferri@policlinico-example.it', 'Paediatrics', 'Milan', false)
-        };
-        return EventRegistrationService.register(events[0].Id, rows);
+        List<Contact> pool = registrantPool();
+        List<String> specialties = ConsentCaptureConfig.specialties();
+        EventRegistrationService.ImportResult total = new EventRegistrationService.ImportResult();
+        Integer poolPos = 0;
+        Integer newIdx = 0;
+        for (Integer ei = 0; ei < events.size(); ei++) {
+            Event__c ev = events[ei];
+            Integer target = ev.Event_Type__c == TRAINING_TYPE ? REGISTRATIONS_PER_TRAINING : REGISTRATIONS_PER_EVENT;
+            List<EventRegistrationService.Registrant> rows = new List<EventRegistrationService.Registrant>();
+            Set<String> used = new Set<String>();
+            if (ev.Name == CONGRESS_NAME) {
+                rows.add(registrant('Laura', 'Benedetti', 'laura.benedetti@ospedale-example.it', 'Paediatrics', 'Padua', false));
+                rows.add(registrant('Roberto', 'Esposito', 'roberto.esposito@aslroma-example.it', 'Paediatrics', 'Rome', true));
+                rows.add(registrant('Andrea', 'Villa', 'andrea.villa@aovr-example.it', 'Paediatrics', 'Verona', false));
+                rows.add(registrant('Federica', 'Marchi', 'federica.marchi@meyer-example.it', 'Paediatrics', 'Florence', true));
+                rows.add(registrant('Tommaso', 'Galli', 'tommaso.galli@gmail.com', 'Neonatology', 'Milan', false));
+                rows.add(registrant('Marco', 'Ferri', 'marco.ferri@policlinico-example.it', 'Paediatrics', 'Milan', false));
+            }
+            Integer guard = 0;
+            while (rows.size() < target && guard < target * 3) {
+                guard++;
+                Integer slot = rows.size();
+                Integer kind = Math.mod(slot, 20);
+                Boolean consent = Math.mod(slot, 5) < 2;
+                if (kind < 13 && !pool.isEmpty() && poolPos < pool.size()) {
+                    Contact c = pool[poolPos];
+                    poolPos++;
+                    if (used.contains(c.Email.toLowerCase())) {
+                        continue;
+                    }
+                    used.add(c.Email.toLowerCase());
+                    Boolean byRegistration = kind >= 11 && String.isNotBlank(c.Registration_Number__c);
+                    EventRegistrationService.Registrant r = registrant(
+                        c.FirstName,
+                        c.LastName,
+                        byRegistration ? personalEmail(c.FirstName, c.LastName, 'reg') : c.Email,
+                        c.Specialty__c,
+                        c.MailingCity,
+                        consent
+                    );
+                    if (byRegistration) {
+                        r.registrationNumber = c.Registration_Number__c;
+                    }
+                    rows.add(r);
+                } else if (newIdx < NEW_REGISTRANT_SURNAMES.size()) {
+                    String last = NEW_REGISTRANT_SURNAMES[newIdx];
+                    String first = NEW_REGISTRANT_FIRST_NAMES[Math.mod(newIdx, NEW_REGISTRANT_FIRST_NAMES.size())];
+                    newIdx++;
+                    rows.add(
+                        registrant(
+                            first,
+                            last,
+                            personalEmail(first, last, null),
+                            specialties[Math.mod(newIdx, specialties.size())],
+                            REGISTRANT_CITIES[Math.mod(newIdx + ei, REGISTRANT_CITIES.size())],
+                            consent
+                        )
+                    );
+                } else if (pool.isEmpty() || poolPos >= pool.size()) {
+                    break;
+                }
+            }
+            EventRegistrationService.ImportResult r = EventRegistrationService.register(ev.Id, rows);
+            total.imported += r.imported;
+            total.skipped += r.skipped;
+            total.messages.add(ev.Name + ': ' + r.imported + ' imported, ' + r.skipped + ' skipped');
+        }
+        return total;
+    }
+
+    /** Volume test HCPs with a unique email and registration number, not part of a known duplicate pair. */
+    private static List<Contact> registrantPool() {
+        List<Contact> candidates = [
+            SELECT Id, FirstName, LastName, Email, Specialty__c, MailingCity, Registration_Number__c, Test_Duplicate_Of__c
+            FROM Contact
+            WHERE Test_Data_Set__c = :VolumeTestData.DATA_SET AND Email != NULL AND FirstName != NULL
+            ORDER BY OneKey_Id__c NULLS LAST, Id
+            LIMIT 2000
+        ];
+        Map<String, Integer> emailCount = new Map<String, Integer>();
+        Map<String, Integer> regCount = new Map<String, Integer>();
+        Set<Id> inDuplicatePair = new Set<Id>();
+        for (Contact c : candidates) {
+            String e = c.Email.toLowerCase();
+            emailCount.put(e, emailCount.containsKey(e) ? emailCount.get(e) + 1 : 1);
+            String reg = HcpMatchEngine.registrationKey(c.Registration_Number__c);
+            if (String.isNotBlank(reg)) {
+                regCount.put(reg, regCount.containsKey(reg) ? regCount.get(reg) + 1 : 1);
+            }
+            if (c.Test_Duplicate_Of__c != null) {
+                inDuplicatePair.add(c.Id);
+                inDuplicatePair.add(c.Test_Duplicate_Of__c);
+            }
+        }
+        List<Contact> pool = new List<Contact>();
+        for (Contact c : candidates) {
+            String reg = HcpMatchEngine.registrationKey(c.Registration_Number__c);
+            Boolean uniqueReg = String.isBlank(reg) || regCount.get(reg) == 1;
+            if (!inDuplicatePair.contains(c.Id) && emailCount.get(c.Email.toLowerCase()) == 1 && uniqueReg) {
+                pool.add(c);
+            }
+        }
+        return pool;
+    }
+
+    private static String personalEmail(String first, String last, String tag) {
+        String local = HcpMatchEngine.normalizeName(first) + '.' + HcpMatchEngine.normalizeName(last);
+        return local + (tag == null ? '' : '.' + tag) + '@gmail.com';
     }
 
     private static EventRegistrationService.Registrant registrant(String first, String last, String email, String spec, String city, Boolean consent) {
