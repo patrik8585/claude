@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Department_Name__c</fullName>
+    <label>Department</label>
+    <formula>IF(HCO__r.RecordType.DeveloperName = "Department", TEXT(HCO__r.Department_Type__c), "")</formula>
+    <formulaTreatBlanksAs>BlankAsBlank</formulaTreatBlanksAs>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

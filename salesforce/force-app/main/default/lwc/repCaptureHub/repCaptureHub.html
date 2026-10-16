@@ -1,0 +1,211 @@
+<template>
+    <div class="app">
+        <header class="rep-h">
+            <b>Rep Hub</b>
+            <span class="who">{repName}<span class="av">{initials}</span></span>
+        </header>
+
+        <template lwc:if={notice}>
+            <div class="notice">{notice}</div>
+        </template>
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+
+        <div class="body">
+            <!-- 1. EVENT SELECTION -->
+            <template lwc:if={isEvents}>
+                <b class="h">Select event</b>
+                <div class="muted">Your active events</div>
+                <template for:each={events} for:item="ev">
+                    <div key={ev.id} class="evc" data-id={ev.id} onclick={selectEvent} role="button" tabindex="0">
+                        <b>{ev.name}<template lwc:if={ev.live}><span class="live">LIVE</span></template></b>
+                        <small>{ev.dates} · {ev.typeLabel}</small>
+                    </div>
+                </template>
+                <template lwc:if={noEvents}>
+                    <div class="alert warn">No active events. Ask your admin to create one (HCP Events tab).</div>
+                </template>
+            </template>
+
+            <!-- 2/3. SEARCH FIRST + HCP CARD -->
+            <template lwc:if={isCapture}>
+                <div class="evchip">
+                    <span class="grow">{eventName}</span>
+                    <button type="button" class="link" onclick={changeEvent}>Change</button>
+                </div>
+
+                <template lwc:if={selected}>
+                    <div class="hcpcard">
+                        <button type="button" class="link" onclick={backToResults}>‹ Back to results</button>
+                        <h4>Dr. {selected.firstName} {selected.lastName}</h4>
+                        <template lwc:if={selectedRegistered}>
+                            <div class="alert info"><span><b>Registered for this event.</b> Check in below.</span></div>
+                        </template>
+                        <div class="muted small">{selected.specialty} · {selected.city}</div>
+                        <div class="kv">
+                            <span>Hospital</span><span>{selected.organisation}</span>
+                            <span>Department</span><span>{selected.department}</span>
+                            <template lwc:if={selectedOtherAffiliations}>
+                                <span>Also works in</span><span>{selectedOtherAffiliations}</span>
+                            </template>
+                            <span>OneKey ID</span><span>{selected.oneKeyId}</span>
+                            <span>Email</span><span>{selected.email}</span>
+                            <span>Consent</span><span><span class={selectedBadgeClass}>{selectedBadgeLabel}</span></span>
+                        </div>
+
+                        <template lwc:if={addedMessage}>
+                            <div class="alert ok"><b>{addedTitle}</b> {addedMessage}</div>
+                        </template>
+                        <template lwc:else>
+                            <template lwc:if={selectedHasConsent}>
+                                <div class="alert ok">Consent is on file – <b>no question needed</b>.</div>
+                                <button type="button" class="btn brand lg block" onclick={addKnown} disabled={saving}>{addKnownLabel}</button>
+                            </template>
+                            <template lwc:else>
+                                <template lwc:if={selectedOptedOut}>
+                                    <div class="alert err"><span><b>Opted out on {selected.consentDate}.</b> Do not contact. Consent can only be re-collected by asking explicitly <b>and</b> with a signature.</span></div>
+                                </template>
+                                <template lwc:else>
+                                    <div class="alert warn"><span><b>No consent captured yet.</b> Ask the question below before adding the HCP to any communication.</span></div>
+                                </template>
+                                <div class="quote">Ask: “{question}”</div>
+                                <div class="cmo">
+                                    <button type="button" class={signClass} data-method="sign" onclick={chooseMethod}>HCP agrees – signs on screen</button>
+                                    <template lwc:if={emailAllowed}>
+                                        <button type="button" class={emailClass} data-method="email" onclick={chooseMethod}>HCP agrees – send confirmation link by email</button>
+                                    </template>
+                                    <button type="button" class={declinedClass} data-method="declined" onclick={chooseMethod}>HCP declines – no communications</button>
+                                </div>
+                                <template lwc:if={isSign}>
+                                    <div class="tiny">{consentText}</div>
+                                    <c-signature-pad onsigned={handleSigned} oncleared={handleCleared}></c-signature-pad>
+                                </template>
+                                <button type="button" class="btn brand lg block" onclick={addKnown} disabled={goDisabled}>{goLabel}</button>
+                            </template>
+                        </template>
+                    </div>
+                </template>
+
+                <template lwc:else>
+                    <template lwc:if={hasRegistered}>
+                        <div class="regbar">
+                            <span class="grow">{registeredSummary}</span>
+                            <button type="button" class="link" onclick={toggleRegistered}>{registeredToggleLabel}</button>
+                        </div>
+                    </template>
+                    <label class="l" for="q">Search HCP first</label>
+                    <input id="q" class="in" value={query} oninput={handleSearch} placeholder="Name, email or registration no." autocomplete="off" />
+                    <template lwc:if={searching}>
+                        <div class="muted small">Searching…</div>
+                    </template>
+                    <template lwc:if={showHint}>
+                        <div class="alert info">Always search first. The app shows each HCP’s consent status, so you only ask when it is needed.</div>
+                    </template>
+                    <template for:each={resultRows} for:item="h">
+                        <div key={h.id} class="res" data-id={h.id} onclick={selectHcp} role="button" tabindex="0">
+                            <div>
+                                <b>Dr. {h.firstName} {h.lastName}</b>
+                                <small>{h.specialty} · {h.city}</small>
+                                <template lwc:if={h.hcoLine}><small class="hco">{h.hcoLine}</small></template>
+                                <span class={h.badgeClass}>{h.badgeLabel}</span>
+                                <template lwc:if={h.attendanceLabel}><span class={h.attendanceClass}>{h.attendanceLabel}</span></template>
+                                <template lwc:if={h.otherTerritory}><span class="sm-badge grey">Other territory</span></template>
+                            </div>
+                            <template lwc:if={h.alreadyAdded}><span class="sm-badge ok">Added</span></template>
+                            <template lwc:else><span class="arrow">›</span></template>
+                        </div>
+                    </template>
+                    <template lwc:if={showWalkInLink}>
+                        <button type="button" class="link walk" onclick={startWalkIn}>Not in the list? + Add as walk-in</button>
+                    </template>
+                    <template lwc:if={showNotFound}>
+                        <div class="alert warn">No HCP found for “{query}” in Salesforce.</div>
+                        <button type="button" class="btn brand lg block" onclick={startWalkIn}>+ Add as walk-in</button>
+                    </template>
+                </template>
+            </template>
+
+            <!-- 4/5. WALK-IN -->
+            <template lwc:if={isWalkIn}>
+                <button type="button" class="link" onclick={backToSearch}>‹ Search</button>
+                <b class="h">New walk-in</b>
+                <div class="muted small">Not in Salesforce – quick form</div>
+                <div>
+                    <div class="f2">
+                        <div>
+                            <label class="l" for="wf">First name <i>*</i></label>
+                            <input id="wf" class="in" data-field="firstName" value={walk.firstName} oninput={handleWalkInput} />
+                        </div>
+                        <div>
+                            <label class="l" for="wl">Last name <i>*</i></label>
+                            <input id="wl" class="in" data-field="lastName" value={walk.lastName} oninput={handleWalkInput} />
+                        </div>
+                    </div>
+                    <label class="l" for="we">Email</label>
+                    <input id="we" type="email" class="in" data-field="email" value={walk.email} oninput={handleWalkInput} placeholder="for slides + consent link" />
+                    <label class="l" for="ws">Specialty</label>
+                    <select id="ws" class="in" data-field="specialty" onchange={handleWalkInput}>
+                        <option value="">Select…</option>
+                        <template for:each={walkSpecialties} for:item="s">
+                            <option key={s.value} value={s.value} selected={s.selected}>{s.value}</option>
+                        </template>
+                    </select>
+                    <label class="l" for="wc">City</label>
+                    <input id="wc" class="in" data-field="city" value={walk.city} oninput={handleWalkInput} />
+                    <label class="l" for="wn">Notes (type or dictate)</label>
+                    <div class="notes-w">
+                        <textarea id="wn" class="in notes" data-field="notes" oninput={handleWalkInput} placeholder="Tap the microphone and speak…"></textarea>
+                        <button type="button" class={micClass} onclick={toggleMic} aria-label="Dictate" aria-pressed={listeningLabel}>🎤</button>
+                        <button type="button" class="lang" onclick={toggleLang} title="Dictation language" disabled={listening}>{langLabel}</button>
+                    </div>
+                </div>
+                <template lwc:if={interimText}>
+                    <div class="interim">… {interimText}</div>
+                </template>
+                <template lwc:if={micHint}>
+                    <div class="muted small">{micHint}</div>
+                </template>
+                <div class="h2">Consent</div>
+                <div class="alert warn"><span><b>No consent captured yet.</b> Ask the question below before adding the HCP to any communication.</span></div>
+                <div class="quote">Ask: “{question}”</div>
+                <div class="cmo">
+                    <button type="button" class={signClass} data-method="sign" onclick={chooseMethod}>HCP agrees – signs on screen</button>
+                    <button type="button" class={emailClass} data-method="email" onclick={chooseMethod}>HCP agrees – send confirmation link by email</button>
+                    <button type="button" class={declinedClass} data-method="declined" onclick={chooseMethod}>HCP declines – no communications</button>
+                </div>
+                <template lwc:if={isSign}>
+                    <div class="tiny">{consentText}</div>
+                    <c-signature-pad onsigned={handleSigned} oncleared={handleCleared}></c-signature-pad>
+                </template>
+                <button type="button" class="btn brand lg block" onclick={saveWalkIn} disabled={goDisabled}>{walkGoLabel}</button>
+            </template>
+
+            <!-- 6. MY CAPTURES TODAY -->
+            <template lwc:if={isCaptures}>
+                <b class="h">My captures today</b>
+                <div class="muted small">{myCapsCount} captures · {myConfirmed} consents confirmed</div>
+                <template for:each={myCaps} for:item="c">
+                    <div key={c.id} class="cap">
+                        <div class="r"><b>Dr. {c.fullName}</b><small>{c.timeLabel}</small></div>
+                        <small>{c.specialty} · {c.city}</small>
+                        <template lwc:if={c.notes}>
+                            <div class="cap-notes">{c.notes}</div>
+                        </template>
+                        <div class="mt4">
+                            <span class={c.badgeClass}>{c.consentLabel}</span>
+                            <template lwc:if={c.hasTask}><span class="sm-badge t">Follow-up task</span></template>
+                        </div>
+                    </div>
+                </template>
+            </template>
+        </div>
+
+        <template lwc:if={showTabs}>
+            <nav class="tabbar">
+                <button type="button" class={captureTabClass} onclick={showCapture}>🔍<span>Capture</span></button>
+                <button type="button" class={capturesTabClass} onclick={showCaptures}>☰<span>My captures ({myCapsCount})</span></button>
+            </nav>
+        </template>
+    </div>
+</template>

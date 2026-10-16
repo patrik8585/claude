@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Test_Duplicate_Of__c</fullName>
+    <description>TEST ONLY. Set by the volume generator on deliberately duplicated HCPs (the same person entered twice). Used to measure duplicate detection.</description>
+    <label>Test: Duplicate Of</label>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <referenceTo>Contact</referenceTo>
+    <relationshipLabel>Test duplicates</relationshipLabel>
+    <relationshipName>Test_Duplicates</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

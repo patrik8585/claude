@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Auto_Match_Registration__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description>Rule 2. When off, an identical registration number only ranks the candidate.</description>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <label>Auto-match on identical reg. number</label>
+    <type>Checkbox</type>
+</CustomField>

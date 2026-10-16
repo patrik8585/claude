@@ -1,0 +1,284 @@
+<template>
+    <div class="wb">
+        <div class="head">
+            <h2>Matching &amp; Duplicates</h2>
+            <nav class="tabs" role="tablist">
+                <button type="button" role="tab" class={queueTabClass} data-tab="queue" onclick={selectTab}>Review queue ({queueCount})</button>
+                <button type="button" role="tab" class={pairsTabClass} data-tab="pairs" onclick={selectTab}>Duplicate HCPs</button>
+                <button type="button" role="tab" class={accuracyTabClass} data-tab="accuracy" onclick={selectTab}>Accuracy</button>
+                <button type="button" role="tab" class={mergesTabClass} data-tab="merges" onclick={selectTab}>Merge history</button>
+            </nav>
+        </div>
+
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+        <template lwc:if={notice}>
+            <div class="alert ok">{notice}</div>
+        </template>
+
+        <!-- REVIEW QUEUE -->
+        <template lwc:if={isQueue}>
+            <div class="bar">
+                <label>Hospital
+                    <select onchange={changeQueueHospital}>
+                        <option value="">All hospitals</option>
+                        <template for:each={hospitalOptions} for:item="h">
+                            <option key={h.value} value={h.value} selected={h.queueSelected}>{h.label}</option>
+                        </template>
+                    </select>
+                </label>
+                <label>Confidence
+                    <select onchange={changeConfidence}>
+                        <option value="">All</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </label>
+                <button type="button" class="btn sm" onclick={loadQueue} disabled={busy}>Refresh</button>
+                <span class="grow"></span>
+                <span class="muted">{selectedCount} selected</span>
+                <button type="button" class="btn sm brand" data-action="recommended" onclick={bulk} disabled={bulkDisabled}>Match to recommended</button>
+                <button type="button" class="btn sm" data-action="new" onclick={bulk} disabled={bulkDisabled}>Create new HCPs</button>
+                <button type="button" class="btn sm danger" data-action="discard" onclick={bulk} disabled={bulkDisabled}>Discard</button>
+            </div>
+            <template lwc:if={confirmBulk}>
+                <div class="alert warn">
+                    <span class="grow">{confirmBulkText}</span>
+                    <button type="button" class="btn sm" onclick={cancelBulk}>Cancel</button>
+                    <button type="button" class="btn sm brand" onclick={runBulk} disabled={busy}>Confirm</button>
+                </div>
+            </template>
+            <div class="scroll">
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th class="cb"><input type="checkbox" onchange={toggleAll} checked={allSelected} aria-label="Select all" /></th>
+                            <th>Capture</th>
+                            <th>Captured name</th>
+                            <th>Hospital</th>
+                            <th>Recommended HCP</th>
+                            <th class="num">Score</th>
+                            <th>Confidence</th>
+                            <th class="num">Cand.</th>
+                            <th>Event / time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={queueRows} for:item="r">
+                            <tr key={r.id} class={r.rowClass}>
+                                <td class="cb"><input type="checkbox" data-id={r.id} checked={r.checked} onchange={toggleRow} aria-label="Select" /></td>
+                                <td><a href="#" data-id={r.id} onclick={openCapture}>{r.name}</a></td>
+                                <td>
+                                    <b>{r.fullName}</b>
+                                    <small>{r.specialty} · {r.city}</small>
+                                </td>
+                                <td>{r.hospital}</td>
+                                <td>{r.topCandidate}</td>
+                                <td class="num"><span class={r.scoreClass}>{r.topScore}</span></td>
+                                <td><span class={r.confClass}>{r.confidence}</span></td>
+                                <td class="num">{r.candidates}</td>
+                                <td><small>{r.eventName}<br />{r.capturedAt}</small></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <template lwc:if={queueEmpty}>
+                    <div class="empty">No capture is waiting for review.</div>
+                </template>
+            </div>
+            <template lwc:if={selectedCaptureId}>
+                <div class="detail">
+                    <div class="dhead">
+                        <b>Side-by-side review</b>
+                        <button type="button" class="btn sm" onclick={closeCapture}>Close</button>
+                    </div>
+                    <c-capture-review record-id={selectedCaptureId} onresolved={handleResolved}></c-capture-review>
+                </div>
+            </template>
+        </template>
+
+        <!-- DUPLICATE HCPS -->
+        <template lwc:if={isPairs}>
+            <div class="bar">
+                <label>Status
+                    <select onchange={changeStatus}>
+                        <option value="Open">Open</option>
+                        <option value="Not a duplicate">Not a duplicate</option>
+                        <option value="Merged">Merged</option>
+                    </select>
+                </label>
+                <label>Hospital
+                    <select onchange={changePairHospital}>
+                        <option value="">All hospitals</option>
+                        <template for:each={hospitalOptions} for:item="h">
+                            <option key={h.value} value={h.value} selected={h.pairSelected}>{h.label}</option>
+                        </template>
+                    </select>
+                </label>
+                <label>Department
+                    <select onchange={changePairDepartment} disabled={noDepartments}>
+                        <option value="">All departments</option>
+                        <template for:each={departmentOptions} for:item="d">
+                            <option key={d.value} value={d.value} selected={d.selected}>{d.label}</option>
+                        </template>
+                    </select>
+                </label>
+                <label>Min. score
+                    <input type="number" min="0" max="100" step="5" value={minScore} onchange={changeMinScore} class="score-in" />
+                </label>
+                <button type="button" class="btn sm" onclick={loadPairs} disabled={busy}>Refresh</button>
+                <span class="grow"></span>
+                <template lwc:if={scanStatus}><span class="muted">Scan: {scanStatus}</span></template>
+                <button type="button" class="btn sm brand" onclick={runScan} disabled={busy}>Run duplicate scan</button>
+            </div>
+            <div class="split">
+                <div class="scroll list">
+                    <table class="grid">
+                        <thead>
+                            <tr>
+                                <th class="num">Score</th>
+                                <th>HCP A</th>
+                                <th>HCP B</th>
+                                <th>Hospital / department</th>
+                                <th>Signals</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={pairRows} for:item="p">
+                                <tr key={p.id} class={p.rowClass} data-id={p.id} onclick={openPair}>
+                                    <td class="num"><span class={p.scoreClass}>{p.score}</span></td>
+                                    <td>{p.nameA}</td>
+                                    <td>{p.nameB}</td>
+                                    <td><small>{p.departments}</small><small class="muted">{p.hospitals}</small></td>
+                                    <td><small>{p.summary}</small></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                    <template lwc:if={pairsEmpty}>
+                        <div class="empty">No pair with these filters. Run the duplicate scan to look for new ones.</div>
+                    </template>
+                </div>
+
+                <template lwc:if={pair}>
+                    <div class="detail">
+                        <div class="dhead">
+                            <b>{pair.pair.name} · score {pair.pair.score}</b>
+                            <button type="button" class="btn sm" onclick={closePair}>Close</button>
+                        </div>
+                        <table class="cmp">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th class={masterAClass}>
+                                        <label><input type="radio" name="master" value="A" checked={masterIsA} onchange={pickMaster} disabled={readOnlyPair} /> Keep A</label>
+                                        <a href={urlA} target="_blank">{pair.pair.nameA}</a>
+                                    </th>
+                                    <th class={masterBClass}>
+                                        <label><input type="radio" name="master" value="B" checked={masterIsB} onchange={pickMaster} disabled={readOnlyPair} /> Keep B</label>
+                                        <a href={urlB} target="_blank">{pair.pair.nameB}</a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={fieldRows} for:item="f">
+                                    <tr key={f.field} class={f.rowClass}>
+                                        <td class="lab">{f.label}</td>
+                                        <td class={f.clsA}>
+                                            <label><input type="radio" name={f.field} value="A" data-field={f.field} checked={f.pickA} onchange={pickValue} disabled={f.locked} /> {f.valueA}</label>
+                                        </td>
+                                        <td class={f.clsB}>
+                                            <label><input type="radio" name={f.field} value="B" data-field={f.field} checked={f.pickB} onchange={pickValue} disabled={f.locked} /> {f.valueB}</label>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <tr>
+                                    <td class="lab">Affiliations</td>
+                                    <td><small>{pair.affiliationsA}</small></td>
+                                    <td><small>{pair.affiliationsB}</small></td>
+                                </tr>
+                                <tr>
+                                    <td class="lab">Consent status</td>
+                                    <td>{pair.consentA}</td>
+                                    <td>{pair.consentB}</td>
+                                </tr>
+                                <tr>
+                                    <td class="lab">Related records</td>
+                                    <td><small>{pair.relatedA}</small></td>
+                                    <td><small>{pair.relatedB}</small></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="why">
+                            <b>Why this score</b>
+                            <ul>
+                                <template for:each={pair.explanation} for:item="x">
+                                    <li key={x}>{x}</li>
+                                </template>
+                            </ul>
+                            <small class="muted">Suggested survivor: {suggestedName} ({pair.suggestionReason}). Consents, captures, affiliations and event attendances of the other record move to the survivor; the merge is recorded in Merge history.</small>
+                        </div>
+                        <template lwc:if={canDecide}>
+                            <input class="note" type="text" placeholder="Note (optional, e.g. why not a duplicate)" value={note} onchange={changeNote} />
+                            <div class="acts">
+                                <button type="button" class="btn" onclick={notDuplicate} disabled={busy}>Not a duplicate</button>
+                                <template lwc:if={confirmMerge}>
+                                    <button type="button" class="btn" onclick={cancelMerge}>Cancel</button>
+                                    <button type="button" class="btn danger" onclick={doMerge} disabled={busy}>Confirm: merge {dropName} into {keepName}</button>
+                                </template>
+                                <template lwc:else>
+                                    <button type="button" class="btn brand" onclick={askMerge} disabled={busy}>Merge…</button>
+                                </template>
+                            </div>
+                        </template>
+                        <template lwc:if={canReopen}>
+                            <div class="acts">
+                                <button type="button" class="btn" onclick={reopen} disabled={busy}>Re-open pair</button>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <!-- ACCURACY -->
+        <template lwc:if={isAccuracy}>
+            <c-matching-accuracy></c-matching-accuracy>
+        </template>
+
+        <!-- MERGE HISTORY -->
+        <template lwc:if={isMerges}>
+            <div class="scroll">
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th>Merge</th>
+                            <th>Surviving HCP</th>
+                            <th>Merged HCP (deleted)</th>
+                            <th>Moved records</th>
+                            <th>By</th>
+                            <th>When</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={mergeRows} for:item="m">
+                            <tr key={m.id}>
+                                <td><a href={m.url} target="_blank">{m.name}</a></td>
+                                <td>{m.survivorName}</td>
+                                <td>{m.mergedName} <small class="muted">{m.mergedId}</small></td>
+                                <td><small>{m.summary}</small></td>
+                                <td>{m.mergedBy}</td>
+                                <td>{m.mergedAt}</td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <template lwc:if={mergesEmpty}>
+                    <div class="empty">No merge yet.</div>
+                </template>
+            </div>
+        </template>
+    </div>
+</template>

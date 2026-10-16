@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Default</label>
+    <protected>false</protected>
+    <values>
+        <field>Weight_Name_Exact__c</field>
+        <value xsi:type="xsd:double">30</value>
+    </values>
+    <values>
+        <field>Weight_Name_Swapped__c</field>
+        <value xsi:type="xsd:double">25</value>
+    </values>
+    <values>
+        <field>Weight_Name_Fuzzy__c</field>
+        <value xsi:type="xsd:double">20</value>
+    </values>
+    <values>
+        <field>Weight_Surname_Only__c</field>
+        <value xsi:type="xsd:double">15</value>
+    </values>
+    <values>
+        <field>Weight_Email__c</field>
+        <value xsi:type="xsd:double">20</value>
+    </values>
+    <values>
+        <field>Weight_Email_Domain__c</field>
+        <value xsi:type="xsd:double">5</value>
+    </values>
+    <values>
+        <field>Weight_Registration__c</field>
+        <value xsi:type="xsd:double">15</value>
+    </values>
+    <values>
+        <field>Penalty_Registration_Conflict__c</field>
+        <value xsi:type="xsd:double">20</value>
+    </values>
+    <values>
+        <field>Weight_Department__c</field>
+        <value xsi:type="xsd:double">15</value>
+    </values>
+    <values>
+        <field>Weight_Hospital__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Weight_Organisation_Text__c</field>
+        <value xsi:type="xsd:double">5</value>
+    </values>
+    <values>
+        <field>Weight_Specialty__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Weight_City__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Weight_Registered_Attendee__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Max_Edit_Distance_Short__c</field>
+        <value xsi:type="xsd:double">1</value>
+    </values>
+    <values>
+        <field>Max_Edit_Distance_Long__c</field>
+        <value xsi:type="xsd:double">2</value>
+    </values>
+    <values>
+        <field>Long_Name_Length__c</field>
+        <value xsi:type="xsd:double">7</value>
+    </values>
+    <values>
+        <field>Min_Candidate_Score__c</field>
+        <value xsi:type="xsd:double">15</value>
+    </values>
+    <values>
+        <field>High_Confidence_Score__c</field>
+        <value xsi:type="xsd:double">60</value>
+    </values>
+    <values>
+        <field>High_Confidence_Gap__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Max_Candidates__c</field>
+        <value xsi:type="xsd:double">10</value>
+    </values>
+    <values>
+        <field>Duplicate_Min_Score__c</field>
+        <value xsi:type="xsd:double">50</value>
+    </values>
+    <values>
+        <field>Auto_Match_Email__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Auto_Match_Registration__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Review_On_Conflict__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Personal_Email_Domains__c</field>
+        <value xsi:type="xsd:string">gmail.com,googlemail.com,yahoo.com,yahoo.it,hotmail.com,hotmail.it,outlook.com,outlook.it,live.it,libero.it,virgilio.it,icloud.com,me.com,tiscali.it,alice.it,tim.it,fastwebnet.it,email.it,pec.it</value>
+    </values>
+</CustomMetadata>

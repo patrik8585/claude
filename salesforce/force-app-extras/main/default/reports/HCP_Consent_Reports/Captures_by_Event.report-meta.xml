@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <columns>
+        <field>CUST_NAME</field>
+    </columns>
+    <columns>
+        <field>Capture__c.First_Name__c</field>
+    </columns>
+    <columns>
+        <field>Capture__c.Last_Name__c</field>
+    </columns>
+    <columns>
+        <field>Capture__c.Matching_Status__c</field>
+    </columns>
+    <columns>
+        <field>Capture__c.Opt_In_Status__c</field>
+    </columns>
+    <columns>
+        <field>Capture__c.Captured_At__c</field>
+    </columns>
+    <description>Captures by event</description>
+    <format>Summary</format>
+    <groupingsDown>
+        <dateGranularity>Day</dateGranularity>
+        <field>Capture__c.Event__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <name>Captures by event</name>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <reportType>CustomEntity$Capture__c</reportType>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <timeFrameFilter>
+        <dateColumn>CUST_CREATED_DATE</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

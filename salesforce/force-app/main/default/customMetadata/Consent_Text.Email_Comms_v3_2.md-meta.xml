@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Email communications v3.2</label>
+    <protected>false</protected>
+    <values>
+        <field>Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Body__c</field>
+        <value xsi:type="xsd:string">I agree that Danone may send me scientific information, product news and invitations to events by email. I can withdraw my consent at any time using the link in every email. See the Privacy Notice for details.</value>
+    </values>
+    <values>
+        <field>Question__c</field>
+        <value xsi:type="xsd:string">May we send you scientific information and product news by email? You can withdraw at any time.</value>
+    </values>
+    <values>
+        <field>Version__c</field>
+        <value xsi:type="xsd:string">v3.2</value>
+    </values>
+</CustomMetadata>

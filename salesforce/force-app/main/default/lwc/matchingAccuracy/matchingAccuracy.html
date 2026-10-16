@@ -1,0 +1,92 @@
+<template>
+    <div class="acc">
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+        <div class="bar">
+            <span class="muted grow">
+                Measured on the generated test captures (Expected outcome / Expected HCP). A match to a known duplicate record of the expected HCP counts as correct.
+                <template lwc:if={m.jobStatus}><br />Last generator / scan job: {m.jobStatus}</template>
+            </span>
+            <button type="button" class="btn sm" onclick={load} disabled={busy}>Refresh</button>
+        </div>
+
+        <template lwc:if={hasData}>
+            <div class="kpis">
+                <div class="kpi"><span>Test captures</span><b>{m.total}</b><small>{m.pending} still queued</small></div>
+                <div class="kpi"><span>Auto-match precision</span><b>{autoPrecision}</b><small>{m.autoCorrect} of {m.autoCount} auto-matches right</small></div>
+                <div class="kpi"><span>Review rate</span><b>{reviewRate}</b><small>{m.reviewCount} sent to a person · {m.missedAuto} could have been auto</small></div>
+                <div class="kpi"><span>False new-HCP rate</span><b>{falseNewRate}</b><small>{m.falseNew} of {m.withExistingHcp} existing HCPs created again</small></div>
+                <div class="kpi"><span>Right HCP among review candidates</span><b>{reviewRecall}</b><small>recommended first: {reviewTop1}</small></div>
+                <div class="kpi"><span>Outcome as expected</span><b>{outcomeAgreement}</b><small>auto / review / new</small></div>
+            </div>
+
+            <h3>By test case</h3>
+            <div class="scroll">
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th>Test case</th>
+                            <th>Expected</th>
+                            <th class="num">Captures</th>
+                            <th class="num">Auto</th>
+                            <th class="num">Review</th>
+                            <th class="num">New HCP</th>
+                            <th class="num">As expected</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={caseRows} for:item="r">
+                            <tr key={r.testCase} class={r.rowClass}>
+                                <td>{r.testCase}</td>
+                                <td>{r.expected}</td>
+                                <td class="num">{r.total}</td>
+                                <td class="num">{r.autoCount}</td>
+                                <td class="num">{r.reviewCount}</td>
+                                <td class="num">{r.newCount}</td>
+                                <td class="num"><b>{r.asExpected}</b></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <template lwc:if={hasProblems}>
+                <h3>To look at ({problemCount})</h3>
+                <ul class="problems">
+                    <template for:each={problemRows} for:item="p">
+                        <li key={p.captureId}><a href={p.url} target="_blank">{p.captureName}</a> · {p.testCase}: <b>{p.issue}</b></li>
+                    </template>
+                </ul>
+            </template>
+
+            <h3>Duplicate detection</h3>
+            <div class="kpis">
+                <div class="kpi"><span>Known duplicates in the data</span><b>{m.knownDuplicates}</b><small>same person entered twice</small></div>
+                <div class="kpi"><span>Found by the scan (recall)</span><b>{duplicateRecall}</b><small>{m.knownDuplicatesFound} pairs found</small></div>
+                <div class="kpi"><span>Pairs that are real duplicates</span><b>{duplicatePrecision}</b><small>of {m.duplicatePairs} proposed pairs (open or merged)</small></div>
+            </div>
+        </template>
+        <template lwc:else>
+            <div class="empty">No test captures yet. Generate the volume test data below (about 2 minutes), then refresh.</div>
+        </template>
+
+        <h3>Volume test data</h3>
+        <div class="muted">
+            Data set: {m.hospitals} hospitals · {m.departments} departments · {m.hcps} generated HCPs. Change the parameters in Setup › Custom Metadata Types › Matching Setting › Default, then
+            regenerate the test captures to measure the effect.
+        </div>
+        <div class="acts">
+            <template lwc:if={confirmAction}>
+                <span class="warn-text">{confirmText}</span>
+                <button type="button" class="btn sm" onclick={cancel}>Cancel</button>
+                <button type="button" class="btn sm danger" onclick={run} disabled={busy}>Confirm</button>
+            </template>
+            <template lwc:else>
+                <button type="button" class="btn sm brand" data-action="generate" onclick={ask}>Generate / regenerate all</button>
+                <button type="button" class="btn sm" data-action="captures" onclick={ask}>Regenerate test captures only</button>
+                <button type="button" class="btn sm danger" data-action="cleanup" onclick={ask}>Delete volume test data</button>
+            </template>
+        </div>
+    </div>
+</template>

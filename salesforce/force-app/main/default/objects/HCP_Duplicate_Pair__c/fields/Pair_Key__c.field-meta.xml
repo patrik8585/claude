@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pair_Key__c</fullName>
+    <description>Lower Contact Id + "-" + higher Contact Id (18-character Ids).</description>
+    <label>Pair Key</label>
+    <externalId>true</externalId>
+    <length>40</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>true</unique>
+    <caseSensitive>false</caseSensitive>
+</CustomField>

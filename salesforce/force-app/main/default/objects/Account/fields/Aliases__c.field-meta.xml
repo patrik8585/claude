@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Aliases__c</fullName>
+    <description>Hospitals: other names HCPs type for this hospital, separated by semicolon (e.g. Gaslini; Istituto Gaslini). Used to resolve the free-text organisation of a capture.</description>
+    <inlineHelpText>Other names, separated by semicolon.</inlineHelpText>
+    <label>Aliases</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

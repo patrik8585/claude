@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Evidence_Is_Immutable</fullName>
+    <active>true</active>
+    <description>Consent evidence (what was agreed, when, how, by whom, signature) cannot be changed after the record is created. Withdraw the consent and capture a new one instead.</description>
+    <errorConditionFormula>AND(
+    NOT(ISNEW()),
+    OR(
+        ISCHANGED(Captured_At__c),
+        ISCHANGED(Consent_Text__c),
+        ISCHANGED(Consent_Text_Version__c),
+        ISCHANGED(Opt_In_Method__c),
+        ISCHANGED(Signature_Captured__c),
+        ISCHANGED(Signature_Hash__c),
+        ISCHANGED(Evidence_Hash__c),
+        ISCHANGED(Captured_By__c),
+        ISCHANGED(Capture_Device__c),
+        ISCHANGED(Source_Capture__c)
+    )
+)</errorConditionFormula>
+    <errorMessage>Consent evidence cannot be changed after creation. Withdraw this consent and capture a new one.</errorMessage>
+</ValidationRule>
