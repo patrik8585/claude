@@ -450,7 +450,7 @@ public with sharing class RepCaptureController {
         cap.HCP_Selected_By_Rep__c = true;
         cap.Matched_Contact__c = c.Id;
         cap.Capture_Device__c = deviceInfo == null ? null : deviceInfo.left(255);
-        return save(cap, m, signatureDataUrl, ev.Name, null);
+        return save(cap, m, signatureDataUrl, ev, null);
     }
 
     // ------------------------------------------------------------ walk-in
@@ -490,7 +490,7 @@ public with sharing class RepCaptureController {
             );
         }
         cap.Capture_Device__c = deviceInfo == null ? null : deviceInfo.left(255);
-        return save(cap, method, signatureDataUrl, ev.Name, follow);
+        return save(cap, method, signatureDataUrl, ev, follow);
     }
 
     // ------------------------------------------------------------ hospitals and departments
@@ -618,7 +618,7 @@ public with sharing class RepCaptureController {
     // ------------------------------------------------------------ helpers
 
     private static Event__c loadEvent(String eventId) {
-        List<Event__c> rows = [SELECT Id, Name FROM Event__c WHERE Id = :eventId AND Active__c = TRUE LIMIT 1];
+        List<Event__c> rows = [SELECT Id, Name, Slides_Url__c FROM Event__c WHERE Id = :eventId AND Active__c = TRUE LIMIT 1];
         if (rows.isEmpty()) {
             throw new AuraHandledException('Select an active event first.');
         }
@@ -679,14 +679,24 @@ public with sharing class RepCaptureController {
         return cap;
     }
 
-    private static SaveResult save(Capture__c cap, String method, String signatureDataUrl, String eventName, Task follow) {
+    private static SaveResult save(Capture__c cap, String method, String signatureDataUrl, Event__c ev, Task follow) {
+        String eventName = ev.Name;
+        // signed on screen: no confirmation page follows, so the copy email carries the slides link
+        String slidesUrl = cap.Send_Slides__c == true ? ev.Slides_Url__c : null;
         String token = method == 'email' ? ConsentService.attachNewToken(cap) : null;
         insert cap;
         Capture__c saved = [SELECT Id, Name FROM Capture__c WHERE Id = :cap.Id];
         Boolean copySent = false;
         if (method == 'sign') {
             String sigHash = ConsentService.saveSignature(cap.Id, saved.Name, signatureDataUrl);
-            copySent = ConsentService.sendSignedCopyEmail(cap.Email__c, cap.Last_Name__c, eventName, cap.Captured_At__c, cap.Captured_By_Name__c);
+            copySent = ConsentService.sendSignedCopyEmail(
+                cap.Email__c,
+                cap.Last_Name__c,
+                eventName,
+                cap.Captured_At__c,
+                cap.Captured_By_Name__c,
+                slidesUrl
+            );
             update new Capture__c(
                 Id = cap.Id,
                 Signature_Hash__c = sigHash,
