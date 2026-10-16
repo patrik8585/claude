@@ -135,6 +135,26 @@ private class EventRegistrationServiceTest {
     }
 
     @IsTest
+    static void attendeeTypeTellsRegisteredFromWalkIns() {
+        Event__c e = ev();
+        Contact ferri = [SELECT Id FROM Contact WHERE LastName = 'Ferri'];
+        Contact romano = [SELECT Id FROM Contact WHERE LastName = 'Romano'];
+        CaptureTriggerHandler.publishEnabled = false;
+        EventRegistrationService.register(e.Id, new List<EventRegistrationService.Registrant>{ row('Giulia', 'Romano', 'g.romano@ospedale-example.it', false) });
+        Capture__c known = ConsentTestFactory.capture(e, 'Marco', 'Ferri', 'marco.ferri@policlinico-example.it', 'Paediatrics', 'Milan');
+        Capture__c unknown = ConsentTestFactory.capture(e, 'Ottavia', 'Quaglierini', 'ottavia.q@gmail.com', 'Paediatrics', 'Bergamo');
+        insert new List<Capture__c>{ known, unknown };
+        Set<Id> ids = registrationCaptureIds();
+        ids.add(known.Id);
+        ids.add(unknown.Id);
+        CaptureMatchingService.processCaptures(ids);
+        Assert.areEqual('Registered', [SELECT Attendee_Type__c FROM Event_Attendee__c WHERE Contact__c = :romano.Id].Attendee_Type__c);
+        Assert.areEqual('Walk-in - known HCP', [SELECT Attendee_Type__c FROM Event_Attendee__c WHERE Contact__c = :ferri.Id].Attendee_Type__c);
+        Contact created = [SELECT Id FROM Contact WHERE LastName = 'Quaglierini'];
+        Assert.areEqual('Walk-in - new HCP', [SELECT Attendee_Type__c FROM Event_Attendee__c WHERE Contact__c = :created.Id].Attendee_Type__c);
+    }
+
+    @IsTest
     static void registeredCandidateGetsBonus() {
         Event__c e = ev();
         Contact romano = [SELECT Id FROM Contact WHERE LastName = 'Romano'];

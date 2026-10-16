@@ -26,6 +26,10 @@
                 <behavior>Edit</behavior>
                 <field>Registered__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Attendee_Type__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>

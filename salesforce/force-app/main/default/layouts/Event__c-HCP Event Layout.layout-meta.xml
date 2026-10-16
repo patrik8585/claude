@@ -74,7 +74,7 @@
         <fields>NAME</fields>
         <fields>Contact__c</fields>
         <fields>Attendance_Status__c</fields>
-        <fields>Registered__c</fields>
+        <fields>Attendee_Type__c</fields>
         <fields>Communications_Allowed__c</fields>
         <relatedList>Event_Attendee__c.Event__c</relatedList>
     </relatedLists>
