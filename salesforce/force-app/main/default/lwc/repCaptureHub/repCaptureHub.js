@@ -4,8 +4,6 @@ import searchHcps from '@salesforce/apex/RepCaptureController.searchHcps';
 import addKnownHcp from '@salesforce/apex/RepCaptureController.addKnownHcp';
 import saveWalkIn from '@salesforce/apex/RepCaptureController.saveWalkIn';
 import getMyCapturesToday from '@salesforce/apex/RepCaptureController.getMyCapturesToday';
-import searchHospitals from '@salesforce/apex/RepCaptureController.searchHospitals';
-import getDepartments from '@salesforce/apex/RepCaptureController.getDepartments';
 import getRegisteredAttendees from '@salesforce/apex/RepCaptureController.getRegisteredAttendees';
 
 const MIC_ERRORS = {
@@ -57,9 +55,6 @@ export default class RepCaptureHub extends LightningElement {
     error;
     searchTimer;
     noticeTimer;
-    hospitalTimer;
-    hospitalOptions = [];
-    departments = [];
     interimText = '';
     dictationLang = (navigator.language || '').toLowerCase().startsWith('it') ? 'it-IT' : 'en-GB';
     userStopped = false;
@@ -84,7 +79,6 @@ export default class RepCaptureHub extends LightningElement {
         this.stopMic();
         clearTimeout(this.searchTimer);
         clearTimeout(this.noticeTimer);
-        clearTimeout(this.hospitalTimer);
     }
 
     async load() {
@@ -432,8 +426,6 @@ export default class RepCaptureHub extends LightningElement {
         const q = (this.query || '').trim();
         const looksLikeEmail = q.includes('@');
         this.walk = looksLikeEmail ? { email: q } : { lastName: q.charAt(0).toUpperCase() + q.slice(1) };
-        this.hospitalOptions = [];
-        this.departments = [];
         this.resetMethod();
         this.screen = 'walkin';
     }
@@ -446,57 +438,6 @@ export default class RepCaptureHub extends LightningElement {
             this.dictationBase = evt.target.value ? evt.target.value + ' ' : '';
             this.dictated = '';
         }
-    }
-
-    // ---------------------------------------------------------------- hospital / department
-
-    handleHospitalInput(evt) {
-        const value = evt.target.value;
-        // free text stays possible; choosing from the list links the capture to the hospital
-        this.walk = { ...this.walk, organisation: value, hospitalId: undefined, departmentId: undefined };
-        this.departments = [];
-        clearTimeout(this.hospitalTimer);
-        if ((value || '').trim().length < 2) {
-            this.hospitalOptions = [];
-            return;
-        }
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this.hospitalTimer = setTimeout(() => this.runHospitalSearch(value), 300);
-    }
-
-    async runHospitalSearch(value) {
-        try {
-            this.hospitalOptions = await searchHospitals({ term: value });
-        } catch (e) {
-            this.hospitalOptions = [];
-        }
-    }
-
-    async pickHospital(evt) {
-        const id = evt.currentTarget.dataset.id;
-        const h = this.hospitalOptions.find((o) => o.id === id);
-        if (!h) {
-            return;
-        }
-        this.walk = { ...this.walk, organisation: h.name, hospitalId: h.id, departmentId: undefined, city: this.walk.city || h.city };
-        this.hospitalOptions = [];
-        try {
-            this.departments = await getDepartments({ hospitalId: h.id });
-        } catch (e) {
-            this.departments = [];
-        }
-    }
-
-    get showHospitalOptions() {
-        return this.hospitalOptions.length > 0 && !this.walk.hospitalId;
-    }
-
-    get hasDepartments() {
-        return this.departments.length > 0;
-    }
-
-    get departmentRows() {
-        return this.departments.map((d) => ({ ...d, selected: d.id === this.walk.departmentId }));
     }
 
     get walkSpecialties() {
@@ -656,9 +597,6 @@ export default class RepCaptureHub extends LightningElement {
                     email: w.email,
                     specialty: w.specialty,
                     city: w.city,
-                    organisation: w.organisation,
-                    hospitalId: w.hospitalId,
-                    departmentId: w.departmentId,
                     notes: w.notes
                 },
                 method: this.method,

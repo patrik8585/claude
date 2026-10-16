@@ -132,6 +132,10 @@
                 <field>Confirmation_Email_Status__c</field>
             </layoutItems>
             <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Email_Error__c</field>
+            </layoutItems>
+            <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Token_Expires_At__c</field>
             </layoutItems>

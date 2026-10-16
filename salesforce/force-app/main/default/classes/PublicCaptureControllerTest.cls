@@ -239,5 +239,13 @@ private class PublicCaptureControllerTest {
         Assert.isTrue(PublicCaptureController.verifyFormToken(token, e.Id));
         Assert.isFalse(PublicCaptureController.verifyFormToken(token + 'x', e.Id));
         Assert.isNull(ConsentService.findByToken('short'));
+        Assert.isFalse(ConsentService.sendConfirmationEmail(null, 'X', 'Event', 'token'), 'no address, no email');
+        Assert.areEqual('No email address', ConsentService.lastEmailError);
+        Consent_Capture_Settings__c st = Consent_Capture_Settings__c.getOrgDefaults();
+        st.Public_Site_Url__c = null;
+        update st;
+        ConsentCaptureConfig.resetCache();
+        Assert.isFalse(ConsentService.sendConfirmationEmail('a@example.com', 'X', 'Event', 'token'), 'no site URL, no link');
+        Assert.isTrue(ConsentService.lastEmailError.startsWith('Public site URL not configured'), ConsentService.lastEmailError);
     }
 }

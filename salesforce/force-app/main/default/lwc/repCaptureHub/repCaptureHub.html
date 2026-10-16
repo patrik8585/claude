@@ -151,34 +151,8 @@
                             <option key={s.value} value={s.value} selected={s.selected}>{s.value}</option>
                         </template>
                     </select>
-                    <div class="f2">
-                        <div>
-                            <label class="l" for="wc">City</label>
-                            <input id="wc" class="in" data-field="city" value={walk.city} oninput={handleWalkInput} />
-                        </div>
-                        <div>
-                            <label class="l" for="wo">Hospital</label>
-                            <input id="wo" class="in" value={walk.organisation} oninput={handleHospitalInput} placeholder="Search…" autocomplete="off" />
-                        </div>
-                    </div>
-                    <template lwc:if={showHospitalOptions}>
-                        <div class="hco-list" role="listbox">
-                            <template for:each={hospitalOptions} for:item="o">
-                                <div key={o.id} class="hco-opt" data-id={o.id} onclick={pickHospital} role="option" aria-selected="false" tabindex="0">
-                                    <b>{o.name}</b><small>{o.city}</small>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                    <template lwc:if={hasDepartments}>
-                        <label class="l" for="wd">Department</label>
-                        <select id="wd" class="in" data-field="departmentId" onchange={handleWalkInput}>
-                            <option value="">Select…</option>
-                            <template for:each={departmentRows} for:item="d">
-                                <option key={d.id} value={d.id} selected={d.selected}>{d.name}</option>
-                            </template>
-                        </select>
-                    </template>
+                    <label class="l" for="wc">City</label>
+                    <input id="wc" class="in" data-field="city" value={walk.city} oninput={handleWalkInput} />
                     <label class="l" for="wn">Notes (type or dictate)</label>
                     <div class="notes-w">
                         <textarea id="wn" class="in notes" data-field="notes" oninput={handleWalkInput} placeholder="Tap the microphone and speak…"></textarea>

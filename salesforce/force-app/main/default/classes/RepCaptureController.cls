@@ -687,7 +687,12 @@ public with sharing class RepCaptureController {
         if (method == 'sign') {
             String sigHash = ConsentService.saveSignature(cap.Id, saved.Name, signatureDataUrl);
             copySent = ConsentService.sendSignedCopyEmail(cap.Email__c, cap.Last_Name__c, eventName, cap.Captured_At__c, cap.Captured_By_Name__c);
-            update new Capture__c(Id = cap.Id, Signature_Hash__c = sigHash, Signature_Copy_Sent__c = copySent);
+            update new Capture__c(
+                Id = cap.Id,
+                Signature_Hash__c = sigHash,
+                Signature_Copy_Sent__c = copySent,
+                Email_Error__c = copySent ? null : ConsentService.lastEmailError
+            );
         }
         if (follow != null) {
             follow.WhatId = cap.Id;
@@ -700,7 +705,8 @@ public with sharing class RepCaptureController {
             r.emailSent = ConsentService.sendConfirmationEmail(cap.Email__c, cap.Last_Name__c, eventName, token);
             update new Capture__c(
                 Id = cap.Id,
-                Confirmation_Email_Status__c = r.emailSent ? CaptureConstants.EMAIL_SENT : CaptureConstants.EMAIL_FAILED
+                Confirmation_Email_Status__c = r.emailSent ? CaptureConstants.EMAIL_SENT : CaptureConstants.EMAIL_FAILED,
+                Email_Error__c = r.emailSent ? null : ConsentService.lastEmailError
             );
         }
         if (method == 'existing') {
@@ -711,7 +717,7 @@ public with sharing class RepCaptureController {
         } else if (method == 'email') {
             r.message = r.emailSent
                 ? 'Confirmation link sent by email - consent pending until the HCP confirms.'
-                : 'Capture saved, but the confirmation email could not be sent (check email settings). Consent stays pending.';
+                : 'Capture saved, but the confirmation email could not be sent (' + ConsentService.lastEmailError + '). Consent stays pending.';
         } else {
             r.message = 'HCP declined - added as attendee only, no communications.';
         }

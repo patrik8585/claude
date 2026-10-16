@@ -239,7 +239,8 @@ public without sharing class PublicCaptureController {
         Boolean sent = ConsentService.sendConfirmationEmail(email, lastName, ev.Name, token);
         update new Capture__c(
             Id = capture.Id,
-            Confirmation_Email_Status__c = sent ? CaptureConstants.EMAIL_SENT : CaptureConstants.EMAIL_FAILED
+            Confirmation_Email_Status__c = sent ? CaptureConstants.EMAIL_SENT : CaptureConstants.EMAIL_FAILED,
+            Email_Error__c = sent ? null : ConsentService.lastEmailError
         );
 
         result.success = true;
@@ -283,7 +284,12 @@ public without sharing class PublicCaptureController {
             null,
             slidesUrl
         );
-        update new Capture__c(Id = capture.Id, Signature_Hash__c = sigHash, Signature_Copy_Sent__c = copySent);
+        update new Capture__c(
+            Id = capture.Id,
+            Signature_Hash__c = sigHash,
+            Signature_Copy_Sent__c = copySent,
+            Email_Error__c = copySent ? null : ConsentService.lastEmailError
+        );
 
         result.success = true;
         result.signed = true;

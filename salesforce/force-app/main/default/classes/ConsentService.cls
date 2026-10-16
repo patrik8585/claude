@@ -68,14 +68,38 @@ public without sharing class ConsentService {
         return base + (base.contains('?') ? '&' : '?') + param + token;
     }
 
+    /** Why the last confirmation / signed-copy email was not sent (null after a successful send). */
+    public static String lastEmailError;
+
+    private static Boolean failed(String reason) {
+        lastEmailError = reason == null ? 'Unknown error' : reason.left(255);
+        System.debug(LoggingLevel.WARN, 'Email not sent: ' + lastEmailError);
+        return false;
+    }
+
+    private static Boolean outcome(List<Messaging.SendEmailResult> results) {
+        if (results.isEmpty()) {
+            return failed('No send result returned');
+        }
+        if (results[0].isSuccess()) {
+            lastEmailError = null;
+            return true;
+        }
+        Messaging.SendEmailError err = results[0].getErrors().isEmpty() ? null : results[0].getErrors()[0];
+        return failed(err == null ? 'Send failed' : String.valueOf(err.getStatusCode()) + ': ' + err.getMessage());
+    }
+
     /**
      * Sends the double opt-in email. Never throws: returns false when the link
      * cannot be built or the org email limit / deliverability blocks the send.
      */
     public static Boolean sendConfirmationEmail(String toAddress, String lastName, String eventName, String token) {
         String link = confirmationLink(token);
-        if (String.isBlank(toAddress) || link == null) {
-            return false;
+        if (String.isBlank(toAddress)) {
+            return failed('No email address');
+        }
+        if (link == null) {
+            return failed('Public site URL not configured: run scripts/apex/01-configure.apex with the site URL');
         }
         try {
             Messaging.reserveSingleEmailCapacity(1);
@@ -109,11 +133,9 @@ public without sharing class ConsentService {
                 String sender = ConsentCaptureConfig.settings().Email_Sender_Name__c;
                 mail.setSenderDisplayName(String.isBlank(sender) ? 'Danone Events' : sender);
             }
-            List<Messaging.SendEmailResult> results = Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ mail }, false);
-            return !results.isEmpty() && results[0].isSuccess();
+            return outcome(Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ mail }, false));
         } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'Confirmation email not sent: ' + e.getMessage());
-            return false;
+            return failed(e.getMessage());
         }
     }
 
@@ -300,7 +322,7 @@ public without sharing class ConsentService {
         String slidesUrl
     ) {
         if (String.isBlank(toAddress)) {
-            return false;
+            return failed('No email address');
         }
         try {
             Messaging.reserveSingleEmailCapacity(1);
@@ -331,11 +353,9 @@ public without sharing class ConsentService {
                 String sender = ConsentCaptureConfig.settings().Email_Sender_Name__c;
                 mail.setSenderDisplayName(String.isBlank(sender) ? 'Danone Events' : sender);
             }
-            List<Messaging.SendEmailResult> results = Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ mail }, false);
-            return !results.isEmpty() && results[0].isSuccess();
+            return outcome(Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ mail }, false));
         } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'Signed copy email not sent: ' + e.getMessage());
-            return false;
+            return failed(e.getMessage());
         }
     }
 }
