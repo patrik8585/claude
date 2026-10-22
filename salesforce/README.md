@@ -56,7 +56,7 @@ salesforce/
 │   └── layouts/                 # Contact Layout + Account Layout: REPLACE the default layouts (fine on a fresh org)
 ├── force-app-ai/main/default/   # NotesExtractionAI (Prompt Builder call), deployed after the Einstein setup
 ├── scripts/apex/                # configure, territory, sample data, Gigya simulation, registrations, reset, event URLs
-└── destructive/                 # one-off: removes the duplicate scan and the merge from the org (section 3)
+└── destructive/                 # one-off: removes the duplicate scan and the merge from the org (section 3, with the generated manifest/)
 ```
 
 | Apex class | Role |
@@ -120,10 +120,12 @@ sf org login web --alias dev-consent --instance-url https://login.salesforce.com
 # 1. Core metadata + Apex. Developer Edition is a production-type org: local Apex tests run automatically.
 sf project deploy start --source-dir force-app --target-org dev-consent --test-level RunLocalTests --wait 30
 
-# 1-bis. Once, after step 1 on an org that had the duplicate scan / merge: delete them from the org
-#        (DuplicateScanJob, HcpMergeService, HCP_Duplicate_Pair__c, HCP_Merge__c with their records,
-#        Matching Setting field Duplicate_Min_Score__c). Skip on a fresh org.
-sf project deploy start --manifest destructive/package.xml --post-destructive-changes destructive/destructiveChanges.xml --target-org dev-consent --test-level RunLocalTests --wait 30
+#    ONCE, instead of step 1, on an org that still has the duplicate scan / merge (deployed before b7402f5):
+#    the same deploy plus the deletion of DuplicateScanJob, HcpMergeService, HCP_Duplicate_Pair__c,
+#    HCP_Merge__c (with their records) and Matching Setting field Duplicate_Min_Score__c, in ONE deploy
+#    (a plain step 1 fails: the old DuplicateScanJob in the org no longer compiles, so every test fails).
+sf project generate manifest --source-dir force-app --name package --output-dir manifest
+sf project deploy start --manifest manifest/package.xml --post-destructive-changes destructive/destructiveChanges.xml --target-org dev-consent --test-level RunLocalTests --wait 30
 
 # 2. Reports, dashboard and the Contact / Account layouts (separate, so a problem here never blocks the core)
 sf project deploy start --source-dir force-app-extras --target-org dev-consent --wait 30
