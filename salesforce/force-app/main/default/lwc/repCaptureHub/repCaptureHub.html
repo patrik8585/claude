@@ -37,10 +37,7 @@
 
                 <template lwc:if={selected}>
                     <div class="hcpcard">
-                        <template lwc:if={addedMessage}>
-                            <button type="button" class="btn brand lg block" onclick={nextHcp}>🔍 New search – next HCP</button>
-                        </template>
-                        <template lwc:else>
+                        <template lwc:if={showBackToResults}>
                             <button type="button" class="link" onclick={backToResults}>‹ Back to results</button>
                         </template>
                         <h4>Dr. {selected.firstName} {selected.lastName}</h4>

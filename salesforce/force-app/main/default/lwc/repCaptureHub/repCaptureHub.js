@@ -16,6 +16,11 @@ const MIC_ERRORS = {
 const MAX_RESTARTS = 5;
 /** The rep works a whole day at one congress: the chosen congress is remembered on the device. */
 const EVENT_KEY = 'hcpRepHub.eventId';
+
+/** Walk-in form with every field empty (an undefined value would show as "undefined" in the inputs). */
+function emptyWalk(values) {
+    return { firstName: '', lastName: '', email: '', specialty: '', city: '', notes: '', ...values };
+}
 const ATTENDANCE = {
     registered: { cls: 'sm-badge reg', short: 'Registered' },
     attended: { cls: 'sm-badge ok', short: 'Checked in' }
@@ -47,7 +52,7 @@ export default class RepCaptureHub extends LightningElement {
     method;
     signed = false;
     added = {};
-    walk = {};
+    walk = emptyWalk();
     listening = false;
     micHint;
     recognition;
@@ -183,7 +188,7 @@ export default class RepCaptureHub extends LightningElement {
     /** Ready for the next HCP at the same congress: empty search, focus on the search box. */
     nextHcp() {
         this.stopMic();
-        this.walk = {};
+        this.walk = emptyWalk();
         this.resetSearch();
         this.showRegistered = false;
         this.screen = 'capture';
@@ -373,6 +378,11 @@ export default class RepCaptureHub extends LightningElement {
     get addKnownLabel() {
         return this.selectedRegistered ? '✓ Check in' : '+ Add to event';
     }
+    /** Before the capture only: once it is saved the card offers "New search – next HCP" instead. */
+    get showBackToResults() {
+        return !this.addedMessage;
+    }
+
     get addedTitle() {
         return this.selectedRegistered ? 'Checked in.' : 'Added to event.';
     }
@@ -471,7 +481,7 @@ export default class RepCaptureHub extends LightningElement {
     startWalkIn() {
         const q = (this.query || '').trim();
         const looksLikeEmail = q.includes('@');
-        this.walk = looksLikeEmail ? { email: q } : { lastName: q.charAt(0).toUpperCase() + q.slice(1) };
+        this.walk = emptyWalk(looksLikeEmail ? { email: q } : { lastName: q.charAt(0).toUpperCase() + q.slice(1) });
         this.resetMethod();
         this.screen = 'walkin';
     }
