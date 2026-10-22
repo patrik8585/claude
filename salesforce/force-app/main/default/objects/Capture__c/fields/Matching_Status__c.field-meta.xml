@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Matching_Status__c</fullName>
+    <label>Matching Status</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Queued</fullName>
+                <default>false</default>
+                <label>Queued</label>
+            </value>
+            <value>
+                <fullName>Auto-matched</fullName>
+                <default>false</default>
+                <label>Auto-matched</label>
+            </value>
+            <value>
+                <fullName>To review</fullName>
+                <default>false</default>
+                <label>To review</label>
+            </value>
+            <value>
+                <fullName>New HCP</fullName>
+                <default>false</default>
+                <label>New HCP</label>
+            </value>
+            <value>
+                <fullName>Reviewed - matched</fullName>
+                <default>false</default>
+                <label>Reviewed - matched</label>
+            </value>
+            <value>
+                <fullName>Reviewed - new HCP</fullName>
+                <default>false</default>
+                <label>Reviewed - new HCP</label>
+            </value>
+            <value>
+                <fullName>Discarded</fullName>
+                <default>false</default>
+                <label>Discarded</label>
+            </value>
+            <value>
+                <fullName>Error</fullName>
+                <default>false</default>
+                <label>Error</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

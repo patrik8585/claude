@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Review_On_Conflict__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description>Email or registration number shared by several HCPs, or email pointing to one HCP and registration number to another (or a different number): send to review instead of auto-matching.</description>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <label>Review on conflicting evidence</label>
+    <type>Checkbox</type>
+</CustomField>

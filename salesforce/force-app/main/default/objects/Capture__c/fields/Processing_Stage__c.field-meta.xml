@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Processing_Stage__c</fullName>
+    <label>Processing Stage</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Received</fullName>
+                <default>false</default>
+                <label>Received</label>
+            </value>
+            <value>
+                <fullName>To review</fullName>
+                <default>false</default>
+                <label>To review</label>
+            </value>
+            <value>
+                <fullName>Matched</fullName>
+                <default>false</default>
+                <label>Matched</label>
+            </value>
+            <value>
+                <fullName>Consent created</fullName>
+                <default>false</default>
+                <label>Consent created</label>
+            </value>
+            <value>
+                <fullName>Sent to Gigya</fullName>
+                <default>false</default>
+                <label>Sent to Gigya</label>
+            </value>
+            <value>
+                <fullName>Completed - no consent</fullName>
+                <default>false</default>
+                <label>Completed - no consent</label>
+            </value>
+            <value>
+                <fullName>Discarded</fullName>
+                <default>false</default>
+                <label>Discarded</label>
+            </value>
+            <value>
+                <fullName>Error</fullName>
+                <default>false</default>
+                <label>Error</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

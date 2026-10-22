@@ -1,0 +1,70 @@
+.card {
+    background: #fff;
+    border: 1px solid #dddbda;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+.hd {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+.tile {
+    border: 1px solid #dddbda;
+    border-radius: 6px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+}
+.tile span {
+    color: #706e6b;
+    font-size: 12px;
+}
+.tile b {
+    font-size: 20px;
+}
+.tile.ok b {
+    color: #2e844a;
+}
+.muted {
+    color: #706e6b;
+    font-size: 12px;
+    margin: 6px 0;
+}
+.upd {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.upd .muted {
+    margin: 0;
+}
+.link {
+    border: 0;
+    background: none;
+    color: #0176d3;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+}
+.alert {
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 8px;
+}
+.alert.err {
+    background: #feded8;
+    color: #ba0517;
+}
+.muted.warn {
+    color: #8c4b02;
+}

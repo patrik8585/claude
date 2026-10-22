@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Primary__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>One primary affiliation per HCP; it sets the Contact Account.</description>
+    <label>Primary</label>
+    <type>Checkbox</type>
+</CustomField>

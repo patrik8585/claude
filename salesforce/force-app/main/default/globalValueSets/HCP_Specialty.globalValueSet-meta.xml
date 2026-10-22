@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>Paediatrics</fullName>
+        <default>false</default>
+        <label>Paediatrics</label>
+    </customValue>
+    <customValue>
+        <fullName>Neonatology</fullName>
+        <default>false</default>
+        <label>Neonatology</label>
+    </customValue>
+    <customValue>
+        <fullName>Paediatric Gastroenterology</fullName>
+        <default>false</default>
+        <label>Paediatric Gastroenterology</label>
+    </customValue>
+    <customValue>
+        <fullName>Paediatric Allergy</fullName>
+        <default>false</default>
+        <label>Paediatric Allergy</label>
+    </customValue>
+    <customValue>
+        <fullName>Dietetics &amp; Nutrition</fullName>
+        <default>false</default>
+        <label>Dietetics &amp; Nutrition</label>
+    </customValue>
+    <customValue>
+        <fullName>General Practice</fullName>
+        <default>false</default>
+        <label>General Practice</label>
+    </customValue>
+    <customValue>
+        <fullName>Gynaecology</fullName>
+        <default>false</default>
+        <label>Gynaecology</label>
+    </customValue>
+    <description>HCP specialties used on Contact and Capture.</description>
+    <masterLabel>HCP Specialty</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

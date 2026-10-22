@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Errors</fullName>
+    <columns>NAME</columns>
+    <columns>First_Name__c</columns>
+    <columns>Last_Name__c</columns>
+    <columns>Processing_Error__c</columns>
+    <columns>Captured_At__c</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Processing_Stage__c</field>
+        <operation>equals</operation>
+        <value>Error</value>
+    </filters>
+    <label>Processing errors</label>
+</ListView>
