@@ -1,6 +1,6 @@
 /**
  * Pre-event registrations: the people who registered for an event before it starts
- * (export of the registration website), imported from the Event record page.
+ * (export of the registration website), loaded by Apex (script 09-sample-registrations for the demo).
  *
  * Each row becomes a Capture__c with Channel "Event registration", so it goes through the same
  * matching as every other capture (existing HCP or steward review). Registrations come before the
@@ -14,7 +14,6 @@
  * already has: only an explicit opt-out withdraws it.
  */
 public with sharing class EventRegistrationService {
-    public static final Integer MAX_ROWS = 2000;
     public static final String IMPORTED_BY = 'Registration import';
     private static final Pattern EMAIL_PATTERN = Pattern.compile('^[A-Za-z0-9._%+\\-]+@[A-Za-z0-9.\\-]+\\.[A-Za-z]{2,}$');
 
@@ -74,8 +73,6 @@ public with sharing class EventRegistrationService {
         /** Registrations discarded because the HCP is not in Salesforce. */
         @AuraEnabled
         public Integer notFound = 0;
-        @AuraEnabled
-        public Boolean canImport = false;
     }
 
     // ------------------------------------------------------------ summary
@@ -85,7 +82,6 @@ public with sharing class EventRegistrationService {
         Event__c ev = loadEvent(eventId);
         Summary s = new Summary();
         s.eventName = ev.Name;
-        s.canImport = FeatureManagement.checkPermission(CaptureConstants.PERM_STEWARD);
         for (AggregateResult ar : [
             SELECT Registered__c reg, Attendance_Status__c st, COUNT(Id) n
             FROM Event_Attendee__c
@@ -125,22 +121,7 @@ public with sharing class EventRegistrationService {
         return s;
     }
 
-    // ------------------------------------------------------------ import
-
-    @AuraEnabled
-    public static ImportResult importRegistrations(String eventId, List<Registrant> rows) {
-        if (!FeatureManagement.checkPermission(CaptureConstants.PERM_STEWARD)) {
-            throw new AuraHandledException('Only admins and data stewards can import registrations.');
-        }
-        Event__c ev = loadEvent(eventId);
-        if (rows == null || rows.isEmpty()) {
-            throw new AuraHandledException('The file has no registrations.');
-        }
-        if (rows.size() > MAX_ROWS) {
-            throw new AuraHandledException('At most ' + MAX_ROWS + ' registrations per import. Split the file.');
-        }
-        return register(ev.Id, rows);
-    }
+    // ------------------------------------------------------------ registration
 
     /** Creates one registration capture per new row. Re-importing the same file skips the rows already imported. */
     public static ImportResult register(Id eventId, List<Registrant> rows) {

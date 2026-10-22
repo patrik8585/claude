@@ -54,9 +54,9 @@ private class EventRegistrationServiceTest {
                 row('Nolast', '', 'nolast@example.it', true),
                 row('Marco', 'Ferri', 'MARCO.FERRI@policlinico-example.it', false)
             };
-            first = EventRegistrationService.importRegistrations(e.Id, rows);
+            first = EventRegistrationService.register(e.Id, rows);
             CaptureMatchingService.processCaptures(registrationCaptureIds());
-            again = EventRegistrationService.importRegistrations(e.Id, rows);
+            again = EventRegistrationService.register(e.Id, rows);
             summary = EventRegistrationService.getSummary(e.Id);
         }
         Assert.areEqual(3, first.imported, 'three valid, distinct rows: ' + first.messages);
@@ -87,7 +87,6 @@ private class EventRegistrationServiceTest {
         Assert.areEqual(0, summary.checkedIn);
         Assert.areEqual(2, summary.notArrived);
         Assert.areEqual(1, summary.notFound, 'Marchi reported as not in Salesforce');
-        Assert.isTrue(summary.canImport, 'admin can import');
     }
 
     @IsTest
@@ -179,29 +178,8 @@ private class EventRegistrationServiceTest {
     }
 
     @IsTest
-    static void importNeedsStewardPermissionAndRows() {
-        Event__c e = ev();
-        User nobody = ConsentTestFactory.user(null);
-        User admin = ConsentTestFactory.user('HCP_Consent_Admin');
-        Boolean denied = false;
-        Boolean empty = false;
-        System.runAs(nobody) {
-            try {
-                EventRegistrationService.importRegistrations(e.Id, new List<EventRegistrationService.Registrant>{ row('A', 'B', null, false) });
-            } catch (AuraHandledException ex) {
-                denied = true;
-            }
-        }
-        System.runAs(admin) {
-            try {
-                EventRegistrationService.importRegistrations(e.Id, new List<EventRegistrationService.Registrant>());
-            } catch (AuraHandledException ex) {
-                empty = true;
-            }
-        }
-        Assert.isTrue(denied, 'users without the steward permission cannot import');
-        Assert.isTrue(empty, 'an empty file is refused');
-        Assert.areEqual(Date.newInstance(2026, 9, 20), EventRegistrationService.parseDate('2026-09-20').dateGmt());
+    static void registrationDates() {
+        Assert.areEqual(Date.newInstance(2026, 9, 20), EventRegistrationService.parseDate('2026-09-20').dateGmt(), 'yyyy-MM-dd parsed');
         Assert.isNotNull(EventRegistrationService.parseDate('not a date'), 'bad dates fall back to now');
     }
 

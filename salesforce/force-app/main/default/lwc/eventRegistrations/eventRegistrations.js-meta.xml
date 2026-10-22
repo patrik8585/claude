@@ -3,7 +3,7 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Event Registrations</masterLabel>
-    <description>Registered vs. checked-in attendees of an event, and CSV import of pre-event registrations.</description>
+    <description>Registered vs. checked-in attendees and walk-ins of an event (live counts).</description>
     <targets>
         <target>lightning__RecordPage</target>
     </targets>

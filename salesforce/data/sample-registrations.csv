@@ -1,6 +1,0 @@
-firstName,lastName,email,specialty,city,registrationNumber,organisation,consent,consentDate
-Chiara,Rinaldi,c.rinaldi.ped@gmail.com,Paediatric Gastroenterology,Florence,FI-08877,Meyer,yes,2026-09-28
-Elena,Greco,elena.greco@asst-example.it,Paediatrics,Milan,,ASST Fatebenefratelli,no,
-Maria,Bianchi,maria.bianchi@sanraffaele-example.it,Gynaecology,Milan,MI-15530,San Raffaele,yes,2026-09-30
-Roberto,Esposito,r.esposito@santobono-example.it,Paediatric Gastroenterology,Naples,NA-27711,Santobono,no,
-Giorgio,Bellandi,giorgio.bellandi@gmail.com,Paediatrics,Turin,,Regina Margherita,yes,2026-09-30

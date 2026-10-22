@@ -2,7 +2,10 @@
     <article class="card">
         <header class="hd">
             <b>Registrations</b>
-            <button type="button" class="link" onclick={refresh}>Refresh</button>
+            <span class="upd">
+                <template lwc:if={updatedAt}><span class="muted">Updated {updatedAt}</span></template>
+                <button type="button" class="link" onclick={refresh}>Refresh</button>
+            </span>
         </header>
         <template lwc:if={error}>
             <div class="alert err">{error}</div>
@@ -20,40 +23,7 @@
             <template lwc:if={summary.inProgress}>
                 <p class="muted">{summary.inProgress} registrations still being matched or waiting for a data steward (Matching › Review queue).</p>
             </template>
-
-            <template lwc:if={summary.canImport}>
-                <div class="imp">
-                    <label class="l" for="csv">Import registrations (CSV)</label>
-                    <input id="csv" type="file" accept=".csv,text/csv" onchange={handleFile} />
-                    <p class="muted">
-                        Columns: firstName, lastName, email, specialty, city, registrationNumber, organisation, consent (yes/no), consentDate (yyyy-mm-dd),
-                        consentVersion. Comma or semicolon separated, first row = headers. Only HCPs already in Salesforce are registered. A row without consent never removes a consent the HCP already has.
-                    </p>
-                    <template lwc:if={rows}>
-                        <div class="prev">
-                            <b>{rowCount} registrations in {fileName}</b> · {consentCount} with consent
-                            <ul>
-                                <template for:each={previewRows} for:item="r">
-                                    <li key={r.key}>{r.label}</li>
-                                </template>
-                            </ul>
-                            <button type="button" class="btn brand" onclick={runImport} disabled={importing}>{importLabel}</button>
-                        </div>
-                    </template>
-                    <template lwc:if={result}>
-                        <div class="alert ok">
-                            <b>{result.imported} imported</b>, {result.skipped} skipped. Matching runs in a few seconds: press Refresh.
-                            <template lwc:if={hasMessages}>
-                                <ul>
-                                    <template for:each={result.messages} for:item="m">
-                                        <li key={m}>{m}</li>
-                                    </template>
-                                </ul>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-            </template>
+            <p class="muted">Live figures from the event attendees: they refresh every {refreshSeconds} seconds.</p>
         </template>
     </article>
 </template>
