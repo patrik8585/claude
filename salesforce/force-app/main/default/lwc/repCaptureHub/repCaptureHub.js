@@ -14,6 +14,8 @@ const MIC_ERRORS = {
     'language-not-supported': 'This language is not supported by the browser dictation: switch IT/EN or use the keyboard microphone.'
 };
 const MAX_RESTARTS = 5;
+/** The rep works a whole day at one congress: the chosen congress is remembered on the device. */
+const EVENT_KEY = 'hcpRepHub.eventId';
 const ATTENDANCE = {
     registered: { cls: 'sm-badge reg', short: 'Registered' },
     attended: { cls: 'sm-badge ok', short: 'Checked in' }
@@ -84,6 +86,7 @@ export default class RepCaptureHub extends LightningElement {
     async load() {
         try {
             this.ctx = await getContext();
+            this.restoreEvent();
             this.refreshMyCaptures();
         } catch (e) {
             this.error = this.msg(e);
@@ -141,14 +144,57 @@ export default class RepCaptureHub extends LightningElement {
     // ---------------------------------------------------------------- navigation
 
     selectEvent(evt) {
-        const id = evt.currentTarget.dataset.id;
+        this.openEvent(evt.currentTarget.dataset.id);
+    }
+
+    openEvent(id) {
         const ev = this.events.find((x) => x.id === id);
+        if (!ev) {
+            return;
+        }
         this.eventId = id;
-        this.eventName = ev ? ev.name : '';
+        this.eventName = ev.name;
         this.screen = 'capture';
         this.resetSearch();
         this.showRegistered = false;
         this.loadRegistered();
+        try {
+            localStorage.setItem(EVENT_KEY, id);
+        } catch (e) {
+            // storage not available: the rep chooses the congress again next time
+        }
+    }
+
+    /** Back on the congress chosen last time on this device, or on the only active congress. */
+    restoreEvent() {
+        let saved;
+        try {
+            saved = localStorage.getItem(EVENT_KEY);
+        } catch (e) {
+            saved = null;
+        }
+        if (saved && this.events.some((x) => x.id === saved)) {
+            this.openEvent(saved);
+        } else if (this.events.length === 1) {
+            this.openEvent(this.events[0].id);
+        }
+    }
+
+    /** Ready for the next HCP at the same congress: empty search, focus on the search box. */
+    nextHcp() {
+        this.stopMic();
+        this.walk = {};
+        this.resetSearch();
+        this.showRegistered = false;
+        this.screen = 'capture';
+        this.loadRegistered();
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        requestAnimationFrame(() => {
+            const q = this.template.querySelector('[data-search]');
+            if (q) {
+                q.focus();
+            }
+        });
     }
 
     async loadRegistered() {
@@ -603,11 +649,9 @@ export default class RepCaptureHub extends LightningElement {
                 signatureDataUrl: this.signatureDataUrl(),
                 deviceInfo: this.deviceInfo()
             });
-            this.toast('Capture saved');
-            this.walk = {};
+            this.toast(`Capture saved: Dr. ${w.firstName} ${w.lastName}. Next HCP.`);
             this.resetMethod();
-            this.resetSearch();
-            this.screen = 'captures';
+            this.nextHcp();
             this.refreshMyCaptures();
         } catch (e) {
             this.error = this.msg(e);

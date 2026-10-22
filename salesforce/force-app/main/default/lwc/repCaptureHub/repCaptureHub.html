@@ -32,7 +32,7 @@
             <template lwc:if={isCapture}>
                 <div class="evchip">
                     <span class="grow">{eventName}</span>
-                    <button type="button" class="link" onclick={changeEvent}>Change</button>
+                    <button type="button" class="link" onclick={changeEvent}>Change congress</button>
                 </div>
 
                 <template lwc:if={selected}>
@@ -56,6 +56,7 @@
 
                         <template lwc:if={addedMessage}>
                             <div class="alert ok"><b>{addedTitle}</b> {addedMessage}</div>
+                            <button type="button" class="btn brand lg block" onclick={nextHcp}>+ Next HCP</button>
                         </template>
                         <template lwc:else>
                             <template lwc:if={selectedHasConsent}>
@@ -95,7 +96,7 @@
                         </div>
                     </template>
                     <label class="l" for="q">Search HCP first</label>
-                    <input id="q" class="in" value={query} oninput={handleSearch} placeholder="Name, email or registration no." autocomplete="off" />
+                    <input id="q" class="in" data-search="true" value={query} oninput={handleSearch} placeholder="Name, email or registration no." autocomplete="off" />
                     <template lwc:if={searching}>
                         <div class="muted small">Searching…</div>
                     </template>
@@ -185,6 +186,7 @@
             <template lwc:if={isCaptures}>
                 <b class="h">My captures today</b>
                 <div class="muted small">{myCapsCount} captures · {myConfirmed} consents confirmed</div>
+                <button type="button" class="btn brand lg block" onclick={nextHcp}>+ Capture next HCP at {eventName}</button>
                 <template for:each={myCaps} for:item="c">
                     <div key={c.id} class="cap">
                         <div class="r"><b>Dr. {c.fullName}</b><small>{c.timeLabel}</small></div>
