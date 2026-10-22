@@ -31,21 +31,19 @@
         <headerColor>#032D60</headerColor>
         <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
     </brand>
-    <description>HCP consent capture: review console, consents, events and dashboard.</description>
+    <description>HCP consent capture: congresses, rep capture, matching, captures and dashboard.</description>
     <formFactors>Large</formFactors>
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
     <label>HCP Consent Hub</label>
     <navType>Standard</navType>
-    <tabs>Capture__c</tabs>
-    <tabs>Matching_Workbench</tabs>
-    <tabs>standard-Contact</tabs>
-    <tabs>standard-Account</tabs>
-    <tabs>Consent__c</tabs>
     <tabs>Event__c</tabs>
-    <tabs>Capture_Dashboard</tabs>
     <tabs>Rep_Capture_Hub</tabs>
-    <tabs>HCP_Public_Preview</tabs>
+    <tabs>Matching_Workbench</tabs>
+    <tabs>Capture__c</tabs>
+    <tabs>Capture_Dashboard</tabs>
+    <tabs>standard-Account</tabs>
+    <tabs>standard-Contact</tabs>
     <tabs>standard-report</tabs>
     <tabs>standard-Dashboard</tabs>
     <uiType>Lightning</uiType>

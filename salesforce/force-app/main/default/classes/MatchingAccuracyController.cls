@@ -1,6 +1,6 @@
 /**
  * Measures matching accuracy on the generated test captures (Expected_Outcome__c / Expected_Contact__c),
- * shown in the "Accuracy" tab of the Matching & Duplicates workbench. Also starts the volume generator.
+ * shown in the "Accuracy" tab of the Matching workbench. Also starts the volume generator.
  *
  * A match counts as correct when the matched HCP is the expected one, or a known duplicate record of it
  * (Contact.Test_Duplicate_Of__c), because both records are the same person.

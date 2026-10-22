@@ -18,7 +18,7 @@
                 <p class="muted warn">{summary.notFound} registrations not imported: the HCP is not in Salesforce (only existing HCPs can be registered).</p>
             </template>
             <template lwc:if={summary.inProgress}>
-                <p class="muted">{summary.inProgress} registrations still being matched or waiting for a data steward (Matching &amp; Duplicates › Review queue).</p>
+                <p class="muted">{summary.inProgress} registrations still being matched or waiting for a data steward (Matching › Review queue).</p>
             </template>
 
             <template lwc:if={summary.canImport}>

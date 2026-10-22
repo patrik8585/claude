@@ -295,7 +295,7 @@ public without sharing class CaptureReviewController {
     }
 
     /**
-     * Bulk actions from the Matching & Duplicates workbench.
+     * Bulk actions from the Matching workbench.
      * action: 'recommended' (match each capture to its recommended candidate) | 'new' (create new HCPs) | 'discard'.
      * Captures no longer waiting for review are skipped.
      */

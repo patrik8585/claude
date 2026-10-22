@@ -2,8 +2,8 @@
 <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
-    <masterLabel>Matching and Duplicates Workbench</masterLabel>
-    <description>Data steward workbench: review queue with bulk actions, duplicate HCP pairs with merge, matching accuracy and merge history.</description>
+    <masterLabel>Matching Workbench</masterLabel>
+    <description>Data steward workbench: review queue with bulk actions and side-by-side review, matching accuracy per congress.</description>
     <targets>
         <target>lightning__AppPage</target>
     </targets>

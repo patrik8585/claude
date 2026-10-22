@@ -1,5 +1,5 @@
 /**
- * Apex behind the "Matching & Duplicates" workbench (data stewards):
+ * Apex behind the "Matching" workbench (data stewards):
  * review queue, duplicate HCP pairs, side-by-side comparison, merge and "not a duplicate".
  * without sharing: stewards work on HCPs and captures they do not own; every method checks the
  * HCP_Capture_Data_Steward custom permission.
@@ -131,7 +131,7 @@ public without sharing class MatchingWorkbenchController {
 
     private static void checkSteward() {
         if (!FeatureManagement.checkPermission(CaptureConstants.PERM_STEWARD)) {
-            throw new AuraHandledException('Only data stewards can use the Matching & Duplicates workbench (permission set HCP Consent - Data Steward).');
+            throw new AuraHandledException('Only data stewards can use the Matching workbench (permission set HCP Consent - Data Steward).');
         }
     }
 

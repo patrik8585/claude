@@ -10,7 +10,7 @@
         <name>main</name>
         <type>Region</type>
     </flexiPageRegions>
-    <masterLabel>Matching and Duplicates</masterLabel>
+    <masterLabel>Matching</masterLabel>
     <template>
         <name>flexipage:defaultAppHomeTemplate</name>
     </template>

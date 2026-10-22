@@ -32,7 +32,7 @@ export default class CaptureReview extends LightningElement {
     busy = false;
     selectedId;
 
-    /** Record page Id, or the capture chosen in the Matching & Duplicates workbench (reloads on change). */
+    /** Record page Id, or the capture chosen in the Matching workbench (reloads on change). */
     @api
     get recordId() {
         return this._recordId;
