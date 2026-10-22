@@ -87,10 +87,6 @@
         <value xsi:type="xsd:double">10</value>
     </values>
     <values>
-        <field>Duplicate_Min_Score__c</field>
-        <value xsi:type="xsd:double">50</value>
-    </values>
-    <values>
         <field>Auto_Match_Email__c</field>
         <value xsi:type="xsd:boolean">true</value>
     </values>

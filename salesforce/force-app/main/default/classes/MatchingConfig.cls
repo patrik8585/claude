@@ -33,7 +33,6 @@ public with sharing class MatchingConfig {
     public Integer highConfidenceScore;
     public Integer highConfidenceGap;
     public Integer maxCandidates;
-    public Integer duplicateMinScore;
     public Boolean autoEmail;
     public Boolean autoRegistration;
     public Boolean reviewOnConflict;
@@ -77,7 +76,6 @@ public with sharing class MatchingConfig {
         highConfidenceScore = num(r, 'High_Confidence_Score__c', 60);
         highConfidenceGap = num(r, 'High_Confidence_Gap__c', 10);
         maxCandidates = Math.max(1, num(r, 'Max_Candidates__c', 10));
-        duplicateMinScore = num(r, 'Duplicate_Min_Score__c', 50);
         // Checkboxes are never null on a record; without a record the safe defaults apply.
         autoEmail = r == null ? true : r.Auto_Match_Email__c;
         autoRegistration = r == null ? true : r.Auto_Match_Registration__c;

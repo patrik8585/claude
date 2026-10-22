@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Removes the duplicate-HCP scan and the HCP merge (business decision: duplicates are handled in Pitcher,
+     HCP master data is not changed here). Deploy AFTER force-app, see README section 3. -->
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>DuplicateScanJob</members>
+        <members>HcpMergeService</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>Matching_Setting__mdt.Duplicate_Min_Score__c</members>
+        <name>CustomField</name>
+    </types>
+    <types>
+        <members>HCP_Duplicate_Pair__c</members>
+        <members>HCP_Merge__c</members>
+        <name>CustomObject</name>
+    </types>
+    <version>62.0</version>
+</Package>

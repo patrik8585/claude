@@ -1,6 +1,6 @@
 /**
  * Deterministic, explainable comparison of two HCP profiles. Used by capture matching
- * (capture vs. existing Contact) and by the duplicate scan (Contact vs. Contact).
+ * (capture vs. existing Contact).
  *
  * Every rule that fires adds (or subtracts) the points configured in Matching_Setting__mdt
  * and one line to the explanation, so a steward always sees why a candidate was proposed.

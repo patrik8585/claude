@@ -1,5 +1,5 @@
 /**
- * TEST ONLY - realistic volume data to measure matching accuracy and test the duplicate workbench.
+ * TEST ONLY - realistic volume data to measure matching accuracy (Matching › Accuracy, test set).
  *
  *   VolumeTestData.generate();            // DEV size (fits the 5 MB of a Developer Edition):
  *                                         //   cleanup + 10 hospitals, ~55 departments, ~260 HCPs, 59 test captures
@@ -133,7 +133,6 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         purge(caps);
         // HCPs created from test captures
         List<Contact> created = [SELECT Id FROM Contact WHERE Test_Data_Set__c = :CAPTURE_SET LIMIT 5000];
-        deletePairsAndMerges(new Map<Id, Contact>(created).keySet());
         delete created;
         purge(created);
         delete [SELECT Id FROM Event__c WHERE Name = :TEST_EVENT_NAME];
@@ -144,7 +143,6 @@ public without sharing class VolumeTestData implements Database.Batchable<String
     private static void cleanContacts() {
         List<Contact> contacts = [SELECT Id FROM Contact WHERE Test_Data_Set__c = :DATA_SET LIMIT 5000];
         Set<Id> ids = new Map<Id, Contact>(contacts).keySet();
-        deletePairsAndMerges(ids);
         delete [SELECT Id FROM Consent__c WHERE Contact__c IN :ids];
         delete contacts;
         purge(contacts);
@@ -160,15 +158,6 @@ public without sharing class VolumeTestData implements Database.Batchable<String
         } catch (Exception e) {
             System.debug(LoggingLevel.WARN, 'Recycle Bin not emptied: ' + e.getMessage());
         }
-    }
-
-    private static void deletePairsAndMerges(Set<Id> contactIds) {
-        if (contactIds.isEmpty()) {
-            return;
-        }
-        delete [SELECT Id FROM HCP_Duplicate_Pair__c WHERE Contact_A__c IN :contactIds OR Contact_B__c IN :contactIds];
-        delete [SELECT Id FROM HCP_Merge__c WHERE Master_Contact__c IN :contactIds];
-        delete [SELECT Id FROM HCP_Duplicate_Pair__c WHERE Contact_A__c = NULL OR Contact_B__c = NULL];
     }
 
     private static void cleanAccounts() {
