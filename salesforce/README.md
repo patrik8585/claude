@@ -2,9 +2,14 @@
 
 This is the Salesforce build of the approved clickable mockup (`../index.html`, 7 steps).
 It is an SFDX project that **you deploy yourself** to the Agentforce Developer Edition org
-(alias `dev-consent`). Phases 1–2 are deployed (57/57 tests passing). The phase 4 work (hospitals and
-departments, matching v2, volume test data, Matching & Duplicates workbench) and the Prompt Builder class
-are **not deployed yet**. See [Known limitations / not verified](#6-known-limitations--not-verified).
+(alias `dev-consent`). Phases 1–4 are deployed and every local test passes. The pre-demo changes
+(object *Congress*, *Matching* tab without duplicates and merge, Accuracy per congress, review in a modal,
+new app navigation) are deployed with the commands of section 3, including a destructive step that removes
+the duplicate scan and the merge from the org. See [Known limitations / not verified](#6-known-limitations--not-verified).
+
+**Names in the UI**: the object `Event__c` is labelled **Congress** (tab *Congresses*); its field labels and the
+page texts still say *event*. Standard `Contact` = **HCP** and `Account` = **HCO** after the manual rename of
+section 4.5 (API names never change).
 
 ## 1. Phased plan
 
@@ -13,11 +18,11 @@ are **not deployed yet**. See [Known limitations / not verified](#6-known-limita
 | **1** | Data model, async matching, review console, consent record and Gigya status, dashboard and reports, permission sets, sample data | **Code complete**, not yet deployed |
 | **2** | Experience Cloud: public QR page, kiosk mode, double opt-in confirmation page, rep page (search first, signature, dictation, rule-based extraction) | **LWCs and Apex complete**. You create the sites in the UI (section 4) |
 | **3** | AI with Prompt Builder: "Extract with AI" on notes, review recommendation | "Extract with AI" was deployed and verified with Prompt Builder, then **removed from the rep page** on business feedback: the rep keeps typed / dictated notes only. The Apex (`extractFromNotes`, `force-app-ai`) stays for a later decision (section 8). Review recommendation: design only |
-| **4** | Hospitals & departments, matching v2 (parametric), volume test data with accuracy measurement, Matching & Duplicates workbench with HCP merge | **Deployed**, all tests passing; accuracy measured on the DEV volume set (sections 9–12) |
+| **4** | Hospitals & departments, matching v2 (parametric), volume test data with accuracy measurement, Matching workbench (review queue, accuracy per congress) | **Deployed**, all tests passing; accuracy measured on the DEV volume set (sections 9–12). The duplicate scan and HCP merge were built, then **removed** on business feedback: duplicates are handled in Pitcher and HCP master data is not changed here |
 
 ### Defaults I chose (change them if you disagree)
 
-- **Objects**: custom objects only (`Capture__c`, `Capture_Candidate__c`, `Consent__c`, `Event__c`, `Event_Attendee__c`, `HCP_Affiliation__c`, `HCP_Duplicate_Pair__c`, `HCP_Merge__c`), so internal users can be on the **Salesforce Platform** license. HCPs are standard `Contact` records with custom fields. Hospitals and departments are `Account` records (record types `Hospital` / `Department`); `Contact.AccountId` = the HCP's primary department (section 9).
+- **Objects**: custom objects only (`Capture__c`, `Capture_Candidate__c`, `Consent__c`, `Event__c`, `Event_Attendee__c`, `HCP_Affiliation__c`), so internal users can be on the **Salesforce Platform** license. HCPs are standard `Contact` records with custom fields. Hospitals and departments are `Account` records (record types `Hospital` / `Department`); `Contact.AccountId` = the HCP's primary department (section 9).
 - **Async matching**: a `Capture__c` insert publishes the platform event `Capture_Matching_Request__e`. Its subscriber runs as the *Automated Process* user. Guest and rep transactions therefore never create HCPs or consents themselves.
 - **Guest security**: the guest user gets **Apex class access only** (no object permissions). `PublicCaptureController` is `without sharing` with strict server-side validation, a honeypot field, an HMAC-signed form token (minimum fill time 3 s, maximum age 4 h) and rate limits (3 per email per event per day, 30 per event per minute). It never returns record Ids. Guest-created captures are re-owned by the **event owner** during matching.
 - **Kiosk hardening**: in kiosk mode the form fields use `autocomplete="off"` (no suggestions of the previous visitor's name or email on the shared tablet), the on-screen keyboard is closed on reset, and the form empties after each submit. The per-email limit (3/day) is the same as the QR page; there is no per-device limit (demo).
@@ -42,7 +47,7 @@ salesforce/
 │   ├── triggers/                # CaptureTrigger, CaptureMatchingRequestTrigger
 │   ├── lwc/                     # hcpPublicCapture, repCaptureHub, signaturePad, captureReview,
 │   │                            # consentTimeline, captureDashboard
-│   ├── flexipages/              # Capture/Consent record pages, Rep Capture Hub + Capture Dashboard app pages
+│   ├── flexipages/              # Capture / Consent / Congress record pages, Rep Capture Hub, Capture Dashboard, Matching app pages
 │   ├── applications/            # Lightning app "HCP Consent Hub"
 │   ├── permissionsets/          # HCP_Consent_Admin / _Rep / _Data_Steward / _Guest
 │   ├── customPermissions/, customMetadata/, globalValueSets/, layouts/, tabs/
@@ -50,7 +55,8 @@ salesforce/
 │   ├── reports/, dashboards/    # 7 reports + "Capture performance" dashboard
 │   └── layouts/                 # Contact Layout + Account Layout: REPLACE the default layouts (fine on a fresh org)
 ├── force-app-ai/main/default/   # NotesExtractionAI (Prompt Builder call), deployed after the Einstein setup
-└── scripts/apex/                # configure, territory, sample data, Gigya simulation, reset, event URLs
+├── scripts/apex/                # configure, territory, sample data, Gigya simulation, registrations, reset, event URLs
+└── destructive/                 # one-off: removes the duplicate scan and the merge from the org (section 3)
 ```
 
 | Apex class | Role |
@@ -70,10 +76,9 @@ salesforce/
 | `HcoDirectory` | Hospitals and departments cache; resolves a hospital from free text (name, aliases) or email domain |
 | `AffiliationService` + `HcpAffiliationTrigger` | One primary affiliation per HCP; `Contact.AccountId` = primary HCO; unique affiliation key |
 | `VolumeTestData` | Test only. Batch: hospitals, HCPs with hard cases and test captures with expected outcomes, in two sizes (DEV ~260 HCPs / FULL ~1,000 HCPs); cleanup |
-| `MatchingAccuracyController` | Accuracy KPIs on the test captures; starts the generator |
-| `DuplicateScanJob` | Batch: proposes duplicate HCP pairs with the matching engine |
-| `HcpMergeService` | HCP merge (`Database.merge`) with audit record; evidence lookup after merges |
-| `MatchingWorkbenchController` | Matching & Duplicates workbench: queue, pairs, comparison, merge, "not a duplicate" |
+| `MatchingAccuracyController` | Accuracy tab: live matching figures per congress (or all congresses), and precision on the synthetic test captures |
+| `MatchingWorkbenchController` | Matching workbench: hospital filter options and the review queue |
+| `EventRegistrationService` | Pre-event registrations: live counts for the Congress page card; loads registrations (script 09) |
 | `NotesExtractor` / `NotesExtractionAI` | Pluggable "Extract with AI": Prompt Builder (force-app-ai) with rule-based fallback |
 
 ### Matching rules (mockup step 4) – v2
@@ -115,6 +120,11 @@ sf org login web --alias dev-consent --instance-url https://login.salesforce.com
 # 1. Core metadata + Apex. Developer Edition is a production-type org: local Apex tests run automatically.
 sf project deploy start --source-dir force-app --target-org dev-consent --test-level RunLocalTests --wait 30
 
+# 1-bis. Once, after step 1 on an org that had the duplicate scan / merge: delete them from the org
+#        (DuplicateScanJob, HcpMergeService, HCP_Duplicate_Pair__c, HCP_Merge__c with their records,
+#        Matching Setting field Duplicate_Min_Score__c). Skip on a fresh org.
+sf project deploy start --manifest destructive/package.xml --post-destructive-changes destructive/destructiveChanges.xml --target-org dev-consent --test-level RunLocalTests --wait 30
+
 # 2. Reports, dashboard and the Contact / Account layouts (separate, so a problem here never blocks the core)
 sf project deploy start --source-dir force-app-extras --target-org dev-consent --wait 30
 
@@ -132,9 +142,8 @@ sf apex run --file scripts/apex/03-sample-data.apex  --target-org dev-consent
 sf apex run --file scripts/apex/09-sample-registrations.apex --target-org dev-consent
 #    wait ~10 seconds for async matching, then optionally:
 sf apex run --file scripts/apex/04-simulate-gigya.apex --target-org dev-consent
-#    volume test data (~2 minutes, Batch Apex), then the duplicate scan:
+#    volume test data (~2 minutes, Batch Apex):
 sf apex run --file scripts/apex/05-volume-data.apex --target-org dev-consent
-sf apex run --file scripts/apex/06-duplicate-scan.apex --target-org dev-consent
 
 # 5. Open the app
 sf org open --target-org dev-consent --path lightning/app/c__HCP_Consent_Hub
@@ -146,7 +155,6 @@ To see test results with coverage: `sf apex run test --test-level RunLocalTests 
 Re-run `01-configure.apex` after creating the public site, with its real URL. Use `scripts/apex/event-ids.apex` to print the QR and kiosk URLs for each event.
 To start over: `sf apex run --file scripts/apex/99-reset-sample-data.apex --target-org dev-consent`, then run `03` and `09` again.
 **Org already loaded before phase 4**: the mockup HCPs were created without hospitals and departments. Run `99-reset-sample-data.apex` and then `03-sample-data.apex` once after the phase 4 deploy (the reset never touches volume test data).
-Diagnostics: `08-missed-duplicates.apex` lists the known duplicates the scan did not propose, with the engine's score and explanation (read-only).
 Volume data: `07-regenerate-test-captures.apex` re-creates only the test captures (after changing matching parameters); `98-cleanup-volume-data.apex` deletes all of it.
 
 ## 4. Manual setup in the UI (cannot be deployed reliably as metadata)
@@ -169,16 +177,14 @@ Volume data: `07-regenerate-test-captures.apex` re-creates only the test capture
 4b. Kiosk signature: Setup → **Salesforce Files → General Settings** → tick **Allow site guest users to upload files** → Save. Without it the kiosk "Sign here on the tablet" option answers "could not save your signature" (email confirmation keeps working).
 5. Setup → Digital Experiences → All Sites → *HCP Consent* → **Workspaces → Administration → Preferences**: set the **default owner for records created by guest users** to an internal user (required by Salesforce; matching then moves the capture to the event owner).
 6. Copy the site URL (e.g. `https://<domain>.my.site.com/hcp`), put it in `scripts/apex/01-configure.apex` and run that script again.
-7. **QR codes for posters**: open any event (tab *HCP Events*). The record page shows the **booth QR** (self-scan) and the **kiosk QR**, with **Download PNG** (1200 px) / **Download SVG** (vector, best for print) / **Copy link**. Admins and data stewards only.
+7. **QR codes for posters**: open any congress (tab *Congresses*). The record page shows the **booth QR** (self-scan) and the **kiosk QR**, with **Download PNG** (1200 px) / **Download SVG** (vector, best for print) / **Copy link**. Admins and data stewards only.
    URLs behind the codes:
    - QR at the booth: `https://…/hcp?e=<EventId>&ch=qr`
    - Kiosk tablet: `https://…/hcp?e=<EventId>&mode=kiosk`
    - Confirmation link in the email: `https://…/hcp?t=<token>` (generated automatically)
 
-### 4.2-bis Try the HCP page without a site (Lightning preview)
-The tab **HCP Public Page (preview)** in the *HCP Consent Hub* app shows the same public component inside Lightning, logged in as you. Open it with an event:
-`/lightning/n/HCP_Public_Preview?c__e=<EventId>` (add `&c__mode=kiosk` for kiosk). `scripts/apex/event-ids.apex` prints these URLs.
-To test the confirmation email before the site exists, run `01-configure.apex` with the preview URL (`https://<your-domain>.lightning.force.com/lightning/n/HCP_Public_Preview`): the link then uses `c__t=`. The preview is for demos only: the guest-user security is tested only on the real site.
+### 4.2-bis The HCP page is reached by scanning the QR
+HCPs open the public page only from the booth or kiosk QR of the congress (section 4.2, step 7). The internal Lightning preview page (`HCP_Public_Preview`) is no longer in the app navigation; it still exists for troubleshooting at `/lightning/n/HCP_Public_Preview?c__e=<EventId>` (admins only) but is not part of the demo.
 
 ### 4.3 Rep page (Experience Cloud for internal users)
 1. Create a second site, **Build Your Own (LWR)**, name `HCP Rep`, URL suffix **`rep`**.
@@ -189,9 +195,19 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 
 ### 4.4 Users
 - **Rep**: license *Salesforce Platform*, profile *Standard Platform User*, permission set **HCP Consent - Rep**, field **Territory** = `IT-PED-01` for the demo. It only orders search results: the sample HCPs in `IT-PED-01` (Ferri, Romano, Conti, Gallo, Rinaldi, Villa, Greco, Sala, Benedetti) come first, and the others are shown with an "Other territory" badge.
-- **Data steward**: license *Salesforce Platform*, profile *Standard Platform User*, permission set **HCP Consent - Data Steward** (now also: Matching & Duplicates tab, affiliations, duplicate pairs, merge history, Contact delete for merges, Account record types Hospital / Department).
+- **Data steward**: license *Salesforce Platform*, profile *Standard Platform User*, permission set **HCP Consent - Data Steward** (Matching tab, affiliations, Account record types Hospital / Department). Stewards cannot delete HCPs: duplicates are handled in Pitcher.
 - **Admin / demo**: you, with **HCP Consent - Admin**.
 - Reports and dashboard folders are private to you after deploy. Share *HCP Consent Reports* and *HCP Consent Dashboards* with stewards and marketing from the Reports tab (folder → Share).
+
+### 4.5 Rename Contact to "HCP" and Account to "HCO" (manual, once)
+Standard objects are renamed in Setup, not by deploy (the Metadata API only carries such renames as translations, which needs the Translation Workbench; the manual way takes two minutes and is reversible).
+1. Setup → Quick Find **Rename Tabs and Labels** → Select Language **English**.
+2. Row **Contacts** → **Edit**: Singular `HCP`, Plural `HCPs`, tick **Starts with vowel sound** ("an HCP") → **Next** → leave the field labels as proposed → **Save**.
+3. Row **Accounts** → **Edit**: Singular `HCO`, Plural `HCOs`, tick **Starts with vowel sound** → **Next** → **Save**. Field labels that contain the object name follow (e.g. *Account Name* → *HCO Name*).
+4. Reload the app. The rename applies to the whole org (every app, list views, reports, page titles) in English; other user languages need the same rename in that language.
+
+### 4.6 App navigation
+The *HCP Consent Hub* app shows, in this order: **Congresses, Rep Capture Hub, Matching, Captures, Capture Dashboard, HCOs, HCPs, Reports, Dashboards**. Consents are opened from a capture or an HCP (the tab is not in the navigation). If your navigation bar still shows the old order, you personalised it earlier: click the pencil at the right of the bar → **Reset Navigation** (or remove / reorder the items by hand) → Save.
 
 ## 5. Test checklist (per mockup step)
 
@@ -216,9 +232,8 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 - [ ] Choose **Sign here on the tablet** → submitting without drawing highlights the box → draw → **Register** → "Your consent is recorded. A copy has been sent to your email." The capture has Consent method *Explicit question + signature*, Opt-in Confirmed, a signature file and `Capture_Device__c` = `Kiosk | …`; after matching its consent is *Opt-in confirmed* with Signature captured and the file is linked to it.
 
 **Step 3-bis – Registered attendees** (after `09-sample-registrations.apex`, section 13)
-- [ ] Event *National Paediatrics Congress 2026 - Milan* › card **Registrations**: 50 registered, a few checked in (Ferri and any registrant already captured at the congress), the rest not arrived. *Infant Nutrition Training - Bologna*: 20 registered.
+- [ ] Congress *National Paediatrics Congress 2026 - Milan* › card **Registrations**: 50 registered, a few checked in (Ferri and any registrant already captured at the congress), the rest not arrived. *Infant Nutrition Training - Bologna*: 20 registered. The counts are live: check in an HCP on the rep page and the card changes within 15 seconds (or press Refresh).
 - [ ] Rep page › congress › **Show registered list**: not-arrived registrants first (alphabetical; Benedetti, Marta Bianchi, Esposito, Villa among them) with the *Registered* badge, checked-in ones at the bottom. Benedetti → *Consent on file* → **✓ Check in** (no question). Marta Bianchi → no consent → the consent options, buttons say *check in*.
-- [ ] Event › **Registrations** › import `data/sample-registrations.csv` → 5 rows imported; after Refresh 4 more registered (Rinaldi matched by registration number despite a new email) and *1 not in Salesforce* (Giorgio Bellandi: only existing HCPs can be registered).
 
 **Step 4 – Automatic matching** (after `03-sample-data.apex`)
 - [ ] *Captures* → list view **All captures**: 8 Auto-matched (email: Villa, Ferri, Conti, Gallo, Greco; registration number: Romano, Rinaldi, Sala), 2 To review (Maria Bianchi, Roberto Esposito) and 2 New HCP (Leone, Marchetti).
@@ -231,19 +246,18 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 - [ ] Open a consent → details (type, channel, method, version, captured by, matched by, source capture, event) plus the Gigya timeline. **Simulate sync (demo)** → "Sent to Gigya ✓" and the capture stage becomes *Sent to Gigya*.
 - [ ] HCPs with consent on file (Ferri, Romano, Benedetti) get **no** new consent when reused from the rep page.
 
-**Phase 4 – Hospitals, matching v2, workbench** (after `99` + `03`, then `05` and `06`)
-- [ ] Accounts → *Gaslini Institute*: record type Hospital, related list *HCP Affiliations*. Dr. Maria Bianchi (Genoa): Account = *Paediatrics - Gaslini Institute*, related list *Affiliations*.
+**Phase 4 – Hospitals, matching v2, Matching workbench** (after `99` + `03`, then `05`)
+- [ ] HCOs → *Gaslini Institute*: record type Hospital, related list *HCP Affiliations*. Dr. Maria Bianchi (Genoa): Account = *Paediatrics - Gaslini Institute*, related list *Affiliations*.
 - [ ] Mockup capture of Maria Bianchi: Hospital = Gaslini Institute (resolved from "Gaslini"), confidence High; the comparison table has the rows *Hospital / department* and *Why this score*.
 - [ ] Rep page: search `Rinaldi` → the card shows hospital, department and "Also works in". The walk-in form has no hospital field (business decision): the hospital of a walk-in comes from an institutional email domain, if any.
-- [ ] Tab **Matching & Duplicates** › *Review queue*: tick 2 captures → **Match to recommended** → Confirm → they leave the queue. Click a capture name → the side-by-side review opens below.
-- [ ] *Accuracy*: 59 test captures (DEV; 150 with FULL), auto-match precision, review rate, false new-HCP rate, table by test case, duplicate recall. Change a weight in Setup › Custom Metadata Types › Matching Setting › Default, click **Regenerate test captures only**, wait about a minute, **Refresh**: the figures change.
-- [ ] *Duplicate HCPs*: pairs with score ≥ 50, plus pairs with an identical email or registration number and matching names whatever their score (e.g. an HCP who moved to another hospital); filters hospital / department. Open a pair → choose the survivor and per-field values → **Merge…** → **Confirm**. *Merge history* shows who, when and the moved records. Open a consent of the merged HCP → **Verify evidence** says "intact … merged into this HCP on …".
-- [ ] Mark another pair **Not a duplicate** → run the scan again → the pair stays under *Not a duplicate*.
+- [ ] Tab **Matching** › *Review queue*: tick 2 captures → **Match to recommended** → Confirm → they leave the queue. Scroll down the list, click a capture name → the side-by-side review opens **in a window over the list** (the list keeps its position), with *(n of N)*, **‹ Previous / Next ›** and **← Back to queue** (or Esc). **Match** → the window moves on to the next capture; after the last one it closes.
+- [ ] *Accuracy* › **All congresses** (default): captures by channel, auto-matched (by rep / email / registration number), sent to review, review backlog with the oldest wait, reviewed (matched / new HCP / discarded, average time to decide), recommendation accepted, confidence of the review suggestions, new HCPs, registrations not found, queued / errors, and a table by congress (click a name to filter). Choose one congress in the selector: same figures for that congress only. Capture an HCP on the rep page or resolve a capture in the queue: the figures change within 15 seconds.
+- [ ] *Accuracy* › **Test set (synthetic, with expected outcomes)**: 59 test captures (DEV; 150 with FULL), auto-match precision, review rate, false new-HCP rate, table by test case. After changing a weight in Setup › Custom Metadata Types › Matching Setting › Default, run `07-regenerate-test-captures.apex`, wait about a minute: the figures change.
 - [ ] Dictation on Chrome (desktop or Android): tap 🎤, speak, pause a few seconds: dictation continues and shows the interim text; the IT/EN chip switches language. Block the microphone in the site settings → a message explains how to allow it or use the keyboard microphone.
 
 **Step 7 – Dashboard**
 - [ ] Tab **Capture Dashboard**: KPIs, channel bars, captures per rep, matching and consent donuts. The event filter changes the figures.
-- [ ] Reports tab → *HCP Consent Reports* (6 reports). Dashboards tab → *Capture performance*.
+- [ ] Reports tab → *HCP Consent Reports* (7 reports). Dashboards tab → *Capture performance*.
 
 ## 6. Known limitations / not verified
 
@@ -257,7 +271,6 @@ To test the confirmation email before the site exists, run `01-configure.apex` w
 Semantic Apex errors (types, SOQL against the real schema) and test outcomes are **only verified when you deploy**. Most likely phase 4 deploy issues, which I will fix from the error output:
 - Account record types (Department record type picklist values) and Apex inserting Accounts with these record types in tests (tests run as a user with the admin permission set, which grants them);
 - `PlatformEventSubscriberConfig` (batch size 50 for the matching trigger), a metadata type not used before in this project;
-- `Database.merge` on Contacts and the reparenting of master-detail affiliations during a merge;
 - CPU time of the matching transaction with ~1,000 HCPs (expected well within limits, not measured);
 - the Account layout in `force-app-extras` **replaces** "Account Layout", like the Contact layout. Fine on a fresh org; skip those files otherwise;
 - `force-app-ai`: the `ConnectApi` Prompt Builder types (only compiled by Salesforce, never locally).
@@ -265,11 +278,10 @@ Semantic Apex errors (types, SOQL against the real schema) and test outcomes are
 Functional and platform limits:
 - **Email limits**: Apex single emails to external addresses are limited per org per day. On Developer Edition the limit is very small (single digits to ~15/day). In production it is typically 5,000/day. When the limit is reached the capture is still saved with `Confirmation_Email_Status__c = Failed`; there is no automatic resend in phase 1. Use Marketing Cloud or a transactional email service for high volume (open question T2).
 - **Bot protection** is honeypot + signed token + rate limits. There is **no CAPTCHA** (reCAPTCHA in LWR needs extra setup; open question T1).
-- **Candidate retrieval** uses the first 3 letters of surname and first name, the email, the registration number and the capture's hospital. A typo in the **first 3 letters** of the surname of an HCP from another hospital is not found (it becomes a New HCP, which the duplicate scan then proposes only if surname or first name start with the same letter). Accent-insensitivity is applied in Apex, after retrieval.
-- **Duplicate scan** blocks by initial letter of surname / first name, plus identical email or registration number; HCPs whose names start with different letters and share nothing else are not compared. Fine for ~10,000 HCPs; beyond that, run it per territory or move the blocking keys into an indexed field.
-- **Merge** runs in Apex (`without sharing`, steward custom permission checked). Data stewards get Contact *Delete* in their permission set because merging deletes the duplicate. Not verified with a real Salesforce Platform license user (tests use admin-profile users).
+- **Candidate retrieval** uses the first 3 letters of surname and first name, the email, the registration number and the capture's hospital. A typo in the **first 3 letters** of the surname of an HCP from another hospital is not found (it becomes a New HCP; such duplicates are resolved in Pitcher). Accent-insensitivity is applied in Apex, after retrieval.
+- **No duplicate management here**: duplicate HCPs are detected and merged in Pitcher (business decision). The matching still protects against new duplicates: an email or registration number shared by several HCPs goes to review, never auto-matched.
 - **Record types**: the admin and steward permission sets grant Hospital / Department. If your profile has record type restrictions, also make them available on the profile.
-- Two captures of the **same new HCP in the same batch** create two Contacts (rare; the duplicate scan proposes them and the steward merges them).
+- Two captures of the **same new HCP in the same batch** create two Contacts (rare; resolved in Pitcher like any other duplicate).
 - **Territory** is a plain text field used only to order the rep search (own territory first); it does not restrict visibility.
 - **Gigya**: only a status field and timeline. "Simulate sync" is a demo stand-in for the real integration.
 - **Dictation** uses the browser Web Speech API (Chrome / Edge / Android / Safari) with auto-restart after pauses, interim text, an IT/EN language switch and explicit microphone-permission messages. Firefox and some in-app browsers have no Web Speech API: the page then asks to use the keyboard microphone. Not verified inside the Salesforce mobile app (its WebView may not expose the API) nor in every LWR + Lightning Web Security combination; the keyboard fallback always works.
@@ -336,7 +348,7 @@ Verified in the Developer Edition: the `ConnectApi.EinsteinLLM.generateMessagesF
 
 ## 10. Matching parameters (Custom Metadata)
 
-Setup › Custom Metadata Types › **Matching Setting** › Manage Records › **Default** › Edit. Changes apply to the next capture matched (no deploy). Fields: the weights listed in section 2, *Penalty: registration numbers differ*, *Max edit distance* (short / long names) and *Long name length*, *Minimum candidate score*, *High confidence score* and *gap*, *Maximum candidates per capture*, *Duplicate pair minimum score*, *Auto-match on identical email*, *Auto-match on identical reg. number*, *Review on conflicting evidence*, *Personal email domains*. An empty field falls back to the built-in default. A Custom Metadata Type was chosen over a Custom Setting because it deploys with the code, is versioned in git, is visible in Apex tests without DML and can still be changed in Setup.
+Setup › Custom Metadata Types › **Matching Setting** › Manage Records › **Default** › Edit. Changes apply to the next capture matched (no deploy). Fields: the weights listed in section 2, *Penalty: registration numbers differ*, *Max edit distance* (short / long names) and *Long name length*, *Minimum candidate score*, *High confidence score* and *gap*, *Maximum candidates per capture*, *Auto-match on identical email*, *Auto-match on identical reg. number*, *Review on conflicting evidence*, *Personal email domains*. An empty field falls back to the built-in default. A Custom Metadata Type was chosen over a Custom Setting because it deploys with the code, is versioned in git, is visible in Apex tests without DML and can still be changed in Setup.
 
 ## 11. Volume test data and accuracy
 
@@ -355,15 +367,16 @@ The cleanup empties the deleted test records from the Recycle Bin. `regenerateCa
 - 150 test captures (event "Matching accuracy test set (synthetic)", inactive) in 14 test cases with `Expected_Outcome__c` / `Expected_Contact__c` / `Test_Case__c`: exact email, registration number in another format, personal email + hospital, surname typo, accent variant, swapped names, namesake, really new HCP, new HCP with an existing surname, email of a duplicate record, email shared by duplicates, new address at the same institution, email/registration conflict, typo without hospital.
 - The mockup surnames are not used, so the mockup demo keeps its outcomes; mockup HCPs and events are never touched. Every generated record carries `Test_Data_Set__c` (`VOLUME`, `VOLUME-CAPTURES`) and is removed by the cleanup.
 
-**Accuracy** (Matching & Duplicates › Accuracy, and the report *Matching accuracy - test captures*): auto-match precision (auto-matched to the right HCP or to a known duplicate record of it), review rate, false new-HCP rate (a new Contact created for an HCP that exists), right HCP among the review candidates and as the recommendation, outcome as expected per test case, the captures to look at, and duplicate-scan recall / precision on the known duplicates. **Measured** on the DEV set: 59/59 test captures as expected; auto-match precision 100% (16/16); no HCP created again; right HCP among the review candidates and recommended first 100%; review rate 56% (the test set is built mostly from ambiguous cases); duplicate scan 15/15 known duplicates found (12/15 before the identical-identifier rule), all proposed pairs real.
+**Accuracy on the test set** (Matching › Accuracy › *Test set*, and the report *Matching accuracy - test captures*): auto-match precision (auto-matched to the right HCP or to a known duplicate record of it), review rate, false new-HCP rate (a new Contact created for an HCP that exists), right HCP among the review candidates and as the recommendation, outcome as expected per test case, and the captures to look at. **Measured** on the DEV set: 59/59 test captures as expected; auto-match precision 100% (16/16); no HCP created again; right HCP among the review candidates and recommended first 100%; review rate 56% (the test set is built mostly from ambiguous cases). Only synthetic captures carry an expected outcome; real congresses are measured with the live figures of section 12.
 
-## 12. Matching & Duplicates workbench (data stewards)
+## 12. Matching workbench (data stewards)
 
-Tab **Matching & Duplicates** (app page with the `matchingWorkbench` LWC):
-- **Review queue**: captures *To review* with hospital, recommended HCP, score and confidence; filters hospital / confidence; bulk **Match to recommended / Create new HCPs / Discard** (max 50, with confirmation); click a capture to open the same side-by-side review used on the capture record page.
-- **Duplicate HCPs**: pairs proposed by `DuplicateScanJob` (button *Run duplicate scan* or script `06`); filters status / hospital / department / minimum score. Pair detail: field-by-field comparison with radio buttons, survivor choice (suggested: the record with more history, else the older one), affiliations, consent status, related records, score explanation. **Merge** (two clicks) or **Not a duplicate** (optional note; the pair is never proposed again; *Re-open pair* undoes it).
-- **Merge** (`HcpMergeService`): writes the chosen values on the survivor, folds records that would clash (the duplicate's affiliation to a department the survivor already has; a second attendance at the same event, keeping "no communications" if either declined; duplicate pairs), then `Database.merge` moves consents, captures, candidates, attendances and affiliations. An immutable **`HCP_Merge__c`** keeps who, when, both records' values (JSON), the field choices and the moved-record counts (*Merge history* tab).
-- **Consent evidence after a merge**: the evidence hash is never recomputed or rewritten. *Verify evidence* first checks the hash with the consent's current HCP; if it differs, it retries with each Contact Id merged into that HCP (following earlier merges too, from `HCP_Merge__c`) and reports "intact – recorded for HCP X, merged into this HCP on … by …". Consents created before a merge therefore stay verifiable, and the audit chain explains why `Contact__c` changed.
+Tab **Matching** (app page with the `matchingWorkbench` LWC):
+- **Review queue**: captures *To review* with hospital, recommended HCP, score and confidence; filters hospital / confidence; bulk **Match to recommended / Create new HCPs / Discard** (max 50, with confirmation). Clicking a capture opens the same side-by-side review used on the capture record page **in a modal window over the list** (no scrolling: the list keeps its position), with *(n of N)*, **Previous / Next**, **Back to queue** and Esc. After *Match*, *Create new HCP* or *Discard* the queue reloads and the window shows the next capture; it closes after the last one.
+- **Accuracy**, selector **Congress**:
+  - **All congresses** (default) or **one congress**: live figures from the real captures (the synthetic test event is excluded), refreshed every 15 seconds while the page is open, so captures made during the demo appear at once. Figures: *Captures* (by channel), *Auto-matched* (% of processed, by rule: HCP selected by rep / identical email / identical registration number), *Sent to review* (% of processed: still to review + reviewed), *Review backlog* (still to review, oldest waiting time), *Reviewed* (matched / new HCP / discarded, average time from capture to decision), *Recommendation accepted* (reviewed matches where the steward chose the HCP the engine recommended first: the precision proxy for real data), *Confidence* (average score of the recommended HCP; High / Medium / Low), *New HCP (automatic)* (no candidate), *Registration not found* (registrant not in Salesforce), *Queued / errors*. With *All congresses* a table gives the same figures per congress.
+  - **Test set (synthetic, with expected outcomes)**: precision against the expected outcome (section 11). Test data is managed with the scripts `05` (generate), `07` (regenerate the test captures after a parameter change) and `98` (delete); there are no buttons in the page.
+- *Processed* = all captures except those still queued or in error.
 
 ## 13. Registered attendees (pre-event registrations)
 
@@ -375,7 +388,8 @@ Three cases at every event, on every channel (rep page, kiosk, QR self-scan):
 | (b) HCP in Salesforce, not registered | nothing | capture → matched to the HCP, attendee *Attended* (not registered) |
 | (c) HCP registered for the event (always an HCP already in Salesforce) | registration imported → attendee *Registered* | rep **Check in**, kiosk or QR → attendee *Attended*, still flagged *Registered* |
 
-- **Import**: Event record page › card **Registrations** (admins and data stewards) › CSV with columns `firstName, lastName, email, specialty, city, registrationNumber, organisation, consent (yes/no), consentDate (yyyy-mm-dd), consentVersion` (comma or semicolon; Italian headers such as *nome, cognome, consenso* also work; max 2,000 rows). Example: `data/sample-registrations.csv`. Re-importing the same file skips rows already imported (same email, or same name when there is no email).
+- **Loading registrations**: `EventRegistrationService.register(eventId, rows)` (used by `09-sample-registrations.apex` for the demo; the future feed from the registration website will call the same method). There is no CSV import in the UI. Loading the same registrant twice is skipped (same email, or same name when there is no email).
+- **Congress page › card Registrations**: live counts read from the attendees (registered, checked in, not arrived, walk-ins, registrations not in Salesforce, registrations still being matched), refreshed every 15 seconds and with **Refresh**.
 - **How it works**: each row becomes a `Capture__c` with Channel **Event registration** and goes through the normal matching (auto-match, or steward review: registrations to review appear in the review queue). **Only HCPs already in Salesforce can be registered**: a row that matches nobody is discarded (rule *Registration - HCP not in Salesforce*, counted on the card), never turned into a new HCP; *Create new HCP* is refused for registrations in the review console and skipped by the bulk action. Matching creates the `Event_Attendee__c` with *Attendance Status = Registered* and **`Registered__c` = true**. Any later capture of that HCP at the event (rep check-in, kiosk, QR) sets *Attended*; `Registered__c` stays true, so the card and the dashboard show *registered → checked in* and *walk-ins* (attended, not registered). A registration imported after the HCP attended never turns *Attended* back into *Registered*.
 - **Consent rule**: consent ticked on the registration website is imported as a confirmed `Consent__c` (Channel *Event registration*, method *Given at event registration*, consent text version from the file or the active one). **A registration or an event capture without consent never removes a consent the HCP already has**: only an explicit opt-out (withdrawal) does. The attendee's *Communications Allowed* is true when the HCP gives consent or already has a confirmed one.
 - **Attendee Type** (formula on `Event_Attendee__c`, shown in the event's attendee list): *Registered* (imported registration; with *Attendance Status* telling whether the HCP came), *Walk-in - known HCP* (already in Salesforce, not registered) or *Walk-in - new HCP* (created from the event capture).
@@ -383,4 +397,4 @@ Three cases at every event, on every channel (rep page, kiosk, QR self-scan):
 - **Matching**: a candidate registered for the capture's event gets **+10** (*registered for this event*, Custom Metadata field *Weight: registered for the event*). It only helps the review suggestion: auto-match still needs an identical email or registration number.
 - **Dashboard**: registration captures are not counted as event captures; a KPI shows *Registered → checked in*. The standard report *Captures by channel* (force-app-extras) does list the *Event registration* channel.
 - **Sample registrations** (`09-sample-registrations.apex`, run after `05`): every event except the volume test event gets 50 registrants (20 for a *Training meeting*), all HCPs already in Salesforce (the volume HCPs; without volume data, the mockup HCPs): about 85% with their own email, 15% with a personal email and their registration number; about 40% tick the consent. Opted-out HCPs and known duplicate pairs are not used. About 140 records (≈0.3 MB) for the two sample events.
-- Not built: removing a registration, a "no-show" status, and an automatic feed from the registration website (the CSV export is the interface for now).
+- Not built: removing a registration, a "no-show" status, and the automatic feed from the registration website.
