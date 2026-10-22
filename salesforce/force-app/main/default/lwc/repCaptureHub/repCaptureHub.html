@@ -37,7 +37,12 @@
 
                 <template lwc:if={selected}>
                     <div class="hcpcard">
-                        <button type="button" class="link" onclick={backToResults}>‹ Back to results</button>
+                        <template lwc:if={addedMessage}>
+                            <button type="button" class="btn brand lg block" onclick={nextHcp}>🔍 New search – next HCP</button>
+                        </template>
+                        <template lwc:else>
+                            <button type="button" class="link" onclick={backToResults}>‹ Back to results</button>
+                        </template>
                         <h4>Dr. {selected.firstName} {selected.lastName}</h4>
                         <template lwc:if={selectedRegistered}>
                             <div class="alert info"><span><b>Registered for this event.</b> Check in below.</span></div>
@@ -56,7 +61,7 @@
 
                         <template lwc:if={addedMessage}>
                             <div class="alert ok"><b>{addedTitle}</b> {addedMessage}</div>
-                            <button type="button" class="btn brand lg block" onclick={nextHcp}>+ Next HCP</button>
+                            <button type="button" class="btn brand lg block" onclick={nextHcp}>🔍 New search – next HCP</button>
                         </template>
                         <template lwc:else>
                             <template lwc:if={selectedHasConsent}>
