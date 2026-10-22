@@ -14,12 +14,12 @@
     <enableSharing>true</enableSharing>
     <enableStreamingApi>true</enableStreamingApi>
     <externalSharingModel>Private</externalSharingModel>
-    <label>HCP Event</label>
+    <label>Congress</label>
     <nameField>
         <label>Event Name</label>
         <type>Text</type>
     </nameField>
-    <pluralLabel>HCP Events</pluralLabel>
+    <pluralLabel>Congresses</pluralLabel>
     <searchLayouts/>
     <sharingModel>Read</sharingModel>
     <visibility>Public</visibility>
