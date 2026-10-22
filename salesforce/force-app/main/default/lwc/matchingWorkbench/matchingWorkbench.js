@@ -1,14 +1,6 @@
 import { LightningElement } from 'lwc';
 import getHcoOptions from '@salesforce/apex/MatchingWorkbenchController.getHcoOptions';
 import getReviewQueue from '@salesforce/apex/MatchingWorkbenchController.getReviewQueue';
-import getPairs from '@salesforce/apex/MatchingWorkbenchController.getPairs';
-import getPairDetail from '@salesforce/apex/MatchingWorkbenchController.getPairDetail';
-import mergePair from '@salesforce/apex/MatchingWorkbenchController.mergePair';
-import markNotDuplicate from '@salesforce/apex/MatchingWorkbenchController.markNotDuplicate';
-import reopenPair from '@salesforce/apex/MatchingWorkbenchController.reopenPair';
-import runDuplicateScan from '@salesforce/apex/MatchingWorkbenchController.runDuplicateScan';
-import getJobStatus from '@salesforce/apex/MatchingWorkbenchController.getJobStatus';
-import getMerges from '@salesforce/apex/MatchingWorkbenchController.getMerges';
 import bulkResolve from '@salesforce/apex/CaptureReviewController.bulkResolve';
 
 const BULK_TEXT = {
@@ -19,8 +11,8 @@ const BULK_TEXT = {
 const MAX_BULK = 50;
 
 /**
- * Data steward workbench: review queue with bulk actions and side-by-side review,
- * duplicate HCP pairs with field-by-field merge, matching accuracy, merge history.
+ * Data steward workbench: review queue with bulk actions and the side-by-side review in a modal
+ * (Previous / Next, moves on to the next capture after a decision), matching accuracy.
  */
 export default class MatchingWorkbench extends LightningElement {
     tab = 'queue';
@@ -37,31 +29,13 @@ export default class MatchingWorkbench extends LightningElement {
     selectedCaptureId;
     confirmBulk;
 
-    // pairs
-    pairs = [];
-    pairStatus = 'Open';
-    pairHospital = '';
-    pairDepartment = '';
-    minScore = 50;
-    pair;
-    masterSide = 'A';
-    picks = {};
-    note = '';
-    confirmMerge = false;
-    scanJobId;
-    scanStatus;
-    scanTimer;
     noticeTimer;
-
-    // merges
-    merges = [];
 
     connectedCallback() {
         this.init();
     }
 
     disconnectedCallback() {
-        clearTimeout(this.scanTimer);
         clearTimeout(this.noticeTimer);
     }
 
@@ -82,10 +56,6 @@ export default class MatchingWorkbench extends LightningElement {
         this.error = undefined;
         if (this.tab === 'queue') {
             this.loadQueue();
-        } else if (this.tab === 'pairs') {
-            this.loadPairs();
-        } else if (this.tab === 'merges') {
-            this.loadMerges();
         }
     }
 
@@ -95,40 +65,20 @@ export default class MatchingWorkbench extends LightningElement {
     get queueTabClass() {
         return this.tabClass('queue');
     }
-    get pairsTabClass() {
-        return this.tabClass('pairs');
-    }
     get accuracyTabClass() {
         return this.tabClass('accuracy');
-    }
-    get mergesTabClass() {
-        return this.tabClass('merges');
     }
     get isQueue() {
         return this.tab === 'queue';
     }
-    get isPairs() {
-        return this.tab === 'pairs';
-    }
     get isAccuracy() {
         return this.tab === 'accuracy';
-    }
-    get isMerges() {
-        return this.tab === 'merges';
     }
 
     get hospitalOptions() {
         return this.hcoOptions
             .filter((o) => !o.parent)
-            .map((o) => ({ ...o, queueSelected: o.value === this.queueHospital, pairSelected: o.value === this.pairHospital }));
-    }
-
-    get departmentOptions() {
-        return this.hcoOptions.filter((o) => o.parent && o.parent === this.pairHospital).map((o) => ({ ...o, selected: o.value === this.pairDepartment }));
-    }
-
-    get noDepartments() {
-        return !this.pairHospital;
+            .map((o) => ({ ...o, queueSelected: o.value === this.queueHospital }));
     }
 
     // ---------------------------------------------------------------- review queue
@@ -249,294 +199,87 @@ export default class MatchingWorkbench extends LightningElement {
         }
     }
 
+    // ---------------------------------------------------------------- side-by-side review (modal)
+
     openCapture(evt) {
         evt.preventDefault();
         this.selectedCaptureId = evt.currentTarget.dataset.id;
+        this.focusModal();
     }
 
     closeCapture() {
         this.selectedCaptureId = undefined;
     }
 
-    handleResolved() {
-        this.toast('Capture resolved');
-        this.loadQueue();
-    }
-
-    // ---------------------------------------------------------------- pairs
-
-    async loadPairs() {
-        this.busy = true;
-        try {
-            this.pairs = await getPairs({
-                status: this.pairStatus,
-                hospitalId: this.pairHospital || null,
-                departmentId: this.pairDepartment || null,
-                minScore: Number(this.minScore) || 0
-            });
-            this.error = undefined;
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.busy = false;
-        }
-    }
-
-    changeStatus(evt) {
-        this.pairStatus = evt.target.value;
-        this.pair = undefined;
-        this.loadPairs();
-    }
-
-    changePairHospital(evt) {
-        this.pairHospital = evt.target.value;
-        this.pairDepartment = '';
-        this.loadPairs();
-    }
-
-    changePairDepartment(evt) {
-        this.pairDepartment = evt.target.value;
-        this.loadPairs();
-    }
-
-    changeMinScore(evt) {
-        this.minScore = evt.target.value;
-        this.loadPairs();
-    }
-
-    get pairRows() {
-        return this.pairs.map((p) => ({
-            ...p,
-            rowClass: this.pair && this.pair.pair.id === p.id ? 'sel click' : 'click',
-            scoreClass: this.scoreClass(p.score)
-        }));
-    }
-
-    get pairsEmpty() {
-        return !this.busy && this.pairs.length === 0;
-    }
-
-    async openPair(evt) {
-        const id = evt.currentTarget.dataset.id;
-        this.busy = true;
-        this.confirmMerge = false;
-        this.note = '';
-        try {
-            const d = await getPairDetail({ pairId: id });
-            this.pair = d;
-            this.masterSide = d.suggestedMaster === d.pair.contactB ? 'B' : 'A';
-            this.resetPicks();
-            this.error = undefined;
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.busy = false;
-        }
-    }
-
-    closePair() {
-        this.pair = undefined;
-    }
-
-    /** Default value per field: the survivor's, or the other one when the survivor's is blank. */
-    resetPicks() {
-        const picks = {};
-        const keep = this.masterSide;
-        const other = keep === 'A' ? 'B' : 'A';
-        this.pair.fields.forEach((f) => {
-            const keepValue = keep === 'A' ? f.valueA : f.valueB;
-            picks[f.field] = keepValue ? keep : other;
-        });
-        this.picks = picks;
-    }
-
-    get readOnlyPair() {
-        return !this.canDecide;
-    }
-
-    get canDecide() {
-        return this.pair && this.pair.pair.status === 'Open';
-    }
-
-    get canReopen() {
-        return this.pair && this.pair.pair.status === 'Not a duplicate';
-    }
-
-    get masterIsA() {
-        return this.masterSide === 'A';
-    }
-    get masterIsB() {
-        return this.masterSide === 'B';
-    }
-    get masterAClass() {
-        return this.masterSide === 'A' ? 'keep' : '';
-    }
-    get masterBClass() {
-        return this.masterSide === 'B' ? 'keep' : '';
-    }
-    get urlA() {
-        return this.pair ? `/lightning/r/Contact/${this.pair.pair.contactA}/view` : null;
-    }
-    get urlB() {
-        return this.pair ? `/lightning/r/Contact/${this.pair.pair.contactB}/view` : null;
-    }
-    get keepName() {
-        return this.masterSide === 'A' ? this.pair.pair.nameA : this.pair.pair.nameB;
-    }
-    get dropName() {
-        return this.masterSide === 'A' ? this.pair.pair.nameB : this.pair.pair.nameA;
-    }
-    get suggestedName() {
-        if (!this.pair) {
-            return '';
-        }
-        return this.pair.suggestedMaster === this.pair.pair.contactB ? this.pair.pair.nameB : this.pair.pair.nameA;
-    }
-
-    pickMaster(evt) {
-        this.masterSide = evt.target.value;
-        this.confirmMerge = false;
-        this.resetPicks();
-    }
-
-    pickValue(evt) {
-        this.picks = { ...this.picks, [evt.target.dataset.field]: evt.target.value };
-    }
-
-    get fieldRows() {
-        if (!this.pair) {
-            return [];
-        }
-        return this.pair.fields.map((f) => {
-            const pick = this.picks[f.field];
-            return {
-                ...f,
-                valueA: f.valueA || '—',
-                valueB: f.valueB || '—',
-                pickA: pick === 'A',
-                pickB: pick === 'B',
-                locked: f.same || !this.canDecide,
-                rowClass: f.same ? 'same' : 'diff',
-                clsA: pick === 'A' ? 'chosen' : '',
-                clsB: pick === 'B' ? 'chosen' : ''
-            };
-        });
-    }
-
-    changeNote(evt) {
-        this.note = evt.target.value;
-    }
-
-    askMerge() {
-        this.confirmMerge = true;
-    }
-
-    cancelMerge() {
-        this.confirmMerge = false;
-    }
-
-    async doMerge() {
-        const p = this.pair.pair;
-        const masterId = this.masterSide === 'A' ? p.contactA : p.contactB;
-        const choices = {};
-        Object.keys(this.picks).forEach((field) => {
-            choices[field] = this.picks[field] === this.masterSide ? 'master' : 'duplicate';
-        });
-        this.busy = true;
-        this.error = undefined;
-        try {
-            await mergePair({ pairId: p.id, masterId, choices });
-            this.toast(`Merged: ${this.dropName} → ${this.keepName}. Recorded in Merge history.`);
-            this.pair = undefined;
-            this.confirmMerge = false;
-            await this.loadPairs();
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.busy = false;
-        }
-    }
-
-    async notDuplicate() {
-        this.busy = true;
-        this.error = undefined;
-        try {
-            await markNotDuplicate({ pairId: this.pair.pair.id, note: this.note });
-            this.toast('Marked as not a duplicate: this pair will not be proposed again.');
-            this.pair = undefined;
-            await this.loadPairs();
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.busy = false;
-        }
-    }
-
-    async reopen() {
-        this.busy = true;
-        try {
-            await reopenPair({ pairId: this.pair.pair.id });
-            this.toast('Pair re-opened.');
-            this.pair = undefined;
-            await this.loadPairs();
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.busy = false;
-        }
-    }
-
-    async runScan() {
-        this.busy = true;
-        try {
-            this.scanJobId = await runDuplicateScan();
-            this.scanStatus = 'Queued';
-            this.pollScan();
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.busy = false;
-        }
-    }
-
-    pollScan() {
-        clearTimeout(this.scanTimer);
+    focusModal() {
         // eslint-disable-next-line @lwc/lwc/no-async-operation
-        this.scanTimer = setTimeout(async () => {
-            try {
-                this.scanStatus = await getJobStatus({ jobId: this.scanJobId });
-            } catch (e) {
-                this.scanStatus = undefined;
-                return;
+        requestAnimationFrame(() => {
+            const modal = this.template.querySelector('.modal');
+            if (modal) {
+                modal.focus();
             }
-            if (this.scanStatus && /^(Completed|Failed|Aborted)/.test(this.scanStatus)) {
-                this.loadPairs();
-            } else {
-                this.pollScan();
-            }
-        }, 4000);
+        });
     }
 
-    // ---------------------------------------------------------------- merges
-
-    async loadMerges() {
-        this.busy = true;
-        try {
-            const rows = await getMerges();
-            this.merges = rows.map((m) => ({ ...m, url: `/lightning/r/HCP_Merge__c/${m.id}/view` }));
-        } catch (e) {
-            this.error = this.msg(e);
-        } finally {
-            this.busy = false;
+    modalKey(evt) {
+        if (evt.key === 'Escape') {
+            this.closeCapture();
         }
     }
 
-    get mergeRows() {
-        return this.merges;
+    get selectedIndex() {
+        return this.queue.findIndex((r) => r.id === this.selectedCaptureId);
     }
 
-    get mergesEmpty() {
-        return !this.busy && this.merges.length === 0;
+    get modalTitle() {
+        const i = this.selectedIndex;
+        if (i < 0) {
+            return 'Side-by-side review';
+        }
+        const r = this.queue[i];
+        return `${r.name} · ${r.fullName} (${i + 1} of ${this.queue.length})`;
+    }
+
+    get noPrev() {
+        return this.selectedIndex <= 0;
+    }
+
+    get noNext() {
+        const i = this.selectedIndex;
+        return i < 0 || i >= this.queue.length - 1;
+    }
+
+    prevCapture() {
+        const i = this.selectedIndex;
+        if (i > 0) {
+            this.selectedCaptureId = this.queue[i - 1].id;
+        }
+    }
+
+    nextCapture() {
+        const i = this.selectedIndex;
+        if (i >= 0 && i < this.queue.length - 1) {
+            this.selectedCaptureId = this.queue[i + 1].id;
+        }
+    }
+
+    /** After a decision the queue reloads and the modal moves on to the next capture (or closes at the end). */
+    async handleResolved() {
+        const i = this.selectedIndex;
+        const resolvedId = this.selectedCaptureId;
+        await this.loadQueue();
+        if (this.queue.some((r) => r.id === resolvedId)) {
+            return; // still to review (e.g. matching re-run): stay on it
+        }
+        const rest = this.queue;
+        if (rest.length === 0) {
+            this.selectedCaptureId = undefined;
+            this.toast('Capture resolved. The review queue is empty.');
+            return;
+        }
+        const next = rest[Math.min(Math.max(i, 0), rest.length - 1)];
+        this.selectedCaptureId = next.id;
+        this.toast('Capture resolved. Showing the next one.');
     }
 
     // ---------------------------------------------------------------- utils
