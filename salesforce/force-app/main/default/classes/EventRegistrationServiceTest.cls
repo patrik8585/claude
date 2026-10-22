@@ -178,6 +178,27 @@ private class EventRegistrationServiceTest {
     }
 
     @IsTest
+    static void manualRegisteredAttendeeIsCounted() {
+        Event__c e = ev();
+        Contact romano = [SELECT Id FROM Contact WHERE LastName = 'Romano'];
+        // entered by hand on the congress page: only the status is chosen
+        Event_Attendee__c a = new Event_Attendee__c(
+            Event__c = e.Id,
+            Contact__c = romano.Id,
+            Attendee_Key__c = CaptureResolutionService.attendeeKey(e.Id, romano.Id),
+            Attendance_Status__c = CaptureConstants.ATTENDANCE_REGISTERED
+        );
+        insert a;
+        Assert.isTrue(attendee(romano.Id).Registered__c, 'flag set from the status');
+        Assert.areEqual(1, EventRegistrationService.getSummary(e.Id).registered, 'counted as registered');
+        update new Event_Attendee__c(Id = a.Id, Attendance_Status__c = CaptureConstants.ATTENDANCE_ATTENDED);
+        EventRegistrationService.Summary s = EventRegistrationService.getSummary(e.Id);
+        Assert.isTrue(attendee(romano.Id).Registered__c, 'still registered after check-in');
+        Assert.areEqual(1, s.checkedIn, 'registered and checked in');
+        Assert.areEqual(0, s.walkIns, 'not a walk-in');
+    }
+
+    @IsTest
     static void registrationDates() {
         Assert.areEqual(Date.newInstance(2026, 9, 20), EventRegistrationService.parseDate('2026-09-20').dateGmt(), 'yyyy-MM-dd parsed');
         Assert.isNotNull(EventRegistrationService.parseDate('not a date'), 'bad dates fall back to now');
