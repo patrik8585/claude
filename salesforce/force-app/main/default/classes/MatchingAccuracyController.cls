@@ -1,9 +1,13 @@
 /**
- * Measures matching accuracy on the generated test captures (Expected_Outcome__c / Expected_Contact__c),
- * shown in the "Accuracy" tab of the Matching workbench. Also starts the volume generator.
+ * "Accuracy" tab of the Matching workbench.
  *
- * A match counts as correct when the matched HCP is the expected one, or a known duplicate record of it
- * (Contact.Test_Duplicate_Of__c), because both records are the same person.
+ * - Per congress (getEventMetrics): what matching did with the real captures of one congress, or of all
+ *   of them: auto-matched by rule, sent to review and how stewards resolved it, new HCPs, registrations
+ *   not found, confidence, review backlog. Read live from Capture__c / Capture_Candidate__c.
+ * - Test set (getMetrics): precision against the expected outcome of the generated test captures
+ *   (Expected_Outcome__c / Expected_Contact__c). A match counts as correct when the matched HCP is the
+ *   expected one, or a known duplicate record of it (Contact.Test_Duplicate_Of__c), because both
+ *   records are the same person.
  */
 public without sharing class MatchingAccuracyController {
     public class Metrics {
@@ -47,16 +51,6 @@ public without sharing class MatchingAccuracyController {
         public Integer departments = 0;
         @AuraEnabled
         public Integer hcps = 0;
-        @AuraEnabled
-        public Integer knownDuplicates = 0;
-        @AuraEnabled
-        public Integer duplicatePairs = 0;
-        @AuraEnabled
-        public Integer knownDuplicatesFound = 0;
-        @AuraEnabled
-        public Decimal duplicateRecall;
-        @AuraEnabled
-        public Decimal duplicatePrecision;
         @AuraEnabled
         public String jobStatus;
     }
@@ -231,28 +225,10 @@ public without sharing class MatchingAccuracyController {
         m.hospitals = [SELECT COUNT() FROM Account WHERE RecordType.DeveloperName = :HcoDirectory.RT_HOSPITAL];
         m.departments = [SELECT COUNT() FROM Account WHERE RecordType.DeveloperName = :HcoDirectory.RT_DEPARTMENT];
         m.hcps = [SELECT COUNT() FROM Contact WHERE Test_Data_Set__c = :VolumeTestData.DATA_SET];
-        m.knownDuplicates = [SELECT COUNT() FROM Contact WHERE Test_Duplicate_Of__c != NULL];
-        Integer volumePairs = 0;
-        for (HCP_Duplicate_Pair__c p : [
-            SELECT Contact_A__c, Contact_B__c, Contact_A__r.Test_Duplicate_Of__c, Contact_B__r.Test_Duplicate_Of__c, Contact_A__r.Test_Data_Set__c
-            FROM HCP_Duplicate_Pair__c
-            WHERE Status__c != 'Not a duplicate' AND Contact_A__c != NULL AND Contact_B__c != NULL
-            LIMIT 10000
-        ]) {
-            m.duplicatePairs++;
-            if (p.Contact_A__r.Test_Data_Set__c != null) {
-                volumePairs++;
-            }
-            if (p.Contact_A__r.Test_Duplicate_Of__c == p.Contact_B__c || p.Contact_B__r.Test_Duplicate_Of__c == p.Contact_A__c) {
-                m.knownDuplicatesFound++;
-            }
-        }
-        m.duplicateRecall = pct(m.knownDuplicatesFound, m.knownDuplicates);
-        m.duplicatePrecision = pct(m.knownDuplicatesFound, volumePairs);
         List<AsyncApexJob> jobs = [
             SELECT Status, JobItemsProcessed, TotalJobItems, NumberOfErrors, ExtendedStatus
             FROM AsyncApexJob
-            WHERE ApexClass.Name IN ('VolumeTestData', 'DuplicateScanJob') AND JobType = 'BatchApex'
+            WHERE ApexClass.Name = 'VolumeTestData' AND JobType = 'BatchApex'
             ORDER BY CreatedDate DESC
             LIMIT 1
         ];
@@ -290,21 +266,294 @@ public without sharing class MatchingAccuracyController {
         return (Decimal.valueOf(part) * 100 / whole).setScale(1);
     }
 
-    // ------------------------------------------------------------ generator actions (stewards / admins)
 
-    /** action: generate | captures | cleanup. Returns the batch job Id. */
+    // ------------------------------------------------------------ real congresses
+
+    public static final String RULE_REP = 'HCP selected by rep';
+    public static final String RULE_EMAIL = 'Identical email';
+    public static final String RULE_REGISTRATION = 'Identical registration number';
+
+    public class EventOption {
+        @AuraEnabled
+        public String value;
+        @AuraEnabled
+        public String label;
+        @AuraEnabled
+        public Integer captures = 0;
+    }
+
+    public class ChannelCount {
+        @AuraEnabled
+        public String label;
+        @AuraEnabled
+        public Integer count = 0;
+    }
+
+    /** Matching figures of the real captures of one congress (or of all congresses in the "All" row). */
+    public class EventMetrics {
+        @AuraEnabled
+        public String eventId;
+        @AuraEnabled
+        public String eventName;
+        @AuraEnabled
+        public Integer total = 0;
+        @AuraEnabled
+        public List<ChannelCount> byChannel = new List<ChannelCount>();
+        /** Matched or decided by the engine or a steward (total minus queued and errors). */
+        @AuraEnabled
+        public Integer processed = 0;
+        @AuraEnabled
+        public Integer queued = 0;
+        @AuraEnabled
+        public Integer errors = 0;
+        @AuraEnabled
+        public Integer autoCount = 0;
+        @AuraEnabled
+        public Decimal autoRate;
+        @AuraEnabled
+        public Integer autoByRep = 0;
+        @AuraEnabled
+        public Integer autoByEmail = 0;
+        @AuraEnabled
+        public Integer autoByRegistration = 0;
+        /** Sent to a person: still to review + reviewed (matched, new HCP, discarded). */
+        @AuraEnabled
+        public Integer sentToReview = 0;
+        @AuraEnabled
+        public Decimal reviewRate;
+        @AuraEnabled
+        public Integer backlog = 0;
+        /** Minutes the oldest capture still to review has been waiting. */
+        @AuraEnabled
+        public Integer oldestWaitingMinutes;
+        @AuraEnabled
+        public Integer reviewedMatched = 0;
+        @AuraEnabled
+        public Integer reviewedNew = 0;
+        @AuraEnabled
+        public Integer reviewedDiscarded = 0;
+        /** Average minutes from capture to the steward's decision. */
+        @AuraEnabled
+        public Integer avgReviewMinutes;
+        /** Reviewed - matched to the candidate the engine recommended first. */
+        @AuraEnabled
+        public Integer recommendationAccepted = 0;
+        @AuraEnabled
+        public Decimal recommendationAcceptedRate;
+        @AuraEnabled
+        public Integer newHcp = 0;
+        @AuraEnabled
+        public Integer registrationNotFound = 0;
+        @AuraEnabled
+        public Integer confidenceHigh = 0;
+        @AuraEnabled
+        public Integer confidenceMedium = 0;
+        @AuraEnabled
+        public Integer confidenceLow = 0;
+        /** Average score of the recommended candidate of the captures sent to review. */
+        @AuraEnabled
+        public Decimal avgTopScore;
+        /** Only for "All congresses": one row per congress. */
+        @AuraEnabled
+        public List<EventMetrics> byEvent = new List<EventMetrics>();
+        @AuraEnabled
+        public String refreshedAt;
+
+        // running totals, not sent to the page
+        public Map<String, ChannelCount> channels = new Map<String, ChannelCount>();
+        public Decimal topScoreSum = 0;
+        public Integer topScoreCount = 0;
+        public Long reviewMinutesSum = 0;
+        public Integer reviewMinutesCount = 0;
+    }
+
+    /** Congresses with real captures (the synthetic test event excluded), most recent first. */
     @AuraEnabled
-    public static String runGenerator(String action) {
+    public static List<EventOption> getEventOptions() {
         checkSteward();
-        if (action == 'generate') {
-            return VolumeTestData.generate();
+        Map<Id, Integer> counts = new Map<Id, Integer>();
+        for (AggregateResult ar : [
+            SELECT Event__c ev, COUNT(Id) n
+            FROM Capture__c
+            WHERE Expected_Outcome__c = NULL AND Event__c != NULL
+            GROUP BY Event__c
+        ]) {
+            counts.put((Id) ar.get('ev'), (Integer) ar.get('n'));
         }
-        if (action == 'captures') {
-            return VolumeTestData.regenerateCaptures();
+        List<EventOption> out = new List<EventOption>();
+        for (Event__c e : [
+            SELECT Id, Name, Start_Date__c
+            FROM Event__c
+            WHERE Name != :VolumeTestData.TEST_EVENT_NAME
+            ORDER BY Start_Date__c DESC NULLS LAST, Name
+            LIMIT 200
+        ]) {
+            EventOption o = new EventOption();
+            o.value = e.Id;
+            o.label = e.Name;
+            o.captures = counts.containsKey(e.Id) ? counts.get(e.Id) : 0;
+            out.add(o);
         }
-        if (action == 'cleanup') {
-            return VolumeTestData.cleanup();
+        return out;
+    }
+
+    /** eventId empty = all congresses, with one row per congress in byEvent. */
+    @AuraEnabled
+    public static EventMetrics getEventMetrics(String eventId) {
+        checkSteward();
+        Id evId = String.isBlank(eventId) ? null : Id.valueOf(eventId);
+        String q =
+            'SELECT Id, Event__c, Event__r.Name, Channel__c, Matching_Status__c, Match_Rule__c, Matched_Contact__c, ' +
+            'Suggestion_Confidence__c, Captured_At__c, CreatedDate, Reviewed_At__c ' +
+            'FROM Capture__c WHERE Expected_Outcome__c = NULL AND Event__c != NULL';
+        if (evId != null) {
+            q += ' AND Event__c = :evId';
         }
-        throw new AuraHandledException('Unknown action.');
+        q += ' ORDER BY Captured_At__c ASC LIMIT 20000';
+        List<Capture__c> caps = Database.query(q);
+
+        // recommended candidate (rank 1) of every capture that went to review
+        Set<Id> reviewIds = new Set<Id>();
+        for (Capture__c c : caps) {
+            if (wentToReview(c)) {
+                reviewIds.add(c.Id);
+            }
+        }
+        Map<Id, Capture_Candidate__c> top = new Map<Id, Capture_Candidate__c>();
+        for (Capture_Candidate__c cc : [
+            SELECT Capture__c, Contact__c, Score__c
+            FROM Capture_Candidate__c
+            WHERE Capture__c IN :reviewIds AND Recommended__c = TRUE
+        ]) {
+            top.put(cc.Capture__c, cc);
+        }
+
+        EventMetrics summary = new EventMetrics();
+        Map<Id, EventMetrics> perEvent = new Map<Id, EventMetrics>();
+        Datetime now = System.now();
+        for (Capture__c c : caps) {
+            if (!perEvent.containsKey(c.Event__c)) {
+                EventMetrics em = new EventMetrics();
+                em.eventId = c.Event__c;
+                em.eventName = c.Event__r.Name;
+                perEvent.put(c.Event__c, em);
+            }
+            add(summary, c, top.get(c.Id), now);
+            add(perEvent.get(c.Event__c), c, top.get(c.Id), now);
+        }
+        finish(summary);
+        if (evId != null) {
+            List<Event__c> evs = [SELECT Name FROM Event__c WHERE Id = :evId];
+            summary.eventId = evId;
+            summary.eventName = evs.isEmpty() ? null : evs[0].Name;
+        } else {
+            for (EventMetrics em : perEvent.values()) {
+                finish(em);
+                summary.byEvent.add(em);
+            }
+        }
+        summary.refreshedAt = now.format('HH:mm:ss');
+        return summary;
+    }
+
+    private static Boolean wentToReview(Capture__c c) {
+        String st = c.Matching_Status__c;
+        return st == CaptureConstants.MATCH_REVIEW ||
+            st == CaptureConstants.MATCH_REVIEWED ||
+            st == CaptureConstants.MATCH_REVIEWED_NEW ||
+            (st == CaptureConstants.MATCH_DISCARDED && c.Match_Rule__c != CaptureConstants.RULE_REGISTRATION_NOT_FOUND);
+    }
+
+    private static void add(EventMetrics m, Capture__c c, Capture_Candidate__c rec, Datetime now) {
+        m.total++;
+        String channel = String.isBlank(c.Channel__c) ? '(none)' : c.Channel__c;
+        if (!m.channels.containsKey(channel)) {
+            ChannelCount k = new ChannelCount();
+            k.label = channel;
+            m.channels.put(channel, k);
+            m.byChannel.add(k);
+        }
+        m.channels.get(channel).count++;
+
+        String st = c.Matching_Status__c;
+        if (st == CaptureConstants.MATCH_QUEUED || st == null) {
+            m.queued++;
+            return;
+        }
+        if (st == CaptureConstants.MATCH_ERROR) {
+            m.errors++;
+            return;
+        }
+        m.processed++;
+        if (st == CaptureConstants.MATCH_AUTO) {
+            m.autoCount++;
+            if (c.Match_Rule__c == RULE_REP) {
+                m.autoByRep++;
+            } else if (c.Match_Rule__c == RULE_EMAIL) {
+                m.autoByEmail++;
+            } else if (c.Match_Rule__c == RULE_REGISTRATION) {
+                m.autoByRegistration++;
+            }
+            return;
+        }
+        if (st == CaptureConstants.MATCH_NEW) {
+            m.newHcp++;
+            return;
+        }
+        if (!wentToReview(c)) {
+            m.registrationNotFound++;
+            return;
+        }
+        m.sentToReview++;
+        if (c.Suggestion_Confidence__c == 'High') {
+            m.confidenceHigh++;
+        } else if (c.Suggestion_Confidence__c == 'Medium') {
+            m.confidenceMedium++;
+        } else if (c.Suggestion_Confidence__c == 'Low') {
+            m.confidenceLow++;
+        }
+        if (rec != null && rec.Score__c != null) {
+            m.topScoreSum += rec.Score__c;
+            m.topScoreCount++;
+        }
+        Datetime capturedAt = c.Captured_At__c == null ? c.CreatedDate : c.Captured_At__c;
+        if (st == CaptureConstants.MATCH_REVIEW) {
+            m.backlog++;
+            Integer waiting = minutesBetween(capturedAt, now);
+            if (waiting != null && (m.oldestWaitingMinutes == null || waiting > m.oldestWaitingMinutes)) {
+                m.oldestWaitingMinutes = waiting;
+            }
+            return;
+        }
+        if (st == CaptureConstants.MATCH_REVIEWED) {
+            m.reviewedMatched++;
+            if (rec != null && rec.Contact__c == c.Matched_Contact__c) {
+                m.recommendationAccepted++;
+            }
+        } else if (st == CaptureConstants.MATCH_REVIEWED_NEW) {
+            m.reviewedNew++;
+        } else {
+            m.reviewedDiscarded++;
+        }
+        Integer took = minutesBetween(capturedAt, c.Reviewed_At__c);
+        if (took != null) {
+            m.reviewMinutesSum += took;
+            m.reviewMinutesCount++;
+        }
+    }
+
+    private static void finish(EventMetrics m) {
+        m.autoRate = pct(m.autoCount, m.processed);
+        m.reviewRate = pct(m.sentToReview, m.processed);
+        m.recommendationAcceptedRate = pct(m.recommendationAccepted, m.reviewedMatched);
+        m.avgTopScore = m.topScoreCount == 0 ? null : (m.topScoreSum / m.topScoreCount).setScale(0);
+        m.avgReviewMinutes = m.reviewMinutesCount == 0 ? null : (m.reviewMinutesSum / m.reviewMinutesCount).intValue();
+    }
+
+    private static Integer minutesBetween(Datetime fromTime, Datetime toTime) {
+        if (fromTime == null || toTime == null || toTime < fromTime) {
+            return null;
+        }
+        return ((toTime.getTime() - fromTime.getTime()) / 60000).intValue();
     }
 }

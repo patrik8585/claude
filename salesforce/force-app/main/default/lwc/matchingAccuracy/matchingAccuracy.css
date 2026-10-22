@@ -11,9 +11,25 @@ h3 {
 }
 .bar {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    align-items: flex-start;
-    margin-bottom: 8px;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+.sel {
+    display: flex;
+    flex-direction: column;
+    font-size: 11px;
+    color: var(--mute);
+}
+.sel select {
+    font-size: 13px;
+    border: 1px solid #c9c9c9;
+    border-radius: 4px;
+    padding: 4px 6px;
+    min-height: 30px;
+    max-width: 420px;
+    background: #fff;
 }
 .grow {
     flex: 1;
@@ -44,6 +60,16 @@ h3 {
     margin: 2px 0;
 }
 .kpi small {
+    color: var(--mute);
+}
+.kpi b.warn,
+.grid b.warn {
+    color: #8c4b02;
+}
+.kpi b.ok {
+    color: #2e844a;
+}
+.grid td small {
     color: var(--mute);
 }
 .scroll {
@@ -81,16 +107,6 @@ h3 {
     text-align: center;
     color: var(--mute);
 }
-.acts {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 8px;
-}
-.warn-text {
-    color: #8c4b02;
-}
 .btn {
     border: 1px solid #c9c9c9;
     background: #fff;
@@ -98,16 +114,6 @@ h3 {
     padding: 4px 10px;
     cursor: pointer;
     font-size: 13px;
-}
-.btn.brand {
-    background: #0176d3;
-    border-color: #0176d3;
-    color: #fff;
-}
-.btn.danger {
-    background: #ba0517;
-    border-color: #ba0517;
-    color: #fff;
 }
 .btn:disabled {
     opacity: 0.5;

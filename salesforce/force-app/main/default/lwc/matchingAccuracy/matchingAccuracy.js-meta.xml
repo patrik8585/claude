@@ -3,7 +3,7 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>Matching Accuracy</masterLabel>
-    <description>Auto-match precision, review rate and false new-HCP rate measured on the generated test captures.</description>
+    <description>Matching figures per congress (live) and precision on the synthetic test captures.</description>
     <targets>
         <target>lightning__AppPage</target>
     </targets>
