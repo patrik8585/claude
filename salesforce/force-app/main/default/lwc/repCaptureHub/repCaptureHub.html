@@ -61,6 +61,19 @@
                             <button type="button" class="btn brand lg block" onclick={nextHcp}>🔍 New search – next HCP</button>
                         </template>
                         <template lwc:else>
+                            <div class="ta">
+                                <button type="button" class="ta-h" onclick={toggleAreas} aria-expanded={areasExpanded}>
+                                    <span class="grow">Therapeutic area <span class="ta-opt">(optional)</span></span>
+                                    <span class="ta-sum">{areasSummary}</span>
+                                </button>
+                                <template lwc:if={areasOpen}>
+                                    <div class="ta-grid">
+                                        <template for:each={areaOptions} for:item="a">
+                                            <button key={a.value} type="button" class={a.cls} data-value={a.value} onclick={toggleArea} aria-pressed={a.pressed}>{a.value}</button>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                             <template lwc:if={selectedHasConsent}>
                                 <div class="alert ok">Consent is on file – <b>no question needed</b>.</div>
                                 <button type="button" class="btn brand lg block" onclick={addKnown} disabled={saving}>{addKnownLabel}</button>
@@ -156,6 +169,19 @@
                     </select>
                     <label class="l" for="wc">City</label>
                     <input id="wc" class="in" data-field="city" value={walk.city} oninput={handleWalkInput} />
+                    <div class="ta">
+                        <button type="button" class="ta-h" onclick={toggleAreas} aria-expanded={areasExpanded}>
+                            <span class="grow">Therapeutic area <span class="ta-opt">(optional)</span></span>
+                            <span class="ta-sum">{areasSummary}</span>
+                        </button>
+                        <template lwc:if={areasOpen}>
+                            <div class="ta-grid">
+                                <template for:each={areaOptions} for:item="a">
+                                    <button key={a.value} type="button" class={a.cls} data-value={a.value} onclick={toggleArea} aria-pressed={a.pressed}>{a.value}</button>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
                     <label class="l" for="wn">Notes (type or dictate)</label>
                     <div class="notes-w">
                         <textarea id="wn" class="in notes" data-field="notes" oninput={handleWalkInput} placeholder="Tap the microphone and speak…"></textarea>

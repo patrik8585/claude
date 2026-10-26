@@ -489,3 +489,56 @@
     flex: 1;
     font-weight: 600;
 }
+
+/* therapeutic area: optional, several allowed */
+.ta {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    margin: 10px 0;
+}
+.ta-h {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    background: #fff;
+    font: inherit;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+.ta-sum {
+    color: var(--brand);
+    font-size: 13px;
+    text-align: right;
+}
+.ta-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 12px 12px;
+}
+.chip {
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #fff;
+    color: var(--ink2);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+.chip.on {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+}
+.ta-opt {
+    color: var(--mute);
+    font-weight: 400;
+}

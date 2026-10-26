@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Therapeutic_Area__c</fullName>
+    <description>Therapeutic areas the HCP is interested in, chosen by the rep on the Rep Hub (optional).</description>
+    <label>Therapeutic Area</label>
+    <required>false</required>
+    <type>MultiselectPicklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Allergy</fullName>
+                <default>false</default>
+                <label>Allergy</label>
+            </value>
+            <value>
+                <fullName>C.Growth-Cerebral Palsy</fullName>
+                <default>false</default>
+                <label>C.Growth-Cerebral Palsy</label>
+            </value>
+            <value>
+                <fullName>C.Growth-Congenital Heart D.</fullName>
+                <default>false</default>
+                <label>C.Growth-Congenital Heart D.</label>
+            </value>
+            <value>
+                <fullName>C.Growth-Malnutrition</fullName>
+                <default>false</default>
+                <label>C.Growth-Malnutrition</label>
+            </value>
+            <value>
+                <fullName>Cancer Care</fullName>
+                <default>false</default>
+                <label>Cancer Care</label>
+            </value>
+            <value>
+                <fullName>Critical Care/ICU</fullName>
+                <default>false</default>
+                <label>Critical Care/ICU</label>
+            </value>
+            <value>
+                <fullName>Diabetes</fullName>
+                <default>false</default>
+                <label>Diabetes</label>
+            </value>
+            <value>
+                <fullName>DRM</fullName>
+                <default>false</default>
+                <label>DRM</label>
+            </value>
+            <value>
+                <fullName>Dysphagia</fullName>
+                <default>false</default>
+                <label>Dysphagia</label>
+            </value>
+            <value>
+                <fullName>Epilepsy</fullName>
+                <default>false</default>
+                <label>Epilepsy</label>
+            </value>
+            <value>
+                <fullName>First Diet</fullName>
+                <default>false</default>
+                <label>First Diet</label>
+            </value>
+            <value>
+                <fullName>FO</fullName>
+                <default>false</default>
+                <label>FO</label>
+            </value>
+            <value>
+                <fullName>Frail Elderly</fullName>
+                <default>false</default>
+                <label>Frail Elderly</label>
+            </value>
+            <value>
+                <fullName>GI</fullName>
+                <default>false</default>
+                <label>GI</label>
+            </value>
+            <value>
+                <fullName>IF</fullName>
+                <default>false</default>
+                <label>IF</label>
+            </value>
+            <value>
+                <fullName>Medical Devices</fullName>
+                <default>false</default>
+                <label>Medical Devices</label>
+            </value>
+            <value>
+                <fullName>Memory</fullName>
+                <default>false</default>
+                <label>Memory</label>
+            </value>
+            <value>
+                <fullName>Metabolics</fullName>
+                <default>false</default>
+                <label>Metabolics</label>
+            </value>
+            <value>
+                <fullName>Nephrology</fullName>
+                <default>false</default>
+                <label>Nephrology</label>
+            </value>
+            <value>
+                <fullName>Neuro/Stroke</fullName>
+                <default>false</default>
+                <label>Neuro/Stroke</label>
+            </value>
+            <value>
+                <fullName>Neuro Degenerative</fullName>
+                <default>false</default>
+                <label>Neuro Degenerative</label>
+            </value>
+            <value>
+                <fullName>Obesity</fullName>
+                <default>false</default>
+                <label>Obesity</label>
+            </value>
+            <value>
+                <fullName>Other Early Life</fullName>
+                <default>false</default>
+                <label>Other Early Life</label>
+            </value>
+            <value>
+                <fullName>Others Adult</fullName>
+                <default>false</default>
+                <label>Others Adult</label>
+            </value>
+            <value>
+                <fullName>Pre-term</fullName>
+                <default>false</default>
+                <label>Pre-term</label>
+            </value>
+            <value>
+                <fullName>Recovery</fullName>
+                <default>false</default>
+                <label>Recovery</label>
+            </value>
+            <value>
+                <fullName>Sarcopenia</fullName>
+                <default>false</default>
+                <label>Sarcopenia</label>
+            </value>
+            <value>
+                <fullName>Woundcare</fullName>
+                <default>false</default>
+                <label>Woundcare</label>
+            </value>
+            <value>
+                <fullName>YCF 1-3</fullName>
+                <default>false</default>
+                <label>YCF 1-3</label>
+            </value>
+            <value>
+                <fullName>YCF 3+</fullName>
+                <default>false</default>
+                <label>YCF 3+</label>
+            </value>
+            <value>
+                <fullName>Other</fullName>
+                <default>false</default>
+                <label>Other</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+    <visibleLines>6</visibleLines>
+</CustomField>

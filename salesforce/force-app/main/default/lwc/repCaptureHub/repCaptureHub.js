@@ -52,6 +52,9 @@ export default class RepCaptureHub extends LightningElement {
     method;
     signed = false;
     added = {};
+    /** Therapeutic areas ticked for the current HCP (optional, several allowed). */
+    areas = [];
+    areasOpen = false;
     walk = emptyWalk();
     listening = false;
     micHint;
@@ -268,6 +271,8 @@ export default class RepCaptureHub extends LightningElement {
     resetMethod() {
         this.method = undefined;
         this.signed = false;
+        this.areas = [];
+        this.areasOpen = false;
     }
 
     // ---------------------------------------------------------------- search
@@ -390,6 +395,34 @@ export default class RepCaptureHub extends LightningElement {
         return this.selected ? this.added[this.selected.id] : undefined;
     }
 
+    // ---------------------------------------------------------------- therapeutic area
+
+    toggleAreas() {
+        this.areasOpen = !this.areasOpen;
+    }
+    toggleArea(evt) {
+        const v = evt.currentTarget.dataset.value;
+        this.areas = this.areas.includes(v) ? this.areas.filter((x) => x !== v) : [...this.areas, v];
+    }
+    get areasExpanded() {
+        return this.areasOpen ? 'true' : 'false';
+    }
+    get areaOptions() {
+        const list = this.ctx ? this.ctx.therapeuticAreas || [] : [];
+        return list.map((value) => {
+            const on = this.areas.includes(value);
+            return { value, pressed: on ? 'true' : 'false', cls: on ? 'chip on' : 'chip' };
+        });
+    }
+    get areasSummary() {
+        const n = this.areas.length;
+        if (n === 0) {
+            return this.areasOpen ? '▴' : 'Choose ▾';
+        }
+        const text = n <= 2 ? this.areas.join(', ') : `${n} selected`;
+        return `${text} ${this.areasOpen ? '▴' : '▾'}`;
+    }
+
     // ---------------------------------------------------------------- consent options
 
     chooseMethod(evt) {
@@ -461,7 +494,8 @@ export default class RepCaptureHub extends LightningElement {
                 contactId: hcp.id,
                 method: hcp.consentStatus === 'valid' ? null : this.method,
                 signatureDataUrl: this.signatureDataUrl(),
-                deviceInfo: this.deviceInfo()
+                deviceInfo: this.deviceInfo(),
+                therapeuticAreas: this.areas
             });
             this.added = { ...this.added, [hcp.id]: r.message };
             this.toast(hcp.attendance === 'registered' ? 'Checked in' : 'Added to event');
@@ -653,7 +687,8 @@ export default class RepCaptureHub extends LightningElement {
                     email: w.email,
                     specialty: w.specialty,
                     city: w.city,
-                    notes: w.notes
+                    notes: w.notes,
+                    therapeuticAreas: this.areas
                 },
                 method: this.method,
                 signatureDataUrl: this.signatureDataUrl(),

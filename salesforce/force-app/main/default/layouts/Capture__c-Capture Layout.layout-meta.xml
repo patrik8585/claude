@@ -80,6 +80,10 @@
                 <behavior>Edit</behavior>
                 <field>Interest__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Therapeutic_Area__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>
