@@ -53,6 +53,8 @@ export default class RepCaptureHub extends LightningElement {
     signed = false;
     added = {};
     walk = emptyWalk();
+    areas = [];
+    areasOpen = false;
     listening = false;
     micHint;
     recognition;
@@ -258,6 +260,7 @@ export default class RepCaptureHub extends LightningElement {
     }
 
     resetSearch() {
+        this.resetAreas();
         this.query = '';
         this.results = [];
         this.searched = false;
@@ -337,6 +340,46 @@ export default class RepCaptureHub extends LightningElement {
         const id = evt.currentTarget.dataset.id;
         this.selected = this.visibleResults.find((h) => h.id === id);
         this.resetMethod();
+        this.resetAreas();
+    }
+
+    // ---------------------------------------------------------------- therapeutic area (optional, multi-select)
+
+    resetAreas() {
+        this.areas = [];
+        this.areasOpen = false;
+    }
+
+    toggleAreas() {
+        this.areasOpen = !this.areasOpen;
+    }
+
+    toggleArea(evt) {
+        const v = evt.currentTarget.dataset.value;
+        this.areas = this.areas.includes(v) ? this.areas.filter((x) => x !== v) : [...this.areas, v];
+    }
+
+    get areaChips() {
+        return ((this.ctx && this.ctx.therapeuticAreas) || []).map((v) => {
+            const on = this.areas.includes(v);
+            return { value: v, cls: on ? 'ta-chip on' : 'ta-chip', pressed: on ? 'true' : 'false' };
+        });
+    }
+
+    get areasSummary() {
+        const n = this.areas.length;
+        if (n === 0) {
+            return 'none';
+        }
+        return n <= 2 ? this.areas.join(', ') : `${n} selected`;
+    }
+
+    get areasCaret() {
+        return this.areasOpen ? '▴' : '▾';
+    }
+
+    get areasExpanded() {
+        return this.areasOpen ? 'true' : 'false';
     }
 
     get selectedHasConsent() {
@@ -461,7 +504,8 @@ export default class RepCaptureHub extends LightningElement {
                 contactId: hcp.id,
                 method: hcp.consentStatus === 'valid' ? null : this.method,
                 signatureDataUrl: this.signatureDataUrl(),
-                deviceInfo: this.deviceInfo()
+                deviceInfo: this.deviceInfo(),
+                therapeuticAreas: this.areas
             });
             this.added = { ...this.added, [hcp.id]: r.message };
             this.toast(hcp.attendance === 'registered' ? 'Checked in' : 'Added to event');
@@ -483,6 +527,7 @@ export default class RepCaptureHub extends LightningElement {
         const looksLikeEmail = q.includes('@');
         this.walk = emptyWalk(looksLikeEmail ? { email: q } : { lastName: q.charAt(0).toUpperCase() + q.slice(1) });
         this.resetMethod();
+        this.resetAreas();
         this.screen = 'walkin';
     }
 
@@ -653,7 +698,8 @@ export default class RepCaptureHub extends LightningElement {
                     email: w.email,
                     specialty: w.specialty,
                     city: w.city,
-                    notes: w.notes
+                    notes: w.notes,
+                    therapeuticAreas: this.areas
                 },
                 method: this.method,
                 signatureDataUrl: this.signatureDataUrl(),

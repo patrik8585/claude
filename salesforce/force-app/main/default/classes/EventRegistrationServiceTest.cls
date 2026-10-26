@@ -109,7 +109,7 @@ private class EventRegistrationServiceTest {
             CaptureTriggerHandler.publishEnabled = false;
             listBefore = RepCaptureController.getRegisteredAttendees(e.Id);
             found = RepCaptureController.searchHcps('Ferri', e.Id);
-            RepCaptureController.addKnownHcp(e.Id, ferri.Id, null, null, 'test device');
+            RepCaptureController.addKnownHcp(e.Id, ferri.Id, null, null, 'test device', null);
         }
         Assert.areEqual(1, listBefore.registered);
         Assert.areEqual(0, listBefore.checkedIn);

@@ -15,6 +15,9 @@ public with sharing class RepCaptureController {
         public ConsentCaptureConfig.ConsentText consent;
         @AuraEnabled
         public List<String> specialties;
+        /** Values of Capture__c.Therapeutic_Area__c (optional multi-select on the rep page). */
+        @AuraEnabled
+        public List<String> therapeuticAreas;
     }
 
     public class EventOption {
@@ -117,6 +120,8 @@ public with sharing class RepCaptureController {
         @AuraEnabled
         public String interest { get; set; }
         @AuraEnabled
+        public List<String> therapeuticAreas { get; set; }
+        @AuraEnabled
         public Boolean createTask { get; set; }
         @AuraEnabled
         public String taskTitle { get; set; }
@@ -156,6 +161,9 @@ public with sharing class RepCaptureController {
         /** The rep's notes (typed or dictated), shown under the capture. */
         @AuraEnabled
         public String notes;
+        /** Therapeutic areas, "; " separated. */
+        @AuraEnabled
+        public String therapeuticAreas;
     }
 
     // ------------------------------------------------------------ access
@@ -181,6 +189,7 @@ public with sharing class RepCaptureController {
         ctx.territory = u.Territory__c;
         ctx.consent = ConsentCaptureConfig.activeConsentText();
         ctx.specialties = ConsentCaptureConfig.specialties();
+        ctx.therapeuticAreas = new List<String>(therapeuticAreaValues());
         ctx.events = new List<EventOption>();
         Date today = Date.today();
         for (Event__c ev : [
@@ -414,9 +423,17 @@ public with sharing class RepCaptureController {
     /**
      * Adds an HCP found by search to the event.
      * method: 'sign' | 'email' | 'declined' (ignored when a valid opt-in is on file).
+     * therapeuticAreas: optional, values of Capture__c.Therapeutic_Area__c.
      */
     @AuraEnabled
-    public static SaveResult addKnownHcp(String eventId, String contactId, String method, String signatureDataUrl, String deviceInfo) {
+    public static SaveResult addKnownHcp(
+        String eventId,
+        String contactId,
+        String method,
+        String signatureDataUrl,
+        String deviceInfo,
+        List<String> therapeuticAreas
+    ) {
         checkAccess();
         Event__c ev = loadEvent(eventId);
         User u = me();
@@ -449,6 +466,7 @@ public with sharing class RepCaptureController {
         cap.Registration_Number__c = c.Registration_Number__c;
         cap.HCP_Selected_By_Rep__c = true;
         cap.Matched_Contact__c = c.Id;
+        cap.Therapeutic_Area__c = therapeuticAreaField(therapeuticAreas);
         cap.Capture_Device__c = deviceInfo == null ? null : deviceInfo.left(255);
         return save(cap, m, signatureDataUrl, ev, null);
     }
@@ -478,6 +496,7 @@ public with sharing class RepCaptureController {
         applyHco(cap, data.hospitalId, data.departmentId);
         cap.Notes__c = data.notes == null ? null : data.notes.left(32000);
         cap.Interest__c = String.isBlank(data.interest) ? null : data.interest.left(255);
+        cap.Therapeutic_Area__c = therapeuticAreaField(data.therapeuticAreas);
         Task follow = null;
         if (data.createTask == true && String.isNotBlank(data.taskTitle)) {
             follow = new Task(
@@ -583,6 +602,7 @@ public with sharing class RepCaptureController {
                 Consent_Method__c,
                 Opt_In_Status__c,
                 Notes__c,
+                Therapeutic_Area__c,
                 (SELECT Id FROM Tasks LIMIT 1)
             FROM Capture__c
             WHERE Captured_By__c = :UserInfo.getUserId() AND CreatedDate = TODAY
@@ -610,12 +630,40 @@ public with sharing class RepCaptureController {
             }
             m.hasTask = !c.Tasks.isEmpty();
             m.notes = c.Notes__c;
+            m.therapeuticAreas = c.Therapeutic_Area__c == null ? null : c.Therapeutic_Area__c.replace(';', '; ');
             out.add(m);
         }
         return out;
     }
 
     // ------------------------------------------------------------ helpers
+
+    /** Active values of Capture__c.Therapeutic_Area__c, in picklist order. */
+    private static Set<String> therapeuticAreaValues() {
+        Set<String> values = new Set<String>();
+        for (Schema.PicklistEntry e : Capture__c.Therapeutic_Area__c.getDescribe().getPicklistValues()) {
+            if (e.isActive()) {
+                values.add(e.getValue());
+            }
+        }
+        return values;
+    }
+
+    /** Multi-select value from the chosen areas; unknown values are ignored, none chosen = null. */
+    @TestVisible
+    private static String therapeuticAreaField(List<String> areas) {
+        if (areas == null || areas.isEmpty()) {
+            return null;
+        }
+        Set<String> allowed = therapeuticAreaValues();
+        List<String> picked = new List<String>();
+        for (String a : areas) {
+            if (a != null && allowed.contains(a) && !picked.contains(a)) {
+                picked.add(a);
+            }
+        }
+        return picked.isEmpty() ? null : String.join(picked, ';');
+    }
 
     private static Event__c loadEvent(String eventId) {
         List<Event__c> rows = [SELECT Id, Name, Slides_Url__c FROM Event__c WHERE Id = :eventId AND Active__c = TRUE LIMIT 1];

@@ -61,6 +61,20 @@
                             <button type="button" class="btn brand lg block" onclick={nextHcp}>🔍 New search – next HCP</button>
                         </template>
                         <template lwc:else>
+                            <div class="ta">
+                                <button type="button" class="ta-h" onclick={toggleAreas} aria-expanded={areasExpanded}>
+                                    <span class="grow">Therapeutic area <i class="opt">(optional)</i></span>
+                                    <span class="ta-sum">{areasSummary}</span>
+                                    <span class="ta-caret">{areasCaret}</span>
+                                </button>
+                                <template lwc:if={areasOpen}>
+                                    <div class="ta-grid">
+                                        <template for:each={areaChips} for:item="a">
+                                            <button key={a.value} type="button" class={a.cls} data-value={a.value} onclick={toggleArea} aria-pressed={a.pressed}>{a.value}</button>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                             <template lwc:if={selectedHasConsent}>
                                 <div class="alert ok">Consent is on file – <b>no question needed</b>.</div>
                                 <button type="button" class="btn brand lg block" onclick={addKnown} disabled={saving}>{addKnownLabel}</button>
@@ -163,6 +177,20 @@
                         <button type="button" class="lang" onclick={toggleLang} title="Dictation language" disabled={listening}>{langLabel}</button>
                     </div>
                 </div>
+                <div class="ta">
+                    <button type="button" class="ta-h" onclick={toggleAreas} aria-expanded={areasExpanded}>
+                        <span class="grow">Therapeutic area <i class="opt">(optional)</i></span>
+                        <span class="ta-sum">{areasSummary}</span>
+                        <span class="ta-caret">{areasCaret}</span>
+                    </button>
+                    <template lwc:if={areasOpen}>
+                        <div class="ta-grid">
+                            <template for:each={areaChips} for:item="a">
+                                <button key={a.value} type="button" class={a.cls} data-value={a.value} onclick={toggleArea} aria-pressed={a.pressed}>{a.value}</button>
+                            </template>
+                        </div>
+                    </template>
+                </div>
                 <template lwc:if={interimText}>
                     <div class="interim">… {interimText}</div>
                 </template>
@@ -195,6 +223,9 @@
                         <small>{c.specialty} · {c.city}</small>
                         <template lwc:if={c.notes}>
                             <div class="cap-notes">{c.notes}</div>
+                        </template>
+                        <template lwc:if={c.therapeuticAreas}>
+                            <small class="cap-ta">Therapeutic area: {c.therapeuticAreas}</small>
                         </template>
                         <div class="mt4">
                             <span class={c.badgeClass}>{c.consentLabel}</span>

@@ -489,3 +489,62 @@
     flex: 1;
     font-weight: 600;
 }
+
+/* therapeutic area: optional multi-select as tap chips */
+.ta {
+    margin: 10px 0;
+    border: 1px solid #dddbda;
+    border-radius: 8px;
+    background: #fff;
+}
+.ta-h {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    border: 0;
+    background: none;
+    padding: 10px 12px;
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+.ta-h .opt {
+    font-weight: 400;
+    color: #706e6b;
+}
+.ta-sum {
+    font-weight: 400;
+    color: #706e6b;
+    font-size: 12px;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ta-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 12px 12px;
+}
+.ta-chip {
+    border: 1px solid #c9c9c9;
+    background: #fff;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.ta-chip.on {
+    background: #0176d3;
+    border-color: #0176d3;
+    color: #fff;
+}
+.cap-ta {
+    display: block;
+    color: #706e6b;
+    margin-top: 2px;
+}
