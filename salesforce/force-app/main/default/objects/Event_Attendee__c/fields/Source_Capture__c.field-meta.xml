@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Source_Capture__c</fullName>
+    <label>Source Capture</label>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <referenceTo>Capture__c</referenceTo>
+    <relationshipLabel>Event Attendees</relationshipLabel>
+    <relationshipName>Event_Attendees</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

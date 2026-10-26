@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Max_Edit_Distance_Long__c</fullName>
+    <description>Levenshtein distance allowed for a name of Long_Name_Length__c characters or more.</description>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <label>Max edit distance (long names)</label>
+    <precision>4</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

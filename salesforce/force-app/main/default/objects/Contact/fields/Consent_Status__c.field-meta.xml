@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Consent_Status__c</fullName>
+    <inlineHelpText>Summary of the latest consent records; maintained by Apex.</inlineHelpText>
+    <label>Consent Status</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>None</fullName>
+                <default>false</default>
+                <label>None</label>
+            </value>
+            <value>
+                <fullName>Pending</fullName>
+                <default>false</default>
+                <label>Pending</label>
+            </value>
+            <value>
+                <fullName>Opt-in</fullName>
+                <default>false</default>
+                <label>Opt-in</label>
+            </value>
+            <value>
+                <fullName>Opted out</fullName>
+                <default>false</default>
+                <label>Opted out</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

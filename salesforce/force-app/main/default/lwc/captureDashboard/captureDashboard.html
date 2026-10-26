@@ -1,0 +1,85 @@
+<template>
+    <div class="dash">
+        <div class="ph">
+            <div>
+                <small>Dashboard</small>
+                <h1>Capture performance</h1>
+            </div>
+            <span class="sp"></span>
+            <label class="evlabel" for="ev">Event</label>
+            <select id="ev" class="dsel" onchange={changeEvent}>
+                <option value="">All events</option>
+                <template for:each={eventOptions} for:item="o">
+                    <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                </template>
+            </select>
+            <button type="button" class="btn" onclick={refresh}>Refresh</button>
+        </div>
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+        <template lwc:if={stats}>
+            <div class="kpis">
+                <template for:each={kpis} for:item="k">
+                    <div key={k.label} class={k.cls}><small>{k.label}</small><b>{k.value}</b></div>
+                </template>
+            </div>
+            <div class="charts">
+                <div class="dcard">
+                    <h3>Captures by channel</h3>
+                    <div class="cb">
+                        <template for:each={channelBars} for:item="b">
+                            <div key={b.label} class="hb"><span>{b.label}</span><div class="tr"><i style={b.style}></i></div><b>{b.value}</b></div>
+                        </template>
+                    </div>
+                </div>
+                <div class="dcard">
+                    <h3>Captures per rep</h3>
+                    <div class="cb">
+                        <template for:each={repBars} for:item="b">
+                            <div key={b.label} class="hb"><span>{b.label}</span><div class="tr"><i style={b.style}></i></div><b>{b.value}</b></div>
+                        </template>
+                        <div class="foot">Self-scan and kiosk captures are not attributed to a rep.</div>
+                    </div>
+                </div>
+                <div class="dcard">
+                    <h3>Matching outcome</h3>
+                    <div class="cb donutw">
+                        <svg viewBox="0 0 160 160" role="img" aria-label="Matching outcome">
+                            <circle r="60" cx="80" cy="80" fill="none" stroke="#ececec" stroke-width="26"></circle>
+                            <template for:each={matchingDonut} for:item="s">
+                                <circle key={s.label} r="60" cx="80" cy="80" fill="none" stroke={s.color} stroke-width="26" stroke-dasharray={s.dash} stroke-dashoffset={s.offset} transform="rotate(-90 80 80)"></circle>
+                            </template>
+                            <text x="80" y="78" text-anchor="middle" font-size="26" font-weight="700" fill="#181818">{stats.total}</text>
+                            <text x="80" y="98" text-anchor="middle" font-size="11" fill="#706e6b">captures</text>
+                        </svg>
+                        <div class="dl">
+                            <template for:each={matchingDonut} for:item="s">
+                                <div key={s.label}><i style={s.swatch}></i>{s.label}<b>{s.value} · {s.pct}%</b></div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+                <div class="dcard">
+                    <h3>Consent status</h3>
+                    <div class="cb donutw">
+                        <svg viewBox="0 0 160 160" role="img" aria-label="Consent status">
+                            <circle r="60" cx="80" cy="80" fill="none" stroke="#ececec" stroke-width="26"></circle>
+                            <template for:each={consentDonut} for:item="s">
+                                <circle key={s.label} r="60" cx="80" cy="80" fill="none" stroke={s.color} stroke-width="26" stroke-dasharray={s.dash} stroke-dashoffset={s.offset} transform="rotate(-90 80 80)"></circle>
+                            </template>
+                            <text x="80" y="78" text-anchor="middle" font-size="26" font-weight="700" fill="#181818">{stats.total}</text>
+                            <text x="80" y="98" text-anchor="middle" font-size="11" fill="#706e6b">captures</text>
+                        </svg>
+                        <div class="dl">
+                            <template for:each={consentDonut} for:item="s">
+                                <div key={s.label}><i style={s.swatch}></i>{s.label}<b>{s.value} · {s.pct}%</b></div>
+                            </template>
+                        </div>
+                        <div class="foot">Pending = the HCP has not yet clicked “Confirm” in the email.</div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

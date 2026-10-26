@@ -1,0 +1,36 @@
+<template>
+    <div class="card">
+        <h3>QR codes for posters</h3>
+        <div class="cb">
+            <template lwc:if={error}>
+                <div class="alert err">{error}</div>
+            </template>
+            <template lwc:if={info}>
+                <template lwc:if={notConfigured}>
+                    <div class="alert warn">The public site URL is not configured yet. Create the Experience Cloud site, then run <code>scripts/apex/01-configure.apex</code> with its URL.</div>
+                </template>
+                <template lwc:if={notPublic}>
+                    <div class="alert warn">This event is not active or public capture is disabled: the QR code will open a page that refuses registrations.</div>
+                </template>
+                <template for:each={codes} for:item="c">
+                    <div key={c.key} class="qr">
+                        <img src={c.png} alt={c.title} width="180" height="180" />
+                        <div class="meta">
+                            <b>{c.title}</b>
+                            <small>{c.hint}</small>
+                            <a class="url" href={c.url} target="_blank" rel="noopener noreferrer">{c.url}</a>
+                            <div class="btns">
+                                <button type="button" class="btn brand" data-key={c.key} data-format="png" onclick={download}>Download PNG</button>
+                                <button type="button" class="btn" data-key={c.key} data-format="svg" onclick={download}>Download SVG</button>
+                                <button type="button" class="btn" data-key={c.key} onclick={copy}>Copy link</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <template lwc:if={notice}>
+                    <div class="alert ok">{notice}</div>
+                </template>
+            </template>
+        </div>
+    </div>
+</template>

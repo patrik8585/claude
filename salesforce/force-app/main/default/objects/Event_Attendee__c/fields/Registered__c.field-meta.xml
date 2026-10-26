@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Registered__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Set by the system: the HCP registered for the event before it started (an imported registration, or an attendee entered with Attendance Status = Registered). Stays true after check-in (Attended), so registered-and-checked-in can be told from walk-ins.</description>
+    <inlineHelpText>Set automatically when the attendee is Registered; stays checked after check-in.</inlineHelpText>
+    <label>Registered</label>
+    <type>Checkbox</type>
+</CustomField>

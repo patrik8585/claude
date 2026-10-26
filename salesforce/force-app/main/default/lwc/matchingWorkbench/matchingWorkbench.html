@@ -1,0 +1,116 @@
+<template>
+    <div class="wb">
+        <div class="head">
+            <h2>Matching</h2>
+            <nav class="tabs" role="tablist">
+                <button type="button" role="tab" class={queueTabClass} data-tab="queue" onclick={selectTab}>Review queue ({queueCount})</button>
+                <button type="button" role="tab" class={accuracyTabClass} data-tab="accuracy" onclick={selectTab}>Accuracy</button>
+            </nav>
+        </div>
+
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+        <template lwc:if={notice}>
+            <div class="alert ok">{notice}</div>
+        </template>
+
+        <!-- REVIEW QUEUE -->
+        <template lwc:if={isQueue}>
+            <div class="bar">
+                <label>Hospital
+                    <select onchange={changeQueueHospital}>
+                        <option value="">All hospitals</option>
+                        <template for:each={hospitalOptions} for:item="h">
+                            <option key={h.value} value={h.value} selected={h.queueSelected}>{h.label}</option>
+                        </template>
+                    </select>
+                </label>
+                <label>Confidence
+                    <select onchange={changeConfidence}>
+                        <option value="">All</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </label>
+                <button type="button" class="btn sm" onclick={loadQueue} disabled={busy}>Refresh</button>
+                <span class="grow"></span>
+                <span class="muted">{selectedCount} selected</span>
+                <button type="button" class="btn sm brand" data-action="recommended" onclick={bulk} disabled={bulkDisabled}>Match to recommended</button>
+                <button type="button" class="btn sm" data-action="new" onclick={bulk} disabled={bulkDisabled}>Create new HCPs</button>
+                <button type="button" class="btn sm danger" data-action="discard" onclick={bulk} disabled={bulkDisabled}>Discard</button>
+            </div>
+            <template lwc:if={confirmBulk}>
+                <div class="alert warn">
+                    <span class="grow">{confirmBulkText}</span>
+                    <button type="button" class="btn sm" onclick={cancelBulk}>Cancel</button>
+                    <button type="button" class="btn sm brand" onclick={runBulk} disabled={busy}>Confirm</button>
+                </div>
+            </template>
+            <div class="scroll">
+                <table class="grid">
+                    <thead>
+                        <tr>
+                            <th class="cb"><input type="checkbox" onchange={toggleAll} checked={allSelected} aria-label="Select all" /></th>
+                            <th>Capture</th>
+                            <th>Captured name</th>
+                            <th>Hospital</th>
+                            <th>Recommended HCP</th>
+                            <th class="num">Score</th>
+                            <th>Confidence</th>
+                            <th class="num">Cand.</th>
+                            <th>Event / time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={queueRows} for:item="r">
+                            <tr key={r.id} class={r.rowClass}>
+                                <td class="cb"><input type="checkbox" data-id={r.id} checked={r.checked} onchange={toggleRow} aria-label="Select" /></td>
+                                <td><a href="#" data-id={r.id} onclick={openCapture}>{r.name}</a></td>
+                                <td>
+                                    <b>{r.fullName}</b>
+                                    <small>{r.specialty} · {r.city}</small>
+                                </td>
+                                <td>{r.hospital}</td>
+                                <td>{r.topCandidate}</td>
+                                <td class="num"><span class={r.scoreClass}>{r.topScore}</span></td>
+                                <td><span class={r.confClass}>{r.confidence}</span></td>
+                                <td class="num">{r.candidates}</td>
+                                <td><small>{r.eventName}<br />{r.capturedAt}</small></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <template lwc:if={queueEmpty}>
+                    <div class="empty">No capture is waiting for review.</div>
+                </template>
+            </div>
+        </template>
+
+        <!-- ACCURACY -->
+        <template lwc:if={isAccuracy}>
+            <c-matching-accuracy></c-matching-accuracy>
+        </template>
+    </div>
+
+    <!-- SIDE-BY-SIDE REVIEW: opens over the queue, the list keeps its scroll position -->
+    <template lwc:if={selectedCaptureId}>
+        <div class="backdrop" onclick={closeCapture}></div>
+        <section class="modal" role="dialog" aria-modal="true" aria-label="Side-by-side review" tabindex="-1" onkeydown={modalKey}>
+            <header class="mhead">
+                <button type="button" class="btn sm" onclick={closeCapture}>← Back to queue</button>
+                <b class="grow mtitle">{modalTitle}</b>
+                <button type="button" class="btn sm" onclick={prevCapture} disabled={noPrev}>‹ Previous</button>
+                <button type="button" class="btn sm" onclick={nextCapture} disabled={noNext}>Next ›</button>
+                <button type="button" class="x" onclick={closeCapture} aria-label="Close">×</button>
+            </header>
+            <div class="mbody">
+                <template lwc:if={notice}>
+                    <div class="alert ok">{notice}</div>
+                </template>
+                <c-capture-review record-id={selectedCaptureId} onresolved={handleResolved}></c-capture-review>
+            </div>
+        </section>
+    </template>
+</template>

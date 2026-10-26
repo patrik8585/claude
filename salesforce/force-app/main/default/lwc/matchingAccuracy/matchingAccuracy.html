@@ -1,0 +1,137 @@
+<template>
+    <div class="acc">
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+        <div class="bar">
+            <label class="sel">Congress
+                <select onchange={changeView}>
+                    <option value="" selected={allSelected}>All congresses</option>
+                    <template for:each={eventOptions} for:item="o">
+                        <option key={o.value} value={o.value} selected={o.selected}>{o.label}</option>
+                    </template>
+                    <option value="TEST" selected={testSelected}>Test set (synthetic, with expected outcomes)</option>
+                </select>
+            </label>
+            <span class="muted grow">{viewNote}</span>
+            <button type="button" class="btn sm" onclick={refresh} disabled={busy}>Refresh</button>
+        </div>
+
+        <!-- REAL CONGRESSES -->
+        <template lwc:if={isEventView}>
+            <template lwc:if={hasEventData}>
+                <div class="kpis">
+                    <div class="kpi"><span>Captures</span><b>{e.total}</b><small>{channelText}</small></div>
+                    <div class="kpi"><span>Auto-matched</span><b>{autoRate}</b><small>{e.autoCount} of {e.processed} · rep {e.autoByRep} · email {e.autoByEmail} · reg. no. {e.autoByRegistration}</small></div>
+                    <div class="kpi"><span>Sent to review</span><b>{reviewRate}</b><small>{e.sentToReview} captures to a data steward</small></div>
+                    <div class="kpi"><span>Review backlog</span><b class={backlogClass}>{e.backlog}</b><small>{oldestText}</small></div>
+                    <div class="kpi"><span>Reviewed</span><b>{reviewedTotal}</b><small>{e.reviewedMatched} matched · {e.reviewedNew} new HCP · {e.reviewedDiscarded} discarded · {avgReviewText}</small></div>
+                    <div class="kpi"><span>Recommendation accepted</span><b>{acceptedRate}</b><small>{e.recommendationAccepted} of {e.reviewedMatched} reviewed matches took the recommended HCP</small></div>
+                    <div class="kpi"><span>Confidence (review)</span><b>{avgTopScore}</b><small>avg. score of the recommended HCP · High {e.confidenceHigh} · Medium {e.confidenceMedium} · Low {e.confidenceLow}</small></div>
+                    <div class="kpi"><span>New HCP (automatic)</span><b>{e.newHcp}</b><small>no candidate found: HCP created</small></div>
+                    <div class="kpi"><span>Registration not found</span><b>{e.registrationNotFound}</b><small>registrant not in Salesforce: not imported</small></div>
+                    <div class="kpi"><span>Queued / errors</span><b>{e.queued} / {e.errors}</b><small>still being matched / matching failed</small></div>
+                </div>
+
+                <template lwc:if={hasByEvent}>
+                    <h3>By congress</h3>
+                    <div class="scroll">
+                        <table class="grid">
+                            <thead>
+                                <tr>
+                                    <th>Congress</th>
+                                    <th class="num">Captures</th>
+                                    <th class="num">Auto-matched</th>
+                                    <th class="num">Sent to review</th>
+                                    <th class="num">Backlog</th>
+                                    <th class="num">Reviewed</th>
+                                    <th class="num">Rec. accepted</th>
+                                    <th class="num">New HCP</th>
+                                    <th class="num">Reg. not found</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template for:each={eventRows} for:item="r">
+                                    <tr key={r.eventId}>
+                                        <td><a href="#" data-id={r.eventId} onclick={openEventRow}>{r.eventName}</a></td>
+                                        <td class="num">{r.total}</td>
+                                        <td class="num">{r.autoCount} <small>{r.autoRateText}</small></td>
+                                        <td class="num">{r.sentToReview} <small>{r.reviewRateText}</small></td>
+                                        <td class="num"><b class={r.backlogClass}>{r.backlog}</b></td>
+                                        <td class="num">{r.reviewedTotal}</td>
+                                        <td class="num">{r.acceptedText}</td>
+                                        <td class="num">{r.newHcp}</td>
+                                        <td class="num">{r.registrationNotFound}</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+            </template>
+            <template lwc:else>
+                <div class="empty">No capture for this congress yet. Figures appear as soon as captures arrive.</div>
+            </template>
+        </template>
+
+        <!-- SYNTHETIC TEST SET -->
+        <template lwc:if={testSelected}>
+            <template lwc:if={hasData}>
+                <div class="kpis">
+                    <div class="kpi"><span>Test captures</span><b>{m.total}</b><small>{m.pending} still queued</small></div>
+                    <div class="kpi"><span>Auto-match precision</span><b>{autoPrecision}</b><small>{m.autoCorrect} of {m.autoCount} auto-matches right</small></div>
+                    <div class="kpi"><span>Review rate</span><b>{testReviewRate}</b><small>{m.reviewCount} sent to a person · {m.missedAuto} could have been auto</small></div>
+                    <div class="kpi"><span>False new-HCP rate</span><b>{falseNewRate}</b><small>{m.falseNew} of {m.withExistingHcp} existing HCPs created again</small></div>
+                    <div class="kpi"><span>Right HCP among review candidates</span><b>{reviewRecall}</b><small>recommended first: {reviewTop1}</small></div>
+                    <div class="kpi"><span>Outcome as expected</span><b>{outcomeAgreement}</b><small>auto / review / new</small></div>
+                </div>
+
+                <h3>By test case</h3>
+                <div class="scroll">
+                    <table class="grid">
+                        <thead>
+                            <tr>
+                                <th>Test case</th>
+                                <th>Expected</th>
+                                <th class="num">Captures</th>
+                                <th class="num">Auto</th>
+                                <th class="num">Review</th>
+                                <th class="num">New HCP</th>
+                                <th class="num">As expected</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template for:each={caseRows} for:item="r">
+                                <tr key={r.testCase} class={r.rowClass}>
+                                    <td>{r.testCase}</td>
+                                    <td>{r.expected}</td>
+                                    <td class="num">{r.total}</td>
+                                    <td class="num">{r.autoCount}</td>
+                                    <td class="num">{r.reviewCount}</td>
+                                    <td class="num">{r.newCount}</td>
+                                    <td class="num"><b>{r.asExpected}</b></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <template lwc:if={hasProblems}>
+                    <h3>To look at ({problemCount})</h3>
+                    <ul class="problems">
+                        <template for:each={problemRows} for:item="p">
+                            <li key={p.captureId}><a href={p.url} target="_blank">{p.captureName}</a> · {p.testCase}: <b>{p.issue}</b></li>
+                        </template>
+                    </ul>
+                </template>
+                <p class="muted">
+                    Data set: {m.hospitals} hospitals · {m.departments} departments · {m.hcps} generated HCPs.
+                    <template lwc:if={m.jobStatus}>Last generator job: {m.jobStatus}.</template>
+                </p>
+            </template>
+            <template lwc:else>
+                <div class="empty">No synthetic test captures in this org.</div>
+            </template>
+        </template>
+    </div>
+</template>

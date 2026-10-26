@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Hospital</fullName>
+    <active>true</active>
+    <description>Healthcare organisation (hospital, university hospital, local health authority). Parent of its departments.</description>
+    <label>Hospital</label>
+</RecordType>

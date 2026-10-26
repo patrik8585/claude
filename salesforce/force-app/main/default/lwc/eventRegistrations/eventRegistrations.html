@@ -1,0 +1,29 @@
+<template>
+    <article class="card">
+        <header class="hd">
+            <b>Registrations</b>
+            <span class="upd">
+                <template lwc:if={updatedAt}><span class="muted">Updated {updatedAt}</span></template>
+                <button type="button" class="link" onclick={refresh}>Refresh</button>
+            </span>
+        </header>
+        <template lwc:if={error}>
+            <div class="alert err">{error}</div>
+        </template>
+        <template lwc:if={summary}>
+            <div class="tiles">
+                <div class="tile"><span>Registered</span><b>{summary.registered}</b></div>
+                <div class="tile ok"><span>Checked in</span><b>{summary.checkedIn}</b></div>
+                <div class="tile"><span>Not arrived</span><b>{summary.notArrived}</b></div>
+                <div class="tile"><span>Walk-ins</span><b>{summary.walkIns}</b></div>
+            </div>
+            <template lwc:if={summary.notFound}>
+                <p class="muted warn">{summary.notFound} registrations not imported: the HCP is not in Salesforce (only existing HCPs can be registered).</p>
+            </template>
+            <template lwc:if={summary.inProgress}>
+                <p class="muted">{summary.inProgress} registrations still being matched or waiting for a data steward (Matching › Review queue).</p>
+            </template>
+            <p class="muted">Live figures from the event attendees: they refresh every {refreshSeconds} seconds.</p>
+        </template>
+    </article>
+</template>

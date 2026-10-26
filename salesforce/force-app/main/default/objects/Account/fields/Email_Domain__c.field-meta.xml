@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Email_Domain__c</fullName>
+    <description>Hospitals: institutional email domain(s), separated by comma or semicolon (e.g. gaslini-example.it). Matching infers the hospital from the captured email.</description>
+    <inlineHelpText>Institutional email domains, comma separated, without @.</inlineHelpText>
+    <label>Email Domain</label>
+    <length>255</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
