@@ -97,4 +97,15 @@ public without sharing class ConsentCaptureConfig {
         }
         return values;
     }
+
+    /** Therapeutic areas the rep can tick on the Rep Hub (optional, several allowed). */
+    public static List<String> therapeuticAreas() {
+        List<String> values = new List<String>();
+        for (Schema.PicklistEntry e : Capture__c.Therapeutic_Area__c.getDescribe().getPicklistValues()) {
+            if (e.isActive()) {
+                values.add(e.getValue());
+            }
+        }
+        return values;
+    }
 }
