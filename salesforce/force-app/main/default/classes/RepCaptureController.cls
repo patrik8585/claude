@@ -166,6 +166,33 @@ public with sharing class RepCaptureController {
         public String therapeuticAreas;
     }
 
+    /** A kiosk or QR entry of the congress that is still waiting to be identified (see OpenCaptureService). */
+    public class OpenEntry {
+        @AuraEnabled
+        public String id;
+        @AuraEnabled
+        public String firstName;
+        @AuraEnabled
+        public String lastName;
+        @AuraEnabled
+        public String email;
+        @AuraEnabled
+        public String specialty;
+        @AuraEnabled
+        public String city;
+        @AuraEnabled
+        public String organisation;
+        @AuraEnabled
+        public String registrationNumber;
+        /** Kiosk | QR */
+        @AuraEnabled
+        public String channelLabel;
+        @AuraEnabled
+        public String timeLabel;
+        @AuraEnabled
+        public String consentLabel;
+    }
+
     // ------------------------------------------------------------ access
 
     private static void checkAccess() {
@@ -469,6 +496,37 @@ public with sharing class RepCaptureController {
         cap.Therapeutic_Area__c = therapeuticAreaField(therapeuticAreas);
         cap.Capture_Device__c = deviceInfo == null ? null : deviceInfo.left(255);
         return save(cap, m, signatureDataUrl, ev, null);
+    }
+
+    // ------------------------------------------------------------ open kiosk / QR entries
+
+    /**
+     * Kiosk and QR entries of this congress not identified yet, matching the search term.
+     * Shown under the HCP results so the rep does not create again an HCP who used the kiosk first.
+     */
+    @AuraEnabled
+    public static List<OpenEntry> searchOpenEntries(String term, String eventId) {
+        checkAccess();
+        return OpenCaptureService.search(term, eventId);
+    }
+
+    /** The rep identified the HCP of a kiosk / QR entry among the search results. */
+    @AuraEnabled
+    public static String linkOpenEntry(String captureId, String contactId) {
+        checkAccess();
+        // with sharing: the rep can only link an HCP the rep can see
+        List<Contact> rows = String.isBlank(contactId) ? new List<Contact>() : [SELECT Id FROM Contact WHERE Id = :contactId];
+        if (rows.isEmpty()) {
+            throw new AuraHandledException('HCP not found.');
+        }
+        return OpenCaptureService.link(captureId, rows[0].Id);
+    }
+
+    /** The HCP of a kiosk / QR entry is not in Salesforce: create the HCP from the entry. */
+    @AuraEnabled
+    public static String createHcpFromOpenEntry(String captureId) {
+        checkAccess();
+        return OpenCaptureService.createHcp(captureId);
     }
 
     // ------------------------------------------------------------ walk-in

@@ -185,6 +185,133 @@ private class RepCaptureControllerTest {
         Assert.areEqual('Call back Dr. Maria Bianchi', c.Tasks[0].Subject);
     }
 
+    /** Kiosk entry of an HCP not identified yet (the HCP typed a personal email, so no auto-match). */
+    private static Capture__c openKioskEntry(String first, String last, String email) {
+        Capture__c c = ConsentTestFactory.capture(ev(), first, last, email, 'Paediatrics', 'Milan');
+        c.Channel__c = CaptureConstants.CHANNEL_KIOSK;
+        c.Matching_Status__c = CaptureConstants.MATCH_REVIEW;
+        c.Processing_Stage__c = CaptureConstants.STAGE_TO_REVIEW;
+        insert c;
+        return c;
+    }
+
+    @IsTest
+    static void kioskFirstRepLinksTheOpenEntry() {
+        CaptureTriggerHandler.publishEnabled = false;
+        Id evId = ev().Id;
+        Capture__c entry = openKioskEntry('Elena', 'Greco', 'elena.greco@gmail.com');
+        // a rep capture and an entry already resolved are never listed
+        Capture__c repCapture = ConsentTestFactory.capture(ev(), 'Elena', 'Greco', null, 'Paediatrics', 'Milan');
+        repCapture.Channel__c = CaptureConstants.CHANNEL_REP;
+        Capture__c resolved = ConsentTestFactory.capture(ev(), 'Elena', 'Greco', 'other@gmail.com', 'Paediatrics', 'Milan');
+        resolved.Matching_Status__c = CaptureConstants.MATCH_DISCARDED;
+        insert new List<Capture__c>{ repCapture, resolved };
+        User rep = ConsentTestFactory.user('HCP_Consent_Rep');
+        Test.startTest();
+        System.runAs(rep) {
+            List<RepCaptureController.OpenEntry> found = RepCaptureController.searchOpenEntries('greco', evId);
+            Assert.areEqual(1, found.size(), 'only the open kiosk / QR entry: ' + found);
+            Assert.areEqual(entry.Id, found[0].id);
+            Assert.areEqual('Kiosk', found[0].channelLabel);
+            Assert.areEqual(1, RepCaptureController.searchOpenEntries('Elena Greco', evId).size(), 'every word must match');
+            Assert.areEqual(0, RepCaptureController.searchOpenEntries('Mario Greco', evId).size());
+            Assert.areEqual(1, RepCaptureController.searchOpenEntries('elena.greco@gmail', evId).size(), 'by email');
+            Assert.areEqual(0, RepCaptureController.searchOpenEntries('g', evId).size(), 'term too short');
+            Assert.areEqual(0, RepCaptureController.searchOpenEntries('greco', null).size(), 'no congress');
+
+            String msg = RepCaptureController.linkOpenEntry(entry.Id, contactId('Greco'));
+            Assert.isTrue(msg.contains('linked'), msg);
+            Assert.areEqual(0, RepCaptureController.searchOpenEntries('greco', evId).size(), 'closed: no longer listed');
+
+            Boolean twice = false;
+            try {
+                RepCaptureController.linkOpenEntry(entry.Id, contactId('Greco'));
+            } catch (AuraHandledException e) {
+                twice = true;
+            }
+            Assert.isTrue(twice, 'an entry already identified cannot be resolved again');
+        }
+        Test.stopTest();
+        Capture__c after = [
+            SELECT Matching_Status__c, Match_Rule__c, Matched_Contact__c, Reviewed_By__c, Consent__c
+            FROM Capture__c
+            WHERE Id = :entry.Id
+        ];
+        Assert.areEqual(CaptureConstants.MATCH_REVIEWED, after.Matching_Status__c);
+        Assert.areEqual(OpenCaptureService.RULE_LINKED, after.Match_Rule__c);
+        Assert.areEqual(contactId('Greco'), after.Matched_Contact__c);
+        Assert.areEqual(rep.Id, after.Reviewed_By__c);
+        Assert.isNotNull(after.Consent__c, 'consent given at the kiosk recorded on the HCP');
+        Assert.areEqual(
+            1,
+            [SELECT COUNT() FROM Event_Attendee__c WHERE Event__c = :evId AND Contact__c = :contactId('Greco')],
+            'attendee recorded once'
+        );
+    }
+
+    @IsTest
+    static void kioskFirstRepCreatesTheHcpFromTheEntry() {
+        CaptureTriggerHandler.publishEnabled = false;
+        Capture__c entry = openKioskEntry('Luca', 'Neri', 'luca.neri@gmail.com');
+        User rep = ConsentTestFactory.user('HCP_Consent_Rep');
+        Test.startTest();
+        System.runAs(rep) {
+            Assert.areEqual(0, RepCaptureController.searchHcps('Neri', ev().Id).size(), 'not in Salesforce yet');
+            String msg = RepCaptureController.createHcpFromOpenEntry(entry.Id);
+            Assert.isTrue(msg.contains('New HCP'), msg);
+            Boolean badId = false;
+            try {
+                RepCaptureController.createHcpFromOpenEntry('not-an-id');
+            } catch (AuraHandledException e) {
+                badId = true;
+            }
+            Assert.isTrue(badId);
+            Boolean unknownHcp = false;
+            try {
+                RepCaptureController.linkOpenEntry(entry.Id, null);
+            } catch (AuraHandledException e) {
+                unknownHcp = true;
+            }
+            Assert.isTrue(unknownHcp);
+        }
+        Test.stopTest();
+        Capture__c after = [SELECT Matching_Status__c, Match_Rule__c, Matched_Contact__c FROM Capture__c WHERE Id = :entry.Id];
+        Assert.areEqual(CaptureConstants.MATCH_REVIEWED_NEW, after.Matching_Status__c);
+        Assert.areEqual(OpenCaptureService.RULE_NEW, after.Match_Rule__c);
+        Assert.areEqual(after.Matched_Contact__c, contactId('Neri'), 'one new HCP, created from the entry');
+    }
+
+    @IsTest
+    static void repFirstKioskLaterRanksTheCheckedInHcp() {
+        CaptureTriggerHandler.publishEnabled = false;
+        Event__c e = ev();
+        Id greco = contactId('Greco');
+        insert new Event_Attendee__c(
+            Event__c = e.Id,
+            Contact__c = greco,
+            Attendee_Key__c = CaptureResolutionService.attendeeKey(e.Id, greco),
+            Attendance_Status__c = CaptureConstants.ATTENDANCE_ATTENDED,
+            Communications_Allowed__c = false
+        );
+        // later the HCP uses the kiosk with a personal email: no identical identifier, so review
+        Capture__c later = ConsentTestFactory.capture(e, 'Elena', 'Greco', 'elena.g@gmail.com', 'Paediatrics', 'Milan');
+        later.Channel__c = CaptureConstants.CHANNEL_KIOSK;
+        insert later;
+        Test.startTest();
+        CaptureMatchingService.processCaptures(new Set<Id>{ later.Id });
+        Test.stopTest();
+        Capture_Candidate__c top = [
+            SELECT Contact__c, Score_Explanation__c
+            FROM Capture_Candidate__c
+            WHERE Capture__c = :later.Id
+            ORDER BY Rank__c ASC
+            LIMIT 1
+        ];
+        Assert.areEqual(greco, top.Contact__c, 'the HCP the rep checked in is the top candidate');
+        Assert.isTrue(top.Score_Explanation__c.contains('already checked in at this congress'), top.Score_Explanation__c);
+        Assert.areEqual(1, [SELECT COUNT() FROM Event_Attendee__c WHERE Event__c = :e.Id AND Contact__c = :greco], 'no second attendee');
+    }
+
     @IsTest
     static void accessIsChecked() {
         User nobody = ConsentTestFactory.user(null);

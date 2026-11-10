@@ -57,6 +57,10 @@ Nomi da ricordare: l'oggetto `Event__c` si chiama **Congress** nell'interfaccia;
 - Rep Hub: resta sul congresso, pulsante **New search – next HCP** dopo ogni cattura, campi walk-in vuoti.
 - **Therapeutic area** multi-select opzionale (`Capture__c.Therapeutic_Area__c`, 31 valori) nella scheda HCP e nel walk-in, visibile in *My captures today*.
 
+**Fatto ma da verificare con un deploy** (10 novembre, `OpenCaptureService`, README §13):
+- Rep Hub: sotto i risultati compaiono anche le registrazioni kiosk / QR **aperte** dello stesso congresso; il rep le collega a un HCP (*Same person*) o crea l'HCP dalla registrazione, e la registrazione esce dalla coda di revisione.
+- Matching: un candidato già *Attended* allo stesso congresso riceve lo stesso bonus di *registered* (*already checked in at this congress*).
+
 Non so se questi ultimi sono già nell'org: se non ricordi di averli deployati, rifai il deploy (§4).
 
 **Tolto su richiesta del business** (non rimettere senza decisione):

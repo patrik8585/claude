@@ -44,6 +44,8 @@ public without sharing class CaptureMatchingService {
         public Map<Id, Set<Id>> byHospital = new Map<Id, Set<Id>>();
         /** Event Id -> HCPs registered for that event (imported registrations). */
         public Map<Id, Set<Id>> registeredByEvent = new Map<Id, Set<Id>>();
+        /** Event Id -> HCPs already checked in at that event (e.g. by a rep before the HCP used the kiosk). */
+        public Map<Id, Set<Id>> attendedByEvent = new Map<Id, Set<Id>>();
     }
 
     // ------------------------------------------------------------ entry point
@@ -124,11 +126,18 @@ public without sharing class CaptureMatchingService {
             }
             HcpMatchEngine.Profile me = HcpMatchEngine.fromCapture(c);
             List<HcpMatchEngine.Comparison> comps = new List<HcpMatchEngine.Comparison>();
-            Set<Id> registered = c.Channel__c == CaptureConstants.CHANNEL_REGISTRATION ? null : pool.registeredByEvent.get(c.Event__c);
+            Boolean isRegistration = c.Channel__c == CaptureConstants.CHANNEL_REGISTRATION;
+            Set<Id> registered = isRegistration ? null : pool.registeredByEvent.get(c.Event__c);
+            Set<Id> attended = isRegistration ? null : pool.attendedByEvent.get(c.Event__c);
             for (Id contactId : candidateIds(me, c, pool)) {
                 HcpMatchEngine.Comparison cmp = HcpMatchEngine.compare(me, pool.profiles.get(contactId));
-                if (registered != null && registered.contains(contactId) && cfg.wRegistered != 0) {
+                // same weight once: registered first, else already checked in (rep first, kiosk later).
+                // It only ranks the review candidates: auto-match still needs an identical identifier.
+                if (cfg.wRegistered != 0 && registered != null && registered.contains(contactId)) {
                     cmp.add(cfg.wRegistered, 'registered for this event');
+                    cmp.score = Math.max(0, Math.min(100, cmp.score));
+                } else if (cfg.wRegistered != 0 && attended != null && attended.contains(contactId)) {
+                    cmp.add(cfg.wRegistered, 'already checked in at this congress');
                     cmp.score = Math.max(0, Math.min(100, cmp.score));
                 }
                 if (cmp.isCandidate()) {
@@ -378,14 +387,19 @@ public without sharing class CaptureMatchingService {
         if (!eventIds.isEmpty() && !contacts.isEmpty()) {
             Set<Id> contactIds = contacts.keySet();
             for (Event_Attendee__c a : [
-                SELECT Event__c, Contact__c
+                SELECT Event__c, Contact__c, Registered__c, Attendance_Status__c
                 FROM Event_Attendee__c
-                WHERE Event__c IN :eventIds AND Contact__c IN :contactIds AND Registered__c = TRUE
+                WHERE
+                    Event__c IN :eventIds
+                    AND Contact__c IN :contactIds
+                    AND (Registered__c = TRUE
+                    OR Attendance_Status__c = :CaptureConstants.ATTENDANCE_ATTENDED)
             ]) {
-                if (!pool.registeredByEvent.containsKey(a.Event__c)) {
-                    pool.registeredByEvent.put(a.Event__c, new Set<Id>());
+                Map<Id, Set<Id>> target = a.Registered__c ? pool.registeredByEvent : pool.attendedByEvent;
+                if (!target.containsKey(a.Event__c)) {
+                    target.put(a.Event__c, new Set<Id>());
                 }
-                pool.registeredByEvent.get(a.Event__c).add(a.Contact__c);
+                target.get(a.Event__c).add(a.Contact__c);
             }
         }
         pool.profiles = HcpMatchEngine.fromContacts(contacts.values());

@@ -5,6 +5,9 @@ import addKnownHcp from '@salesforce/apex/RepCaptureController.addKnownHcp';
 import saveWalkIn from '@salesforce/apex/RepCaptureController.saveWalkIn';
 import getMyCapturesToday from '@salesforce/apex/RepCaptureController.getMyCapturesToday';
 import getRegisteredAttendees from '@salesforce/apex/RepCaptureController.getRegisteredAttendees';
+import searchOpenEntries from '@salesforce/apex/RepCaptureController.searchOpenEntries';
+import linkOpenEntry from '@salesforce/apex/RepCaptureController.linkOpenEntry';
+import createHcpFromOpenEntry from '@salesforce/apex/RepCaptureController.createHcpFromOpenEntry';
 
 const MIC_ERRORS = {
     'not-allowed': 'Microphone blocked: allow microphone access for this site (browser address bar › site settings), or use the microphone key of your keyboard.',
@@ -44,6 +47,10 @@ export default class RepCaptureHub extends LightningElement {
     eventName;
     query = '';
     results = [];
+    /** Kiosk / QR entries of this congress not identified yet, matching the search. */
+    openEntries = [];
+    selectedEntry;
+    entryDone;
     registeredList = { registered: 0, checkedIn: 0, attendees: [] };
     showRegistered = false;
     searched = false;
@@ -263,6 +270,9 @@ export default class RepCaptureHub extends LightningElement {
         this.resetAreas();
         this.query = '';
         this.results = [];
+        this.openEntries = [];
+        this.selectedEntry = undefined;
+        this.entryDone = undefined;
         this.searched = false;
         this.selected = undefined;
         this.resetMethod();
@@ -278,10 +288,12 @@ export default class RepCaptureHub extends LightningElement {
     handleSearch(evt) {
         this.query = evt.target.value;
         this.selected = undefined;
+        this.selectedEntry = undefined;
         this.showRegistered = false;
         clearTimeout(this.searchTimer);
         if ((this.query || '').trim().length < 2) {
             this.results = [];
+            this.openEntries = [];
             this.searched = false;
             return;
         }
@@ -293,7 +305,11 @@ export default class RepCaptureHub extends LightningElement {
         this.searching = true;
         this.error = undefined;
         try {
-            this.results = await searchHcps({ term: this.query, eventId: this.eventId });
+            const args = { term: this.query, eventId: this.eventId };
+            // open kiosk / QR entries are a help, never a blocker: an error there leaves the list empty
+            const [hcps, entries] = await Promise.all([searchHcps(args), searchOpenEntries(args).catch(() => [])]);
+            this.results = hcps;
+            this.openEntries = entries || [];
             this.searched = true;
         } catch (e) {
             this.error = this.msg(e);
@@ -341,6 +357,76 @@ export default class RepCaptureHub extends LightningElement {
         this.selected = this.visibleResults.find((h) => h.id === id);
         this.resetMethod();
         this.resetAreas();
+    }
+
+    // ---------------------------------------------------------------- open kiosk / QR entries
+
+    get hasOpenEntries() {
+        return !this.showRegistered && this.openEntries.length > 0;
+    }
+
+    get openEntryRows() {
+        return this.openEntries.map((e) => ({
+            ...e,
+            fullName: [e.firstName, e.lastName].filter((x) => !!x).join(' '),
+            detailLine: [e.specialty, e.city, e.email].filter((x) => !!x).join(' · '),
+            whenLabel: `${e.channelLabel} · ${e.timeLabel}`
+        }));
+    }
+
+    get selectedEntryName() {
+        const e = this.selectedEntry;
+        return e ? [e.firstName, e.lastName].filter((x) => !!x).join(' ') : '';
+    }
+
+    /** HCPs of the current search the rep can link the entry to. */
+    get entryCandidates() {
+        return this.resultRows;
+    }
+
+    get hasEntryCandidates() {
+        return this.results.length > 0;
+    }
+
+    selectEntry(evt) {
+        const id = evt.currentTarget.dataset.id;
+        this.selectedEntry = this.openEntries.find((e) => e.id === id);
+        this.entryDone = undefined;
+        this.selected = undefined;
+        this.resetMethod();
+    }
+
+    backFromEntry() {
+        this.selectedEntry = undefined;
+        this.entryDone = undefined;
+    }
+
+    async linkEntry(evt) {
+        const contactId = evt.currentTarget.dataset.id;
+        await this.resolveEntry(() => linkOpenEntry({ captureId: this.selectedEntry.id, contactId }), contactId);
+    }
+
+    async createFromEntry() {
+        await this.resolveEntry(() => createHcpFromOpenEntry({ captureId: this.selectedEntry.id }), null);
+    }
+
+    async resolveEntry(call, contactId) {
+        const entryId = this.selectedEntry.id;
+        this.saving = true;
+        this.error = undefined;
+        try {
+            this.entryDone = await call();
+            this.openEntries = this.openEntries.filter((e) => e.id !== entryId);
+            if (contactId) {
+                this.added = { ...this.added, [contactId]: this.entryDone };
+            }
+            this.toast('Kiosk / QR entry identified');
+            this.loadRegistered();
+        } catch (e) {
+            this.error = this.msg(e);
+        } finally {
+            this.saving = false;
+        }
     }
 
     // ---------------------------------------------------------------- therapeutic area (optional, multi-select)
